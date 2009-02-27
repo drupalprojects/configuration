@@ -1,0 +1,6 @@
+<?php
+
+/**
+ * @file
+ * Do a quick drupal bootstrap and pull off a queued configuration and run it
+ */

@@ -1,0 +1,2135 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Provide a unified method for defining site configurations abstracted from their data format.
+ * Various data formats should be supported via a plugin architecture such as XML, YAML, JSON, PHP
+ */
+
+/**
+ * The first execution phase: Apply the base map to $context
+ */
+define('CONFIGURATION_INITIALIZE', 1);
+
+/**
+ * The second execution phase: Apply the base map to $context
+ */
+define('CONFIGURATION_DEFAULT_MAP', 2);
+
+/**
+ * The third execution phase: Enable all modules needed for the configuration
+ */
+define('CONFIGURATION_ENABLE_MODULES', 3);
+
+/**
+ * The fourth execution phase: Apply all modules configuration maps
+ */
+define('CONFIGURATION_MODULE_MAPS', 4);
+
+/**
+ * The fifth execution phase: Execute the built up actions, one action per execution pass.
+ */
+define('CONFIGURATION_EXECUTE_ACTIONS', 5);
+
+/**
+ * The six execution phase: Disable any modules marked for disabling
+ */
+define('CONFIGURATION_DISABLE_MODULES', 6);
+
+/**
+ * The seventh and last execution phase: Any needed cleanup operations
+ */
+define('CONFIGURATION_FINALIZE', 7);
+
+/**
+ * An execution phase to mark the success and completion of the configuration
+ */
+define('CONFIGURATION_SUCCESS', -1);
+
+/**
+ * An execution phase to mark an error in the execution somewhere
+ */
+define('CONFIGURATION_ERROR', 0);
+
+/**
+ * The key that signals an attribute in the end-result parsed data
+ */
+define('CONFIGURATION_ATTRIBUTE_KEY', '$');
+
+/**
+ * Implementation of hook_perm()
+ */
+function configuration_perm() {
+  return array('execute configurations');
+}
+
+/**
+ * Execute a configuration diven a data object of actions. The supplied
+ * data should be a php array in the correct format.
+ * 
+ * Here is an example configuration to setup two blocks:
+ * 
+ * array(
+ *   array(
+ *     tag => block
+ *     config => array(
+ *       description => My Custom Block
+ *       region => right
+ *       weight => -5
+ *     )
+ *   )
+ *   array(
+ *     tag => block
+ *     config => array(
+ *       id => locale-0
+ *       region => left
+ *       weight => 5
+ *     )
+ *   )
+ * )
+ * 
+ * @param $data
+ *  The dataset containing the configuration to execute
+ * @param $mode
+ *  A string that will form a callback function used to dictate
+ *  execution of the configuration. Two default modes are:
+ *  - batch: Run the configuration on a batch/progress bar page
+ *  - xmlrpc: Run the configuration through services without a 
+ *            break in the pages php execution
+ * 
+ *  The job of the callback function is to ensure that data
+ *  set in the configuration_set_data static cache is maintained
+ *  through any possible page re-loads or however the execution
+ *  is processed so that each pass of configuration_execute_pass
+ *  has the right data available to it.
+ * @return
+ *  TRUE or FALSE for successful execution. The exact error in case
+ *  of an unsuccessful run can be retrieved with configuration_get_error()
+ */
+function configuration_execute($data, $mode = 'batch', $current_id = null) {
+  $args = func_get_args();
+  array_splice($args, 0, 3);
+
+  $function = 'configuration_execute_'. $mode;
+
+  if (!function_exists($function)) {
+    return FALSE;
+  }
+
+  // Create and set a unique id for this execution
+  if (!$current_id) {
+    $current_id = md5(mt_rand());
+  }
+
+  configuration_set_current_id($current_id);
+
+  // Set the current data so it can be used with this execution
+  configuration_set_data('data', $data);
+  
+  // Set to the first phase to get things started
+  configuration_set_data('phase', CONFIGURATION_INTIALIZE);
+
+  return call_user_func_array($function, $args);
+}
+
+/**
+ * Run through a pass of the configuration process
+ * 
+ * @return
+ *  Return the current phase
+ */
+function configuration_run_pass() {
+  $phases = array(CONFIGURATION_INTIALIZE, CONFIGURATION_DEFAULT_MAP, CONFIGURATION_ENABLE_MODULES, CONFIGURATION_MODULE_MAPS, CONFIGURATION_EXECUTE_ACTIONS, CONFIGURATION_DISABLE_MODULES, CONFIGURATION_FINALIZE);
+
+  $phase =& configuration_get_data('phase');
+  $context =& configuration_get_data('context');
+  $data =& configuration_get_data('data');
+  
+  // The context object is required for every phase except the first
+  // Also, the original data object should always be a reference to the
+  // data in the context object which we can't guarantee unless we do it
+  // ourselves here.
+  if (is_object($context)) {
+    $data = &$context->item;
+  }
+  else if ($phase > CONFIGURATION_INTIALIZE) {
+    configuration_set_error('no_context');
+    $phase = CONFIGURATION_ERROR;
+  }
+  
+  // Ensure our phase is valid
+  if (!in_array($phase, $phases)) {
+    configuration_set_error('invalid_phase', array('phase' => $phase));
+  }
+
+  // Make sure necessary include files are loaded
+  configuration_load_includes();
+
+  switch($phase) {
+    // TODO Decide if maybe we should run the first few phases all at once
+    case CONFIGURATION_INTIALIZE:
+      configuration_initiate();
+      $phase++;
+    break;
+    case CONFIGURATION_DEFAULT_MAP:
+      // First apply the base configuration map. This primary purpose
+      // of this map is to set appropriate attributes in the context
+      // object, make it look a bit nicer, and build the module list
+      configuration_apply_map($context, configuration_default_map());
+
+      if (!configuration_get_error()) {
+        $phase++;
+      }
+    break;
+    case CONFIGURATION_ENABLE_MODULES:
+      // Enable all modules set in the configuration
+      $modules =& configuration_get_data('enable modules');
+      if (!empty($modules)) {
+        configuration_enable_modules($modules);
+      }
+
+      if (!configuration_get_error()) {
+        $phase++;
+      }
+    break;
+    case CONFIGURATION_MODULE_MAPS:
+      // Apply all module configuration maps to the object to prepare
+      // the data, apply some basic validations, and setup data needed
+      // for the next configuration phases
+      configuration_apply_maps($context);
+
+      if (!configuration_get_error()) {
+        $phase++;
+      }
+    break;
+    case CONFIGURATION_EXECUTE_ACTIONS:
+      // Go through the built list of actions and build/run them one at a time
+      configuration_process_actions();
+      
+      $left = count(configuration_get_data('actions'));
+      if ($phase != CONFIGURATION_ERROR && !$left) {
+        $phase++;
+      }
+    break;
+    case CONFIGURATION_DISABLE_MODULES:
+      // Disable modules
+      $modules =& configuration_get_data('disable modules');
+      if (!empty($modules)) {
+        configuration_disable_modules($modules);
+      }
+      
+      if (!configuration_get_error()) {
+        $phase++;
+      }
+    break;
+    case CONFIGURATION_FINALIZE:
+      // The configuration succeed so do any necessary cleanup
+      configuration_finalize();
+      $phases++;
+    break;
+    case CONFIGURATION_SUCCESS:
+      // We are done. Nothing to do here.
+    break;
+    case CONFIGURATION_ERROR:
+    default:
+      // TODO Error handling
+    break;
+  }
+  
+  // Any data can be retreived through configuration_get_data, but this can be
+  // a quick way of determining if there was an error
+  return $phase;
+}
+
+/**
+ * The "batch" method of executing a configuration
+ * 
+ * The job of this method is to save and set the configuration data
+ * upon the start of each batch operation while passing it through
+ * the batch sandbox
+ */
+function configuration_execute_batch() {
+  $batch = array(
+    'init_message' => t('Running action @current out of @total', array('@current' => 1, '@total' => 7)),
+    'progress_message' => t('Running action @current out of @total.'),
+    'operations' => array(),
+  );
+
+  for($i=1;$i<=7;$i++) {
+    $batch['operations'][] = array('_configuration_execute_batch', array());
+  }
+
+  batch_set($batch);
+
+  // Get the current batch so we can add the current configuration data
+  $batch =& batch_get();
+  $batch['sets'][0]['results']['configuration_data'] = configuration_get_data(null, true);
+
+  batch_process();
+}
+
+/**
+ * Batch callback function for batch execution
+ */
+function _configuration_execute_batch(&$batch_context) {
+  // Set the configuration data
+  configuration_set_data(null, null, $batch_context['results']['configuration_data']);
+  
+  // Bail on an error
+  if (configuration_get_error()) {
+    configuration_debug_batch(configuration_set_error());
+  }
+
+  // Start a timer. Since we want each action to be its own http request, we need
+  // to ensure the batch api will decide to do it like that by making each action
+  // take at least a second to execute
+  timer_start('configuration_action');
+
+  // Run the current pass
+  $phase = configuration_run_pass();
+  
+  // Deal with custom stuff for the error and action phases
+  if ($phase == CONFIGURATION_EXECUTE_ACTIONS) {
+    $done = configuration_get_data('actions done');
+    $left = configuration_get_data('actions');
+    $done = count($done);
+    $left = count($left);
+    
+    if ($done != $left) {
+      // Set the progress and message of the actions
+      $batch_context['finished'] = $done / ($done + $left);
+      $batch_context['message'] = t('@current out of @total', array('@current' => $done, '@total' => $done + $left));
+
+      // Sleep till 1000 (a second) if needed so we know we'll get a new page load
+      if (timer_read('configuration_action') < 1000) {
+        //@usleep(1000 - timer_read('configuration_action'));
+      }
+    }
+  }
+  
+  // Make sure batch is updated with the updated configuration data store
+  $batch_context['results']['configuration_data'] = configuration_set_data();
+}
+
+/**
+ * Print debug data during a batch operation
+ */
+function configuration_debug_batch($var = null) {
+  $var = print_r($var, true);
+  $var = str_replace(" ", '&nbsp;', $var);
+  $var = str_replace("\n", "<br />", $var);
+  print drupal_to_js(array('status' => 0, 'data' => $var));
+  exit;
+}
+
+/**
+ * Move through the actions list processing one per call
+ */
+function configuration_process_actions() {
+  $actions =& configuration_get_data('actions');
+  $done =& configuration_get_data('actions done');
+
+  if (empty($actions) || !isset($actions[0])) {
+    return true;
+  }
+
+  // Get the next action
+  $action = $actions[0];
+  array_shift($actions);
+  
+  // If the action here is not set, call the callback to set them
+  if (!isset($action[0]) && ($callback = $action[1]->action_callback) && function_exists($callback)) {
+    $value = $callback($action[1]->item, $action[1]);
+
+    if (!configuration_get_error() && !isset($value)) {
+      $done[] = $action;
+      return true;
+    }
+
+    if (is_scalar($value)) {
+      $value = array($value);
+    }
+    
+    // Insert the action(s) here and move out so the next calls can handle them
+    $context = &$action[1];
+    for($i=count($value)-1;isset($value[$i]);$i--) {
+      $new = array($value[$i], &$context);
+      array_unshift($actions, $new);
+    }
+
+    $done[] = $action;
+    return true;
+  }
+  else if (!isset($action[0])){
+    configuration_set_error('missing action', array('!context' => $action[1]));
+  }
+
+  // Process this action
+  if (!configuration_get_error() && $action[0]) {
+    configuration_process_action($action);
+  }
+
+  // Mark this action as complete if no errors
+  if (!configuration_get_error()) {
+    $done[] = $action;
+  }
+  else {
+    // Put the action back on if there was an error. Maybe the error
+    // can be corrected and tried again
+    array_unshift($actions, $action);
+  }
+}
+
+/**
+ * Execute a single action
+ */
+function configuration_process_action($action) {
+  // Get the module list of actions and identifiers
+  $actions =& module_invoke_all('configuration_actions');
+  $identifiers =& configuration_get_data('identifiers');
+
+  $action_id = $action[0];
+  $action_info = $actions[$action_id];
+  $action_context = &$action[1];
+
+  if (!isset($action_info)) {
+    configuration_set_error('invalid action id', array('!action' => $action_id));
+    return false;
+  }
+
+  // Replace identifiers and tokens in the action data
+  configuration_replace_tokens($action_context, $identifiers);
+  
+  // Unlikely, but if there is an error replacing tokens
+  if (configuration_get_error()) {
+    return false;
+  }
+
+  // With proper data and values replaced, apply the actions build map. This is a great
+  // place to do any validation as well (using a #validate callback property or directly)
+  // TODO Implement #validate property...
+  if ($action_info['#build map']) {
+    configuration_apply_map($action_context, $action_info['#build map']);
+  }
+
+  if (configuration_get_error()) {
+    configuration_set_error('action build map', array('!action' => $action_id));
+  }
+
+  // Build the execute $args array. Starting with the actual form data
+  //if ($action_context->build_data) {
+  if ($action_info['#build data'] && ($matches = configuration_fetch($action_info['#build data'], $action_context))) {
+    $action_data = $matches[0]->item;
+  }
+  else {
+    $action_data = $action_context->item;
+  }
+
+  // Then the form state
+  if ($action_context->form_state) {
+    $action_state = &$action_context->form_state;
+    $action_state['values'] = &$action_data;
+  }
+  else {
+    $action_state = array(
+      'storage' => null,
+      'submitted' => false,
+      'values' => &$action_data
+    );
+  }
+  // Then the params
+  for($i=0;isset($action_info['#parameters'][$i]);$i++) {
+    $matches = configuration_fetch($action_info['#parameters'][$i], $action_context);
+    // Ensure that the parameter is at least set
+    $params[$i] = null;
+    if (isset($matches[0])) {
+      $params[$i] = $matches[0]->item;
+    }
+  }
+
+  // Drupal Execute
+  configuration_drupal_execute($action_id, $action_state, $params);
+
+  // Store any form errors
+  if ($form_errors = form_set_error()) {
+    configuration_set_error('form error', $form_errors);
+  }
+  // Run an on-success map and save any identifiers
+  else {
+    if ($action_info['#success map']) {
+      configuration_apply_map($action_context, $action_info['#success map']);
+    }
+    // TODO Replace identifiers before running action
+    if (!empty($action_info['#identifiers'])) {
+      for($i=0;isset($action_info['#identifiers'][$i]);$i++) {
+        $matches = configuration_fetch($action_info['#identifiers'][$i], $action_context);
+
+        // TODO Should we set an error if count($matches) > 1 ?
+        if (!empty($matches)) {
+          $action_context->identifiers[$i] = $matches[0]->item;
+          
+          // Make an id=>identifier map for easier access
+          if ($action_context->id) {
+            $identifiers[$action_context->id] = &$action_context->identifiers[$i];
+          }
+        }
+      }
+    }
+  }
+
+  // Cleanup items
+  unset($action_context->build_data, $action_context->form_state);
+  
+  if ($action_info['#cleanup map']) {
+    configuration_apply_map($action_context, $action_info['#cleanup map']);
+  }
+}
+
+/**
+ * Apply all module configuration maps to the data while
+ * building the action queue at the same time
+ * 
+ * @param $context
+ *  The context array needing the config maps applied to
+ * @return
+ *  An array of actions referencing points in the $context object for
+ *  later use in action execution
+ */
+function configuration_apply_maps(&$context) {
+  // Get all the module maps and apply each one to the context object
+  foreach(module_implements('configuration_maps') as $module) {
+    $map = module_invoke($module, 'configuration_maps');
+    configuration_apply_map($context, $map);
+  }
+}
+
+/**
+ * Apply an individual configuration map to the data set object
+ * 
+ * @param $context
+ *  The context array for which to apply the map
+ * @param $map
+ *  The configuration map to apply to the context array
+ * @return
+ *  An array of referenced actions that resulted from this configuration map
+ */
+function configuration_apply_map(&$context, $map) {
+  foreach($map as $path => &$config) {
+    // TODO Make $path available in sub-functions for error reporting
+    // Get the matches for this path
+    $matches = configuration_fetch($path, $context, TRUE);
+
+    while(!empty($matches)) {
+      // Get and drop off the first match from the matches array
+      $match = &$matches[0];
+      array_shift($matches);
+      
+      // If this match is null (was unset somewhere) skip it
+      if (!isset($match)) {
+        continue;
+      }
+
+      // Setup a list of properties to process in the right order
+      $properties = array_keys(array_intersect_key(configuration_map_properties(), $config));
+  
+      // Loop through the properties list processing one at a time
+      foreach($properties as $property) {
+        $value = $config[$property];
+
+        // Process this property
+        configuration_context_process_property($property, $value, $match, $config);
+
+        // Unset this property as we are done with it
+        unset($properties[$property]);
+      }
+    }
+  }
+}
+
+/**
+ * The default configuration map that is applied to all configuration
+ * context objects. For the time being all it does is make it easier
+ * to visualize the incoming configuration data and set up the module
+ * list.
+ * 
+ * The original format of the incoming data is like: array(
+ *   array( type => block, config => array( // config data ) )
+ *   array( type => block, config => array( // config data ) )
+ *   array( type => menu, config => array( // config data ) )
+ * )
+ * 
+ * Applying a config path against an object like that would look like:
+ * /*[type=block]/config
+ * 
+ * When in realitiy all that should be needed is:
+ * /block
+ * 
+ * This is accomplished here by moving the config data a level above it
+ * and getting rid of the tag key from the data object completely. The
+ * tag key is set in the context object and is made to act as a secondary
+ * array key (the original is just an indexed number).
+ * 
+ * The new configuration looks like: array(
+ *   array( array( // config data ) ) // secondary_key=block
+ *   array( array( // config data ) ) // secondary_key=block
+ *   array( array( // config data ) ) // secondary_key=menu
+ * )
+ */
+function configuration_default_map() {
+  return array(
+    '//*' => array('#value callback' => 'configuration_find_attributes'), // Convert tags starting with a # to attributes
+    '/*/tag' => array('#required' => true, '#context key' => true),
+    '/*/config' => array('#move' => '..'),
+    '/module' => array('#array' => true), // TODO This is temporary since the next item can't catch these matches after the #alias yet
+    '/modules' => array('#alias' => array('module'), '#array' => true),
+    '/modules/*' => array('#enable module' => true)
+  );
+}
+
+/**
+ * Return a list of supported config properties in the order they
+ * should be processed with their descriptions
+ * 
+ * TODO Remove descriptions here as they could just be in documentation somewhere.
+ * TODO Allow modules to specify custom properties as well that would get sent to custom callbacks. Or add a #utility type property that handles a variety of functionality including module custom functionality. Such as a 'split' utitlity or in block modules case a custom function to split a module ID (block-3) into module=block and delta=3.
+ */
+function configuration_map_properties() {
+  return array(
+    '#include' => t('Include/require a file during the build process.'),
+    '#alias' => t('Allow a tag to have aliases for better readability.'),
+    '#default callback' => t('Set the default value if the tag is missing via a callback'),
+    '#default php' => t('Set the default value if the tag is missing via a php snippet'),
+    '#default path' => t('Set the default value if the tag is missing via a path to another item.'),
+    '#default value' => t('Set the default value if the tag is missing.'),
+    '#default' => t('Same as #default value'),
+    '#create' => t('Create the tag under this tag if it does not exist. Either the name of the tag can be set or both the name and the value like: array( name => value )'),
+    '#key' => t('The name of the tag will change to this when processed.'),
+    '#key callback' => t('The tag will change when processed to the result of the callback'),
+    '#key path' => t('The tag will change when processed to the value of the tag at the specified path in the data object. In case the path does not exist a default value can be specified by setting an array like: array( path => default )'),
+    '#key php' => t('The tag will change when processed to the value of the evaluted php.'),
+    '#array' => t('Mark that this data must be an array and make it so if it is not.'),
+    '#assoc' => t('Mark that this data must be an associative array. We cannot make it one if it is not.'),
+    '#move' => t('Move the tag to a different location specified by a path here. The end of the path will replace the current key.'),
+    '#copy' => t('Copy this tag to another location specified by a path here.'),
+    '#required' => t('Specify that this tag is required and must be specified.'),
+    '#context key' => t('Act as a secondary_key for that data object and will be matched against config paths.'),
+    '#value alias' => t('A key=>list array that determines possible aliases of certain values'),
+    '#value callback' => t('Apply a callback on a value. The returned value will become the new value.'),
+    '#value php' => t('Run a php snippet on the value here. The returned value will become the new value.'),
+    '#value path' => t('Set the value of this item to the item specified with the path.'),
+    '#value' => t('Set the value to what is specified here.'),
+    '#id callback' => t('Run a callback that returns an identifier for the action.'),
+    '#id php' => t('Evaluate php that returns an identifier for the action.'),
+    '#options' => t('An array of possible values for the tag. It must be one of them.'),
+    '#options callback' => t('An array of possible values for the tag as returned from the callback.'),
+    '#build callback' => t('The return of this callback will be used as the input data for the execution and will not replace the data in the $context object.'),
+    '#build php' => t('Use a php snippet to get the build data instead of the callback.'),
+    '#action' => t('Specify an action to be called on the corresponding data. This will be saved and run at the end of the execution process.'),
+    '#action callback' => t('A callback that will specify the action to be run here. This callback is run after previous actions are executed.'),
+    '#attribute' => t('A boolean value specifying wether this tag/value pair is an attribute. Child tags are not allowed with attributes. Attributes stay in the context object, but not in the actual data set.'),
+    '#enable module' => t('Add the module here to the enable modules list.'),
+    '#disable module' => t('Add the module here to the disable modules list.'),
+    '#delete' => t('Remove the key=>value from the object completely.')
+  );
+}
+
+/**
+ * Process a single mapping config property. Various properties will mark static data
+ * that will be processed later on in the configuration phases.
+ * 
+ * @param $property
+ *  The property needing processed
+ * @param $value
+ *  The value of the property
+ * @param $context
+ *  The context area of the data to process with this property
+ * @param $config
+ *  The config this property=>value pair is a part of
+ */
+function configuration_context_process_property($property, $value, &$context, &$config = array()) {
+  $empty = $context->empty;
+
+  // This is a list of properties that can take an empty match
+  $empty_properties = array('#alias', '#required', '#create', '#default', '#default callback', '#default php', '#default path', '#default value');
+  
+  // This is a list of properties that do not modify the context object
+  // which will save any integrity checks later on
+  $no_modify_propertiers = array('#include', '#action', '#action callback', '#required', '#options', '#options callback');
+  
+  
+  // If this is an empty context and not in the empty property list, return immediately
+  if ($empty && !in_array($property, $empty_properties)) {
+    return;
+  }
+
+  switch ($property) {
+    case '#include':
+      $file = './'. $value;
+      if (!is_file($file)) {
+        configuration_set_error('pre-validate: include', array('!file' => $file));
+      }
+      else {
+        @require_once $file;
+        $context->include = $file;
+      }
+    break;
+    case '#alias':
+      // TODO Figure out how to deal with the $matches array syncing with new matches here
+      if ($empty) {
+        if (is_scalar($value)) {
+          $value = array($value);
+        }
+        
+        foreach($value as $alias) {
+          // Find the alias, if it exists rename it
+          if (array_key_exists($alias, $context->parent->item)) {
+            // Find the alias context
+            for($i=0;isset($context->parent->children[$i]);$i++) {
+              $change = &$context->parent->children[$i];
+              if ($change->key == $alias) {
+                configuration_context_process_property('#key', $context->key, $change, $config);
+                break(2);
+              }
+            }
+          }
+        }
+      }
+      
+      // Deal with secondary keys here. No need to check if it already exists
+      // since they can exist multiple times
+      for($i=0;isset($context->parent->children[$i]);$i++) {
+        $check=&$context->parent->children[$i];
+        if (($pos = in_array($check->secondary_key, $value)) !== false) {
+          $check->secondary_key = $context->secondary_key;
+        }
+      }
+    break;
+    case '#default callback':
+      if ($empty) {
+        if (is_array($value)) {
+          $args = reset($value);
+          $value = key($value);
+        }
+        if (function_exists($value)) {
+          if (isset($args)) {
+            $context->parent->item[$context->key] = call_user_func_array($value, $args);
+          }
+          else {
+            $context->parent->item[$context->key] = $value($context);
+          }
+          $context->empty = false;
+        }
+      }
+    break;
+    case '#default php':
+      if ($empty) {
+        // Make sure it is set and then get the default and reset it to that
+        $context->parent->item[$context->key] = null;
+        $php = $value;
+        $value = &$context->parent->item[$context->key];
+        $new = eval($php);
+        if (isset($new)) {
+          $context->parent->item[$context->key] = $new;
+        }
+        $context->empty = false;
+      }
+    break;
+    case '#default path':
+      if ($empty && ($matches = configuration_fetch($value, $context)) && count($matches) == 1) {
+        $context->parent->item[$context->key] = $matches[0]->item;
+        $context->empty = false;
+      }
+    break;
+    case '#default':
+    case '#default value':
+    case '#create':
+      if ($empty) {
+        // TODO Think about converting all other context keys to ->_ like ->_parent ->_item
+        if ($context->_attribute) {
+          $context->item = $value;
+        }
+        else {
+          $context->parent->item[$context->key] = $value;
+          $context->item = &$context->parent->item[$context->key];
+        }
+        $context->empty = false;
+      }
+    break;
+    case '#key callback':
+      if (function_exists($value)) {
+        $value = $value($context->item);
+      }
+      else {
+        configuration_set_error(t('An invalid callback was specified: !callback', array('!callback' => $value)));
+        break;
+      }
+    case '#key path':
+      if ($property == '#key path') {
+        if (is_array($value)) {
+          $path = key($value);
+          $default = current($value);
+        }
+        else {
+          $path = $value;
+        }
+        $match = configuration_fetch($path, $context);
+        
+        if (count($match) == 1 && is_scalar($match[0]->item)) {
+          $value = $match[0]->item;
+        }
+        else if ($config['#key default']) {
+          $value = $config['#key default'];
+        }
+        else {
+          break;
+        }
+      }
+    case '#key php':
+      if ($property == '#key php') {
+        $value = eval($value);
+      }
+    break;
+    case '#key':
+      if (array_key_exists($value, $context->parent->item)) {
+        // Key exists already
+        // TODO Is it a problem that the key exists already? Quite possibly....
+        break;
+      }
+
+      $key = $context->key;
+      $context->parent->item[$value] = &$context->item;
+
+      // We need to keep our current context object. check_context should fix the trace paths below
+      $context->key = $value;
+
+      // A plain unset is sufficient even with indexed arrays because check_context will pick it up and fix
+      unset($context->parent->item[$key]);
+    break;
+    case '#array':
+      // TODO Figure out how to deal with associative vs indexed arrays
+      if (!is_array($context->item) || !array_key_exists(0, $context->item)) {
+        if (is_null($context->item) || (is_array($context->item && empty($context->item)))) {
+          $context->item = array();
+        }
+        else {
+          $context->item = array($context->item);
+        }
+      }
+    break;
+    case '#assoc':
+      if (!is_array($value) || array_key_exists(0, $context->item)) {
+        configuration_set_error('assoc array');
+      }
+    break;
+    // TODO Test both copy and move
+    case '#copy':
+      $destinations = configuration_fetch($value, $context);
+      
+      foreach($destinations as &$dest) {
+        // TODO We are making it impossible to overwrite an existing item. Maybe we should make it possible? This applies to #move too
+        if ($dest->empty) {
+          $dest->item = $context->item;
+        }
+      }
+    break;
+    case '#move':
+      // TODO Moving/Copying to the same array level as the current item can cause problems with the current matches set. Maybe make it impossible to do so or think of a solution.
+      $dest = configuration_fetch($value, $context);
+
+      if (count($dest) == 1 && $dest = &$dest[0]) {
+        $parent = &$context->parent;
+        $key = $context->key;
+
+        // Move the necessary dest info over here
+        foreach(array_diff(array_keys((array) $dest), array('children', 'item')) as $key) {
+          // TODO Is there room to do better memory cleanup here or does it not matter?
+          $context->$key = &$dest->$key;
+        }
+
+        // Make sure the old child pointer points to the new context
+        for($i=0;isset($context->parent->children[$i]);$i++) {
+          $check = &$context->parent->children[$i];
+          if ($check === $dest) {
+            $context->parent->children[$i] = &$context;
+            break;
+          }
+        }
+
+        // Make sure the moved data exists in the right place of the original array
+        $context->parent->item[$context->key] = &$context->item;
+
+        // Remove the item here. check_context will make sure contexts are removed
+        // We can't remove if we moved to this items parent
+        // TODO Make it work so you can move two parents up
+        if ($parent !== $dest) {
+          unset($parent->item[$key]);
+        }
+        
+        // Fix all the children trace paths
+        configuration_fix_context_trace($context);
+      }
+    case '#required':
+      if ($context->empty) {
+        $path = implode('/', array_merge($context->trace, array($context->key)));
+        configuration_set_error('pre-validate: required', array('!tag' => $path));
+      }
+      else {
+        $context->required = true;
+      }
+    break;
+    case '#context key':
+      if (is_scalar($context->item)) {
+        $context->parent->secondary_key = $context->item;
+      }
+    break;
+    case '#attribute':
+      if (!is_scalar($context->item)) {
+        $path = implode('/', $context->trace);
+        configuration_set_error('pre-validate: attribute', array('!tag' => $path));
+      }
+      else {
+        if ($context->key[0] == CONFIGURATION_ATTRIBUTE_KEY) {
+          $key = substr($context->key, 1);
+        }
+        else {
+          $key = $context->key;
+        }
+        if (!configuration_reserved_attribute($key)) {
+          $context->parent->{$key} = $context->item;
+          unset($context->parent->item[$context->key]);
+        }
+      }
+    break;
+    case '#options callback':
+      if (function_exists($value)) {
+        $value = $value($context);
+      }
+    case '#options':
+      if (is_scalar($value)) {
+        $value = array($value);
+      }
+      
+      if (!in_array($context->item, $value)) {
+        if (!($context->item === '' && !$context->required)) {
+          $path = implode('/', $context->trace);
+          configuration_set_error('pre-validate: options', array('!path' => $path, '!options' => implode(', ', $value)));
+          break;
+        }
+      }
+    case '#value alias':
+      foreach($value as $real => $aliases) {
+        foreach($aliases as $alias) {
+          if ($context->item == $alias) {
+            $context->item = $real;
+            break(2);
+          }
+        }
+      }
+    break;
+    case '#value callback':
+      if (function_exists($value)) {
+        $value($context->item, $context);
+      }
+      else {
+        configuration_set_error('value callback', array('@callback' => $value));
+      }
+    break;
+    case '#value php':
+      $php = $value;
+      $value = &$context->item;
+      $new = eval($php);
+      if (isset($new)) {
+        $context->item = $new;
+      }
+    break;
+    case '#value path':
+      if (($matches = configuration_fetch($value, $context)) && count($matches) == 1) {
+        $context->item = $matches[0]->item;
+      }
+    break;
+    case '#value':
+      $context->item = $value;
+    break;
+    case '#id callback':
+      if (function_exists($value)) {
+        $identifiers =& configuration_get_data('identifiers');
+      }
+    break;
+    case '#id php':
+    
+    break;
+    case '#id path':
+      
+    break;
+    // Not used/supported.
+    // TODO Remove?
+    case '#build callback':
+      if (function_exists($value)) {
+        $context->build_data = $value($context);
+      }
+    break;
+    case '#build php':
+      $context->build_data = eval($value);
+    break;
+    case '#action':
+      if (!is_array($value)) {
+        $value = array($value);
+      }
+      
+      $actions =& configuration_get_data('actions');
+      foreach($value as $action) {
+        $action[] = array($action, null, &$context);
+      }
+    break;
+    case '#action callback':
+      if (function_exists($value)) {
+        $actions =& configuration_get_data('actions');
+        $context->action_callback = $value;
+        $actions[] = array(null, &$context);
+      }
+      else {
+        configuration_set_error('missing action callback', array('@callback' => $value));
+      }
+    break;
+    case '#enable module':
+      if (is_scalar($context->item)) {
+        $enable =& configuration_get_data('enable modules');
+        $enable[] = $context->item;
+      }
+    break;
+    case '#disable module':
+      if (is_scalar($context->item)) {
+        $disable =& configuration_get_data('disable modules');
+        $disable[] = $context->item;
+      }
+    break;
+    case '#delete':
+      unset($context->parent->item[$context->key]);
+    break;
+  }
+  
+  // Update the context object to reflect any possible new changes
+  if (!in_array($property, $no_modify_propertiers)) {
+    configuration_check_context($context);
+  }
+}
+
+/**
+ * Do the actual drupal execute on an action 
+ */
+function configuration_drupal_execute($form_id, &$form_state, $params) {
+  // Make sure we always have a clear cache for everything
+  $result = db_query('SHOW TABLES LIKE "cache_%"');
+
+  while ($table = db_fetch_array($result)) {
+    $table = current($table);
+    cache_clear_all(null, $table);
+  }
+
+  // Perform direct and automatic manipulation of the configuration data
+  // from the default fapi form object
+  configuration_sync_data_form($form_state['values'], $form_id, $form_state, $params);
+
+  $args = array($form_id, &$form_state);
+
+  if (is_array($params)) {
+    $args = array_merge($args, $params);
+  }
+
+  configuration_set_data('executing', true);
+
+  // If we are in batch mode, trick the form api to think
+  // otherwise to avoid potential problems
+  $batch =& batch_get();
+  $batch_clone = $batch;
+  $batch = null;
+
+  // drupal_execute fails to keep $form_state in-sync through the
+  // whole FAPI process. Issue http://drupal.org/node/346244
+  //$return = call_user_func_array('drupal_execute', $args);
+
+  // Copy of drupal_execute until above issue is fixed
+  $form = call_user_func_array('drupal_retrieve_form', $args);
+
+  $form['#post'] = $form_state['values'];
+  drupal_prepare_form($form_id, $form, $form_state);
+
+  // If you call drupal_validate_form() on the same form more 
+  // than once per page request, validation is not performed 
+  // on any but the first call. 
+  // see issue: http://drupal.org/node/260934
+  // drupal_process_form($form_id, $form, $form_state);
+  
+  // Until above issue is fixed we use our own implementation 
+  // of drupal_process_form() and drupal_validate_form(). 
+  _configuration_process_form($form_id, $form, $form_state);
+
+  configuration_set_data('executing', true);
+  $batch = $batch_clone;
+}
+
+/**
+ * Based on a form api array, make automatic modifications
+ * to the form submission data.
+ * 
+ * What this can do:
+ * 
+ * 1. Check all #options and try and match the data to them. Example of why this is needed:
+ *
+ * XML syntax
+ *    <types>page</types>
+ *          OR
+ *    <types>
+ *      <type>page</type>
+ *      <type>story</type>
+ *    </types>
+ * 
+ * Original Results
+ *  array(
+ *    'types' => 'page'
+ *  ) 
+ *          OR
+ *  array(
+ *    'types' => array(
+ *      'type' => array('page', 'store')
+ *    )
+ *  )
+ * 
+ * Desired Results
+ * array(
+ *  'types' => array(
+ *    'page' => 'page'
+ *  )
+ * ) 
+ *        OR
+ * array(
+ *  'types' => array(
+ *    'page' => 'page',
+ *    'story' => 'story'
+ *  )
+ * )
+ * 
+ * However in some cases the first example (<types>page</types>) would be in the form <type>page</type> without
+ * the <types> parent and no need for the associative array. It would just be array('type' => 'page').
+ *
+ * Based off of the form api #options, #tree, and #multiple values, it should be possible to convert
+ * any of the above xml objects to the right form api object.
+ */
+function configuration_sync_data_form(&$data, $form_id, $form_state, $params = null) {
+  unset($form_state['values']);
+  $args = array($form_id, &$form_state);
+  if (is_array($params)) {
+    $args = array_merge($args, $params);
+  }
+
+  // Get the fully built fapi object
+  $form = call_user_func_array('drupal_retrieve_form', $args);
+  drupal_prepare_form($form_id, $form, $form_state);
+  $form = form_builder($form_id, $form, $form_state);
+
+  $context = configuration_build_context($data);
+  $form = configuration_build_context($form);
+  
+  // TODO Should we remove build data that does not exist in the form object?
+  if ($form_matches = configuration_fetch('//#options', $form)) {
+    for($i=0;isset($form_matches[$i]);$i++) {
+      $form_match = &$form_matches[$i];
+
+      // Check if we have this data
+      $path = '/'. implode('/', $form_matches[$i]->parent->item['#parents']);
+      if ($data_matches = configuration_fetch($path, $context)) {
+        // Possibly manipulate our data to match these #options
+        for($j=0;isset($data_matches[$j]);$j++) {
+          $data_match = &$data_matches[$j];
+
+          // Determine if this is a singular/scalar or arrayed element
+          $scalar = false;
+          if (!$form_match->parent->item['#tree'] || (isset($form_match->parent->item['#multiple']) && !$form_match->parent->item['#multiple'])) {
+            $scalar = true;
+          }
+          // Setup the new value
+          // TODO Actually implement the update vs overwrite functionality as opposed to the 100% update (true)
+          if (true && !$scalar && !empty($form_match->parent->item['#default_value'])) {
+            // Default values are not key=>key arrays like the post values. They are
+            // indexed arrays. The below should catch an indexed array as well as a singular
+            // scalar default value and turn it into a key=>key array
+            $values = (array)$form_match->parent->item['#default_value'];
+            $values = array_combine($values, $values);
+          }
+          else {
+            $values = array();
+          }
+          foreach((array)$data_match->item as $value) {
+            // If the supplied value matches an options label, use that option
+            if ($key = array_search($value, $form_match->item)) {
+              $values[$key] = $key;
+            }
+            // Or if the supplied value is an actual options value (not the label) use that
+            else if (array_key_exists($value, $form_match->item)) {
+              $values[$value] = $value;
+            }
+          }
+          
+          // If we are not on a multiple/tree form, the value should be singular/not an array
+          if ($scalar) {
+            $data_match->item = reset($values);
+          }
+          else {
+            $data_match->item = $values;
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Set the unique execution identifier for this configuration
+ * 
+ * @param $id
+ *  The unique identifier for this execution run
+ * @return
+ *  The currently set identifier
+ */
+function configuration_set_current_id($id = null) {
+  static $current_id;
+  
+  if ($id) {
+    $current_id = $id;
+  }
+
+  return $current_id;
+}
+
+/**
+ * Get the current configuration execution identifier
+ */
+function configuration_get_current_id() {
+  return configuration_set_current_id();
+}
+
+/**
+ * Set an error during configuration setup
+ * 
+ * @param $type
+ *  The type of error being set.
+ * @param $vars
+ *  Any variables that are associated with the particular error
+ * @param $cache
+ *  This will set the static $errors cache
+ * @return
+ *  If $type is set, the error(s) for that type are returned. If not the entire
+ *  static cache is returned.
+ * //TODO Add a param to mark critical vs warning errors?
+ */
+function configuration_set_error($type = null, $vars = array()) {
+  // Use the configuration data store instead of our own static cache here
+  $errors =& configuration_set_data('errors');
+
+  if ($type) {
+    $errors[$type][] = $vars;
+  }
+  
+  if ($type) {
+    return $errors[$type];
+  }
+  else {
+    return $errors;
+  }
+}
+
+/**
+ * Get any errors that have happened during configuration
+ * 
+ * @param $type
+ *  The type of error being checked
+ * @return
+ *  The variable data stored for that particular error, if there is an error
+ */
+function configuration_get_error($type = null, &$vars = null) {
+  $vars = configuration_set_error($type);
+
+  // TODO Problem here
+  if (isset($vars)) {
+    return true;
+  }
+  else {
+    return false;
+  }
+}
+
+/**
+ * Set static data to be retrieved during later phases
+ * 
+ * @param $type
+ *  The type of data being stored, such as 'phase', 'build', 'action', 'cleanup' etc...
+ * @param $data
+ *  The actual data needing stored
+ * @param $cache
+ *  Set the full static $store of data with this $cache
+ * @return
+ *  The specific data needed if $type is set, or all of the stored data
+ */
+function &configuration_set_data($type = null, $data = null, $cache = null) {
+  static $store = array();
+  
+  // Set the store if a cache is given
+  if ($cache) {
+    $store = $cache;
+  }
+
+  // We have to have a unique execute id to deal with data stores
+  if (!($current_id = configuration_get_current_id()) && !($current_id = $store['current_id'])) {
+    return;
+  }
+  else {
+    $store['current_id'] = $current_id;
+  }
+
+  if (isset($type) && isset($data)) {
+    $store[$current_id][$type] = $data;
+  }
+  else if (isset($type) && !isset($store[$current_id][$type])) {
+    $store[$current_id][$type] = null;
+  }
+  
+  if ($type) {
+    return $store[$current_id][$type];
+  }
+  else {
+    return $store;
+  }
+}
+
+/**
+ * Get data from the static data store
+ * 
+ * @param $type
+ *  The type of data needing retrieval
+ * @return
+ *  The desired data
+ */
+function &configuration_get_data($type, $cache = false) {
+  if ($type) {
+    return configuration_set_data($type); 
+  }
+  else if ($cache) {
+    return configuration_set_data();
+  }
+}
+
+/**
+ * Return info on registered actions from the site modules
+ * 
+ * @return
+ *  An array of information on registered actions
+ */
+function configuration_actions() {
+  static $actions = null;
+  
+  if (!is_null($actions)) {
+    return $actions;
+  }
+  
+  foreach(module_implements('configuration_actions') as $module) {
+    $module_actions = (array) module_invoke($module, 'configuration_actions');
+    
+    // Add to the actions array
+    foreach($module_actions as $action => &$data) {
+      $data['module'] = $module;
+      $actions[$action] = &$data;
+    }
+  }
+  
+  return $actions;
+}
+
+/**
+ * Find parts of an array based on a semi-compatible xpath syntax.
+ *
+ * Returns an array of context items that match and reference
+ * the desired parts of an array
+ *
+ * Loosely based off of Cake function Set::extract
+ * 
+ * Supports the following xpath syntax examples
+ * 
+ * - /block
+ * - /menu/id
+ * - /menu/id=3
+ * - /modules/*
+ * - /content/@action
+ * - /content/@action=update
+ * - //*
+ * - //tag
+ * - //@include
+ * - /view//display//id
+ * - /block[module=block]/delta
+ * - /block[module=block][delta=1]
+ * - /block[not(module)][not(delta)]
+ *
+ * TODO: Test referenced matches and make sure that changes to one match (say a parent of a matched child) are updated in the other matches as well.
+ * 
+ * @param $path
+ *  The configuration path (xpath) that should lead to the matches
+ * @param $context
+ *  The previously built context object that is used to traverse the data
+ * @param $return_empty
+ *  If TRUE this fetch operation will return empty objects for each place where a potential match would have been
+ * @return
+ *  Return an indexed array of matched context items
+ */
+function configuration_fetch($path, &$context, $return_empty = false) {
+  // TODO Think a bit more about the necessity of $match_record
+  static $match_record;
+
+  if ($path === '/') {
+    $matches = array(&$context);
+    $match_record[$path] = $matches;
+    return $match_record[$path];
+  }
+  // There can be problems if a / is not in the front.
+  // An example is '..' to find a parent item.
+  else if ($path[0] !== '/') {
+    $path = '/'. $path;
+  }
+
+  // Start the list of contexts
+  $list = array(&$context);
+
+  // Create a list of tokens based on the supplied path
+  $tokens = array_slice(preg_split('/(?<!=)\/(?![a-z]*\])/', $path), 1);
+
+  $all = false;
+  $all_matches = array();
+  $token = null;
+  $previous = null;
+  $match = null;
+  while(!empty($tokens)) {
+    $token = array_shift($tokens);
+
+    // Get any look ahead section
+    $look_aheads = array();
+    if (preg_match_all('/\[(.*?)\]/', $token, $m)) {
+      foreach($m[0] as $remove) {
+        $token = str_replace($remove, '', $token);
+      }
+      $look_aheads = $m[1];
+    }
+    // TODO Implement better conditionals for each token
+    // Currently only supports element=value conditions
+    $conditions = array();
+    if (preg_match('/(=)(.*)/', $token, $m)) {
+      $conditions[$m[1]] = $m[2];
+      $token = substr($token, 0, strpos($token, $m[1]));
+    }
+
+    $matches = array();
+    foreach ($list as &$piece) {
+      if ($token === '..') {
+        $matches[] = &$piece->parent;
+        continue;
+      }
+      // This is the select all (//) syntax
+      else if ($token === '') {
+        $matches[] = &$piece;
+        continue;
+      }
+      else if ($previous === '') {
+        for($i=0;$i<count($piece->children);$i++) {
+          $matches[] = &$piece->children[$i];
+        }
+      }
+      if (is_array($piece->item)) {
+        $i=0;
+        while(isset($piece->children[$i])) {
+          unset($match);
+          // Allow matches to match against a context-only secondary_key
+          if ($piece->children[$i]->key === $token || $piece->children[$i]->secondary_key === $token) {
+            $match = &$piece->children[$i];
+          }
+          else if ($token === '*') {
+            $match = &$piece->children[$i];
+          }
+
+          // Select attributes
+          if ($token[0] == '@' && isset($piece->children[$i]->{substr($token, 1)})) {
+          //  $match = &$piece->children[$i];
+          }
+          
+          if (isset($match) && $previous === '') {
+            $all_matches[] = &$match;
+          }
+          else if (isset($match)) {
+            $matches[] = &$match;
+          }
+          $i++;
+        }
+      }
+      else if ($token === '.') {
+        $matches[] = &$piece;
+      }
+      // Select current piece if looking for an attribute
+      if ($token[0] == '@' && isset($piece->{substr($token, 1)})) {
+        if ($previous === '') {
+          $all_matches[] = &$piece;
+        }
+        else {
+          $matches[] = &$piece;
+        }
+      }
+    }
+
+    // Filter matches from the matches list based on our conditions
+    foreach($conditions as $operator => $value) {
+      _configuration_array_filter($matches, $operator, $value, $token[0] == '@' ? substr($token, 1) : null);
+    }
+
+    // Filter matches based on look-ahead checks
+    foreach($look_aheads as $ahead) {
+      _configuration_array_look_ahead($matches, $ahead, $token);
+    }
+
+    // Update the context area to the next set of matches to dig into
+    // First, continue the same token if we are not done selecting all (//)
+    if (!empty($matches) && $previous === '') {
+      array_unshift($tokens, $token);
+      $list = $matches;
+      continue;
+    }
+    // We are done selecting all, set the matches and move on to the next token
+    else if (empty($matches) &&  $previous === '') {
+      $matches = $all_matches;
+      $all_matches = array();
+    }
+
+    // If we are at the end and no matches, tag on empty matches
+    if ($return_empty && empty($tokens) && empty($matches) && $token[0] != '@') {
+      foreach($list as &$piece) {
+        // Do not attach an empty child if the parent is not an array
+        if (!is_array($piece->parent->item)) {
+          continue;
+        }
+        $match = new stdClass();
+        $match->empty = TRUE;
+        $match->item = null;
+        $match->key = !in_array($token, array('*', '.', '..')) ? $token : null;
+        $match->trace = configuration_trace_context($piece);
+        $match->parent = &$piece;
+        $match->children = array();
+        $matches[] = $match;
+      }
+    }
+    // Deal with selecting attributes
+    else if (empty($tokens) && $token[0] == '@') {
+      if ($return_empty && empty($matches)) {
+        $attribute_list = &$list;
+      }
+      else {
+        $attribute_list = &$matches;
+      }
+      for($i=0;isset($attribute_list[$i]);$i++) {
+        $match = &$attribute_list[$i];
+        $attribute = new stdClass();
+        $attribute->empty = empty($matches) ? true: false;
+        $attribute->_attribute = true;
+        $attribute->key = substr($token, 1);
+        $attribute->item = &$match->{$attribute->key};
+        $attribute->trace = $match->trace;
+        $attribute->parent = &$match;
+        $attribute->children = array();
+  
+        unset($matches[$i]);
+        $matches[$i] = &$attribute;
+      }
+    }
+    else if (!empty($tokens) && empty($matches)) {
+      break;
+    }
+    else {
+      $list = $matches;
+    }
+    
+    $previous = $token;
+  }
+
+  // Make sure the matches stay recorded here so that changes to the
+  // context in check_context will update obtained matches objects 
+  $match_record[$path] = $matches;
+
+  // Return the list of matches
+  return $match_record[$path];
+}
+
+/**
+ * Build a context object given a normal php data object
+ * 
+ * @param $obj
+ *  A reference to the data object needing context
+ * @return
+ *  The context object for the data object
+ */
+function configuration_build_context(&$obj, $key = null, $trace = array(), &$parent = null) {
+  $context = (object) array('trace' => $trace, 'key' => $key, 'item' => &$obj, 'parent' => $parent, 'children' => array());
+  $refs = array(&$context);
+
+  while (!empty($refs)) {
+    $ref = &$refs[0];
+    $parent = &$ref->item;
+    array_splice($refs, 0, 1);
+
+    if (is_array($parent) && !empty($parent)) {
+      $i = 0;
+      foreach($parent as $index => &$child) {
+        // TODO possible optimizations can be done here (with the parent trace)
+        $ref->children[$i] = (object) array('trace' => configuration_trace_context($ref), 'key' => $index, 'item' => &$child, 'parent' => &$ref, 'children' => array());
+        array_unshift($refs, '');
+        $refs[0] = &$ref->children[$i++];
+      }
+    }
+  }
+
+  return $context;
+}
+
+/**
+ * Check and fix the integrity of the context object in case changes
+ * were made to the data
+ * 
+ * TODO If performance seems to be a problem, test using checksums against the data to determine if changes have been made
+ * 
+ * @param $context
+ *  The referenced context object needing checked and possibly fixed.
+ */
+function configuration_check_context(&$context) {
+  // Start from the top of the context
+  while(isset($context->parent)) {
+    $context = &$context->parent;
+  }
+  
+  // Start the check array that will recurse through the context.
+  // Set it to the first item that has a key/parent instead of the root.
+  $checklist = array(&$context->children[0]);
+  
+  while($check = &$checklist[0]) {
+    array_shift($checklist);
+    
+    // Check if this particular item has been removed.
+    if (!isset($check->parent->item[$check->key])) {
+      // Find this context item in the parent and remove it
+      for($i=0;isset($check->parent->children[$i]);$i++) {
+        $find = &$check->parent->children[$i];
+        if ($find === $check) {
+          // We need to set it to null as well as unsetting it so that
+          // any existing references pointing to it will be unset. We can't
+          // splice here either because of the reorder later on
+          unset($check->parent->children[$i]);
+          $check = null;
+          break;
+        }
+      }
+      
+      $check_order = true;
+    }
+    
+    // Check if an item that didn't exist before is here
+    if (is_array($check->parent->item) && !empty($check->parent->item)) {
+      $keys = array_keys($check->parent->item);
+      $keys = array_combine($keys, $keys);
+      for($i=0;isset($check->parent->children[$i]);$i++) {
+        unset($keys[$check->parent->children[$i]->key]);
+      }
+      
+      // Any left overs here should be new. $i should be set to where the next item should be set
+      if (!empty($keys)) {
+        foreach($keys as $key) {
+          $check->parent->children[$i++] = configuration_build_context($check->parent->item[$key], $key, configuration_trace_context($check->parent), $check->parent);
+        }
+      }
+    }
+    
+    // Check that this contexts data changed from no children to having children
+    // The above check will pick up additional children when there some to start
+    if (empty($check->children) && is_array($check->item) && !empty($check->item)) {
+      $i = 0;
+      foreach($check->item as $key => &$data) {
+        $check->children[$i] = configuration_build_context($check->item[$key], $key, configuration_trace_context($check), $check);
+      }
+    }
+    
+    // Check that this context data changed from having children to no children
+    if (!empty($check->children) && !is_array($check->item)) {
+      for($i=0;isset($check->children[$i]);$i++) {
+        $check->children[$i] = null;
+        unset($check->children[$i]);
+      }
+    }
+
+    // If this is marked empty, but is not, remove marker
+    if ($check->empty && isset($check->item)) {
+      unset($check->empty);
+    }
+
+    // Check if a reorder for an indexed array is needed and reorder
+    // TODO Make an appropriate test case and test this
+    if ($check_order) {
+      if (isset($check->parent->item[0]) || isset($check->parent->item[1])) {
+        // First go to the hole in the indexed array
+        for($i=0;isset($check->parent->item[$i]);$i++) {
+          continue;
+        }
+        
+        // Confirm that the context does not exist or remove it
+        if (isset($check->parent->children[$i])) {
+          $check->parent->children[$i] = null;
+          unset($check->parent->children[$i]);
+        }
+        
+        
+        // Move all the consecutive items back one
+        while(isset($check->parent->item[++$i])) {
+          $fix = &$check->parent->children[$i];
+          $check->parent->item[$i - 1] = &$fix->item;
+
+          // Fix the key
+          $fix->key = $i - 1;
+
+          // Fix child traces
+          configuration_fix_context_trace($fix);
+        }
+        
+        // Remove the last item since it was moved up one
+        unset($check->parent->item[$i - 1]);
+        
+        // Sort on the index to finish up
+        ksort($check->parent->item);
+
+        // Sort the children contexts as well
+        usort($check->children, '_configuration_sort_context');
+      }
+    }
+    
+    $i = 0;
+    while(isset($check->children[$i])) {
+      $checklist[count($checklist)] = &$check->children[$i++];
+    }
+  }
+}
+
+/**
+ * Helper function to create a list of parent keys given a context item
+ */
+function configuration_trace_context($obj) {
+  // Loop back up through the parents to fill in the trace value.
+  $up = &$obj;
+  $trace = array();
+  while(isset($up->parent)) {
+    array_unshift($trace, $up->key);
+    $up = &$up->parent;
+  }
+
+  return $trace;
+}
+
+/**
+ * Helper function to update all children trace keys because the parent key
+ * changed
+ */
+function configuration_fix_context_trace(&$context) {
+  // The start of the check list at the parent
+  $list = array(&$context);
+  
+  while($check = &$list[0]) {
+    array_shift($list);
+    $check->trace = configuration_trace_context($check->parent);
+    
+    for($i=0;isset($check->children[$i]);$i++) {
+      $list[count($list)] = &$check->children[$i];
+    }
+  }
+}
+
+/**
+ * Helper function to filter values of the list of matches
+ */
+function _configuration_array_filter(&$matches, $operator, $value = null, $attribute = null) {
+  for($i=count($matches)-1;$i>=0;$i--) {
+    $match = &$matches[$i];
+
+    switch($operator) {
+      case '=':
+        if ($attribute) {
+          if ($match->{$attribute} != $value) {
+            array_splice($matches, $i, 1);
+          }
+        }
+        else if ($match->item != $value) {
+          array_splice($matches, $i, 1);
+        }
+        break;
+    }
+  }
+}
+
+/**
+ * Helper function to filter/modify matches by a look ahead
+ * 
+ * TODO: Support more functions and in a proper manner besides not() manually here
+ */
+function _configuration_array_look_ahead(&$matches, $ahead, $token) {
+  if (preg_match('/(.*?)\((.*?)\)/', $ahead, $m)) {
+    switch(strtolower($m[1])) {
+      case 'not':
+        $not = true;
+        $ahead = $m[2];
+      break;
+    }
+  }
+
+  if (is_numeric($ahead)) {
+    if (isset($matches[$ahead])) {
+      $matches = array(&$matches[$ahead]);
+    }
+    else {
+      $matches = array();
+    }
+  }
+  else {
+    for($i=count($matches)-1;isset($matches[$i]);$i--) {
+      $exist = false;
+      if (configuration_fetch($ahead, $matches[$i])) {
+        $exist = true;
+      }
+      if (($exist && $not) || (!$exist && !$not)) {
+        array_splice($matches, $i, 1);
+      }
+    }
+  }
+}
+
+/**
+ * Helper function to sort an array of context items by key
+ */
+function _configuration_sort_context($a, $b) {
+  return (int)$a->key > (int)$b->key ? 1 : -1;
+}
+
+/**
+ * Custom implementation of drupal_process_form()
+ * 
+ * Enables validation to be performed for each executed form
+ * by calling our custom _patterns_validate_form() function
+ * see issue: http://drupal.org/node/260934
+ */
+function _configuration_process_form($form_id, &$form, &$form_state) {
+  $form_state['values'] = array();
+
+  $form = form_builder($form_id, $form, $form_state);
+
+  // Only process the form if it is programmed or the form_id coming
+  // from the POST data is set and matches the current form_id.
+  if ((!empty($form['#programmed'])) || (!empty($form['#post']) && (isset($form['#post']['form_id']) && ($form['#post']['form_id'] == $form_id)))) {
+    _configuration_validate_form($form_id, $form, $form_state);
+
+    // form_clean_id() maintains a cache of element IDs it has seen,
+    // so it can prevent duplicates. We want to be sure we reset that
+    // cache when a form is processed, so scenerios that result in
+    // the form being built behind the scenes and again for the
+    // browser don't increment all the element IDs needlessly.
+    form_clean_id(NULL, TRUE);
+
+    if ((!empty($form_state['submitted'])) && !form_get_errors() && empty($form_state['rebuild'])) {
+      $form_state['redirect'] = NULL;
+      form_execute_handlers('submit', $form, $form_state);
+
+      // We'll clear out the cached copies of the form and its stored data
+      // here, as we've finished with them. The in-memory copies are still
+      // here, though.
+      if (variable_get('cache', CACHE_DISABLED) == CACHE_DISABLED && !empty($form_state['values']['form_build_id'])) {
+        cache_clear_all('form_'. $form_state['values']['form_build_id'], 'cache_form');
+        cache_clear_all('storage_'. $form_state['values']['form_build_id'], 'cache_form');
+      }
+
+      // If batches were set in the submit handlers, we process them now,
+      // possibly ending execution. We make sure we do not react to the batch
+      // that is already being processed (if a batch operation performs a
+      // drupal_execute).
+      if ($batch =& batch_get() && !isset($batch['current_set'])) {
+        // The batch uses its own copies of $form and $form_state for
+        // late execution of submit handers and post-batch redirection.
+        $batch['form'] = $form;
+        $batch['form_state'] = $form_state;
+        $batch['progressive'] = !$form['#programmed'];
+        batch_process();
+        // Execution continues only for programmatic forms.
+        // For 'regular' forms, we get redirected to the batch processing
+        // page. Form redirection will be handled in _batch_finished(),
+        // after the batch is processed.
+      }
+
+      // If no submit handlers have populated the $form_state['storage']
+      // bundle, and the $form_state['rebuild'] flag has not been set,
+      // we're finished and should redirect to a new destination page
+      // if one has been set (and a fresh, unpopulated copy of the form
+      // if one hasn't). If the form was called by drupal_execute(),
+      // however, we'll skip this and let the calling function examine
+      // the resulting $form_state bundle itself.
+      if (!$form['#programmed'] && empty($form_state['rebuild']) && empty($form_state['storage'])) {
+        drupal_redirect_form($form, $form_state['redirect']);
+      }
+    }
+  }
+}
+
+/**
+ * Custom implementation of drupal_validate_form()
+ *  
+ * Removed static variable that prevented same form_id to be 
+ * validated more then once during a single page request 
+ */
+function _configuration_validate_form($form_id, $form, &$form_state) {
+  // If the session token was set by drupal_prepare_form(), ensure that it
+  // matches the current user's session.
+  if (isset($form['#token'])) {
+    if (!drupal_valid_token($form_state['values']['form_token'], $form['#token'])) {
+      // Setting this error will cause the form to fail validation.
+      form_set_error('form_token', t('Validation error, please try again. If this error persists, please contact the site administrator.'));
+    }
+  }
+
+  _form_validate($form, $form_state, $form_id);
+}
+
+/**
+ * Find and replace identifier and token keys and values
+ */
+function configuration_replace_tokens(&$context) {
+  // TODO Is this bad for performance? Should it be done manually?
+  $matches = configuration_fetch('//*', $context);
+  
+  for($i=0;isset($matches[$i]);$i++) {
+    _configuration_replace_tokens($matches[$i]);
+  }
+}
+
+/**
+ * Helper function to replace key/values using tokens
+ */
+function _configuration_replace_tokens(&$context) {
+  // Replace IDs with identifiers from the current executing pattern
+  $identifiers = configuration_get_data('identifiers');
+  if (is_scalar($context->item) && preg_match('/@([a-zA-Z0-9_]+)@/', $context->item, $match)) {
+    $value = str_replace($match[0], $identifiers[$match[1]], $context->item);
+  }
+  if (preg_match('/__([a-zA-Z0-9_]+)__/', $context->key, $match)) {
+    $key = str_replace($match[0], $identifiers[$match[1]], $context->key);
+  }
+
+  // Replace tokens
+  if (module_exists('token')) {
+    if (is_scalar($context->item) && !isset($value)) {
+      $value = token_replace($context->item, 'global', NULL, '@', '@');
+    }
+    if (!isset($key)) {
+      $key = token_replace($context->key, 'global', NULL, '__', '__');
+    }
+  }
+  
+  // Replace the real data with new values
+  if (isset($value)) {
+    $context->item = $value;
+  }
+  if (isset($key)) {
+    configuration_context_process_property('#key', $key, $context);
+  }
+}
+
+/**
+ * Helper function to convert tags to attributes
+ */
+function configuration_find_attributes($value, &$context) {
+  for($i=0;isset($context->children[$i]);$i++) {
+    if ($context->children[$i]->key[0] == CONFIGURATION_ATTRIBUTE_KEY && is_scalar($context->children[$i]->item)) {
+      configuration_context_process_property('#attribute', true, $context->children[$i]);
+    }
+  }
+}
+
+/**
+ * Helper function to return a list of reserved attributes
+ */
+function configuration_reserved_attribute($attribute = null) {
+  $attributes = array('item', 'parent', 'trace', 'children', 'key', 'identifiers');
+
+  if ($attribute) {
+    return in_array($attribute, $attributes);
+  }
+
+  return $attributes;
+}
+
+/**
+ * Initialize whats needed to execute a configuration.
+ */
+function configuration_initiate() {
+  // Get the data object
+  $data = configuration_get_data('data'); 
+
+  // Create the context array that will be used throughout the process
+  $context = configuration_build_context($data);
+  
+  // Set the phase to the beginning of execution
+  configuration_set_data('phase', CONFIGURATION_INITIALIZE);
+
+  // Store the context object. No need to store the original data
+  // at this point although it already is saved.
+  configuration_set_data('context', $context);
+
+  // Set up php error handling
+  //set_error_handler('configuration_error_handler');
+
+  // This will be used as a refrence to determine if a real error
+  // occured during the pattern execution
+  //@trigger_error('configuration_clean');
+}
+
+/**
+ * Perform any cleanup actions when a configuration is done running
+ */
+function configuration_finalize() {
+  // Reset the error handler to what it was before
+  //restore_error_handler();
+}
+
+/**
+ * Enable all of the provided modules
+ * 
+ * @param &$modules
+ *  The modules list. Dependant modules will be added to this list.
+ * @return
+ *  True or false on success
+ */
+function configuration_enable_modules(&$modules) {
+  if (empty($modules)) {
+    return true;
+  }
+  
+  $missing = configuration_check_module_dependencies(&$modules, TRUE);
+  if (!empty($missing)) {
+    configuration_set_error('enable_modules', array('%modules' => implode(', ', $missing)));
+    return false;
+  }
+
+  require_once './includes/install.inc';
+  drupal_install_modules($modules);
+  module_rebuild_cache();    
+
+  return true;
+}
+
+/**
+ * Disable all the provided modules
+ * 
+ * @param &$modules
+ *  The modules list.
+ * @return
+ *  TRUE or FALSE on success
+ */
+function configuration_disable_modules(&$modules) {
+  
+}
+
+/**
+ * Check if all the module dependencies are available
+ *
+ * @param $modules
+ *   array of module names
+ * @param $update_list
+ *   if TRUE, add all the dependecies to pattern's module list
+ * @return
+ *   empty array if all dependencies are available
+ *   array of missing module's names if some dependencies are not available
+ *
+ */
+function configuration_check_module_dependencies(&$modules, $update_list = FALSE) {
+  if (empty($modules)) {
+    return array();
+  }
+
+  $modules_info = module_rebuild_cache();
+
+  $result = array();
+  $dependencies = array();
+
+  foreach($modules as $module) {
+    $module = is_array($module) ? $module['value'] : $module;
+    if (array_key_exists($module, $modules_info)) {
+      // check also for module's dependencies
+      foreach ($modules_info[$module]->info['dependencies'] as $dependency) {
+        if (array_key_exists($dependency, $modules_info)) {
+          $dependencies[] = $dependency; 
+        }
+        else {
+          $result[] = $dependency;
+        }
+      }
+    }
+    else {
+      $result[] = $module;
+    }
+  }
+
+  if ($update_list && empty($result) && !empty($dependencies)) {
+    $modules = array_unique(array_merge($modules, $dependencies));
+  }
+  
+  return $result;
+}
+
+/**
+ * Load all include files including the module configuration component
+ * files supplied by the configuration framework
+ */
+function configuration_load_includes() {
+  // The module files
+  configuration_load_module_configurations();
+  
+  // Find any includes set on the context object and include them
+  $context =& configuration_get_data('context');
+  
+  // Get all contexts with an include attribute to make sure they are included
+  if (is_object($context)) {
+    $matches = configuration_fetch('//@include', $context);
+
+    foreach($matches as &$match) {
+      if (!file_exists($match->item)) {
+        configuration_set_error('missing include', array('!file' => $match->item));
+        break;
+      }
+      else {
+        @require_once $match->item;
+      }
+    }
+  }
+}
+
+/**
+ * Load all the module files
+ */
+function configuration_load_module_configurations() {
+  static $loaded = false;
+
+  if ($loaded) {
+    return;
+  }
+
+  foreach(file_scan_directory(drupal_get_path('module', 'configuration') .'/modules', '.\.inc') as $file) {
+    // Only load module files for modules that exist and do not setup their own configuration hooks
+    if (module_exists($file->name) && !module_hook($file->name, 'configuration_map')) {
+      include_once $file->filename;
+    }
+  }
+
+  $loaded = true;
+}
