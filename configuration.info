@@ -1,4 +1,3 @@
-; $Id$
 
 name = Configuration Framework
 description = Provide a unified method for defining site configurations abstracted from their data format.
