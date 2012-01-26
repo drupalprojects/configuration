@@ -533,7 +533,7 @@ function configuration_save($configs) {
   $current_config = configuration_get_configuration();
   
   // Check to see if there is anything in datastore that would be lost
-  if (!configuration_check_changed((CONFIGURATION_DATASTORE_ONLY | CONFIGURATION_DATASTORE_OVERRIDDEN), array_keys($configs), $current_config)) {
+  if (!configuration_check_changed((CONFIGURATION_DATASTORE_ONLY), array_keys($configs), $current_config)) {
     return false;
   }
   
