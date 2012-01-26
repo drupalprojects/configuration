@@ -1,0 +1,206 @@
+<?php
+
+/**
+ * User permission component tests for Features
+ */
+class ConfigurationWebTestCase extends DrupalWebTestCase {
+  /**
+   * Track Configurations
+   */
+  function trackConfigurations() {
+    $edit = array();
+    $temp_dir = file_directory_temp();
+    $edit["configuration_config_path"] = $temp_dir;
+    $this->drupalPost('admin/config/system/configuration/settings', $edit, t('Save configuration'));
+    
+    $roles = user_roles();
+    
+    $edit = array();
+    $edit["field[items][node-". $this->type->type ."-body]"] = 1;
+    $edit["filter[items][filtered_html]"] = 1;
+    // Need to create an image preset to store in activestore.
+    // $edit["image[items][large]"] = 1;
+    $edit["node[items][". $this->type->type ."]"] = 1;
+    $edit["taxonomy[items][". $this->vocab->machine_name ."]"] = 1;
+    $edit["user_permission[items][access configuration management]"] = 1;
+    $edit["user_role[items][". $roles[3] ."]"] = 1;
+    
+    $this->tracked = $edit;
+    $this->drupalPost('admin/config/system/configuration/notracking', $edit, t('Write to Datastore'));
+    $this->assertResponse(200);
+  }
+  
+  /**
+   * Returns a new vocabulary with random properties.
+   */
+  function createVocabulary() {
+    // Create a vocabulary.
+    $vocabulary = new stdClass();
+    $vocabulary->name = $this->randomName();
+    $vocabulary->description = $this->randomName();
+    $vocabulary->machine_name = drupal_strtolower($this->randomName());
+    $vocabulary->help = '';
+    $vocabulary->nodes = array('article' => 'article');
+    $vocabulary->weight = mt_rand(0, 10);
+    taxonomy_vocabulary_save($vocabulary);
+    return $vocabulary;
+  }
+}
+class ConfigurationTrackingTest extends ConfigurationWebTestCase {
+  /**
+   * Test info.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => t('Test tracking interface'),
+      'description' => t('Test choosing configurations to track.') ,
+      'group' => t('Configuration'),
+    );
+  }
+  
+  /**
+   * Set up test.
+   */
+  public function setUp() {
+    parent::setUp(array(
+      'configuration',
+      'field',
+      'filter',
+      'image',
+      'taxonomy',
+    ));  
+    
+    $this->admin_user = $this->drupalCreateUser(array(
+      'administer content types', 
+      'access administration pages', 
+      'access configuration management', 
+      'administer modules', 
+      'administer site configuration'
+    ));
+    
+    $this->type = $this->drupalCreateContentType();
+    $this->vocab = $this->createVocabulary();
+    
+    
+    $this->drupalLogin($this->admin_user);
+  }
+  
+  public function testTracking() {
+    $this->trackConfigurations();
+    
+    $types = array('field', 'filter', 'image', 'node', 'user_permission', 'user_role', 'taxonomy');
+    foreach($types as $type) {
+      $this->assertRaw(t('Tracking configurations for %type have been saved', array('%type' => $type)));
+      
+      if (!in_array($type, array('node', 'image'))) {
+        $this->assertRaw(t('Wrote %type to filesystem', array('%type' => 'configuration.'. $type .'.inc')));
+      }
+    }
+    
+    // Test that the options being tracked are no longer in list for stuff not 
+    // being tracked.
+    $this->drupalGet('admin/config/system/configuration/notracking');
+    foreach ($this->tracked as $field => $value) {
+      $this->assertNoField($field);
+    }
+  } 
+}
+
+class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
+  /**
+   * Test info.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => t('Active store overridden test'),
+      'description' => t('Test that configurations that are overridden while being tracked, update status.') ,
+      'group' => t('Configuration'),
+    );
+  }
+  
+  /**
+   * Set up test.
+   */
+  public function setUp() {
+    parent::setUp(array(
+      'configuration',
+      'field',
+      'filter',
+      'image',
+      'taxonomy',
+    ));  
+    
+    $this->admin_user = $this->drupalCreateUser(array(
+      'administer content types', 
+      'access administration pages', 
+      'access configuration management', 
+      'administer modules', 
+      'administer site configuration',
+      'administer filters',
+    ));
+    
+    $this->type = $this->drupalCreateContentType();
+    $this->vocab = $this->createVocabulary();
+    variable_set('configuration_config_path', conf_path() .'/files/configuration_testing');
+    file_prepare_directory(variable_get('configuration_config_path', conf_path() .'/files/configuration_testing'));
+    $this->drupalLogin($this->admin_user);
+  }
+  
+  public function tearDown() {
+    file_unmanaged_delete_recursive(variable_get('configuration_config_path', conf_path() .'/files/configuration_testing'));
+    parent::tearDown();
+  }
+  
+  function testOverridden() {
+    $this->trackConfigurations();
+    
+    // Testing overridding a field
+    $edit = array();
+    $edit["instance[widget][settings][rows]"] = 2;
+    $this->drupalPost('admin/structure/types/manage/'. $this->type->type .'/fields/body', $edit, t('Save settings'));
+    $this->assertRaw(t('You have Configurations that need to be written to file.'));
+    
+    $status = configuration_get_status('field', 'node-'. $this->type->type .'-body');
+    $this->assertEqual($status, CONFIGURATION_ACTIVESTORE_OVERRIDDEN);
+    
+    // Testing putting the field back to default
+    $edit = array();
+    $edit["instance[widget][settings][rows]"] = 20;
+    $this->drupalPost('admin/structure/types/manage/'. $this->type->type .'/fields/body', $edit, t('Save settings'));
+    $this->assertNoRaw(t('You have Configurations that need to be written to file.'));
+    $status = configuration_get_status('field', 'node-'. $this->type->type .'-body');
+    $this->assertEqual($status, CONFIGURATION_IN_SYNC);
+    
+    // Testing overriding filters  
+    $edit = array();
+    $edit["filters[filter_url][settings][filter_url_length]"] = 20;
+    $this->drupalPost('admin/config/content/formats/filtered_html', $edit, t('Save configuration'));
+    $this->assertRaw(t('You have Configurations that need to be written to file.'));
+    $status = configuration_get_status('filter', 'filtered_html');
+    $this->assertEqual($status, CONFIGURATION_ACTIVESTORE_OVERRIDDEN);
+    
+    // Testing filters back to default
+    $edit = array();
+    $edit["filters[filter_url][settings][filter_url_length]"] = 72;
+    $this->drupalPost('admin/config/content/formats/filtered_html', $edit, t('Save configuration'));
+    $this->assertNoRaw(t('You have Configurations that need to be written to file.'));
+    $status = configuration_get_status('filter', 'filtered_html');
+    $this->assertEqual($status, CONFIGURATION_IN_SYNC);
+    
+    // Testing overriding filters  
+    $edit = array();
+    $edit["filters[filter_url][settings][filter_url_length]"] = 20;
+    $this->drupalPost('admin/config/content/formats/filtered_html', $edit, t('Save configuration'));
+    $this->assertRaw(t('You have Configurations that need to be written to file.'));
+    $status = configuration_get_status('filter', 'filtered_html');
+    $this->assertEqual($status, CONFIGURATION_ACTIVESTORE_OVERRIDDEN);
+    
+    // Testing filters back to default
+    $edit = array();
+    $edit["filters[filter_url][settings][filter_url_length]"] = 72;
+    $this->drupalPost('admin/config/content/formats/filtered_html', $edit, t('Save configuration'));
+    $this->assertNoRaw(t('You have Configurations that need to be written to file.'));
+    $status = configuration_get_status('filter', 'filtered_html');
+    $this->assertEqual($status, CONFIGURATION_IN_SYNC);
+  }
+}

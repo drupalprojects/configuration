@@ -1,5 +1,7 @@
+name = "Configuration Management"
+description = "Provides configuration management for Drupal."
+core = 7.x
+package = "Configuration"
 
-name = Configuration Framework
-description = Provide a unified method for defining site configurations abstracted from their data format.
-core = 6.x
-package = Site Setup
+files[] = configuration_stream.inc
+files[] = tests/configuration.test
