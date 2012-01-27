@@ -327,6 +327,13 @@ function _ctools_configuration_export_crud_save($table, $name, $object) {
       $object->export_type = $in_activestore->export_type;
     }
     
+    // @todo: Panel pages can't import from datastore this way.  Have to figure
+    // out how to get panel pages imported.
+    // page_manager_get_tasks();
+    // module_load_include('inc', 'panels', 'plugins/task_handlers/panel_context');
+    //     foreach ($object->default_handlers as &$handler){
+    //       panels_panel_context_save($handler, '');
+    //     }
     ctools_export_crud_save($table, $object);
   }
 }
@@ -335,6 +342,10 @@ function _ctools_configuration_export_crud_save($table, $name, $object) {
  * Implements hook_configuration_export_render() for page_manager.
  */
 function page_manager_pages_configuration_export_render($module, $data) {
+  // Reset the static counter for pids
+  $pid_counter = &drupal_static('panels_export_display');
+  $pid_counter = 0;
+  
   // Ensure that handlers have their code included before exporting.
   page_manager_get_tasks();
   return ctools_component_configuration_export_render('page_manager_pages', $module, $data);
@@ -386,6 +397,21 @@ function ctools_configuration_check($identifier) {
     if (empty($export)) {
       configuration_set_status($component, $identifier, CONFIGURATION_TRACKED_DATASTORE_ONLY);
     }
+    
+    /**
+     * @todo: There is a bug with an object being attached to views when 
+     * exporting. Haven't been able to track down where this is coming from so
+     * I'm just going to unset it for now.
+     */
+    if ($component == 'views_view') {
+      foreach ($export as &$view) {
+        if (property_exists($view, 'localization_plugin')) {
+          unset($view->localization_plugin);
+        }
+      }
+    }
+    
+    
     /**
      * @todo This code is reused in all component files.
      */

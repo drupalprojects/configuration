@@ -149,10 +149,11 @@ function configuration_export_prepare($export, $module_name, $reset = FALSE) {
 function configuration_export_render_hooks($export, $module_name, $reset = FALSE) {
   configuration_include();
   $code = array();
+  $export['reset'] = $reset;
   
   // Sort components to keep exported code consistent
   ksort($export['configuration']);
-
+  
   foreach ($export['configuration'] as $component => $data) {
     if (!empty($data)) {
       // Sort the items so that we don't generate different exports based on order
@@ -839,7 +840,7 @@ function configuration_write_exports($components = NULL, $exclude = array()) {
   try {
     // Check files in the config directory and ensure we won't overwrite
     // new configs before writing to file.
-    if (configuration_check_changed((CONFIGURATION_DATASTORE_ONLY | CONFIGURATION_DATASTORE_OVERRIDDEN), $components)) {
+    if (configuration_check_changed((CONFIGURATION_DATASTORE_ONLY), $components)) {
       $config_populate = configuration_populate_sanitize($config);
       $export = configuration_populate($config_populate, array());
 
