@@ -204,6 +204,7 @@ function node_configuration_enable($module) {
 function configuration_check_node($identifier) {
   // Get static variable that we can access across this request.
   $from_activestore = &drupal_static('configuration_from_activestore');
+  $component = 'node';
   
   if (file_exists("config://configuration.inc")) {
     // Load the current configuration file on disk
@@ -235,7 +236,7 @@ function configuration_check_node($identifier) {
       $component = 'node';
       $status = $config[$component][$identifier]['status'];
       $md5_datastore = (is_array($items_code) && array_key_exists($identifier, $items_code)) ? md5(serialize($items_code[$identifier])) : '';
-      $md5_activestore = md5(serialize($items[$identifier]));
+      $md5_activestore = (is_array($items_code) && array_key_exists($identifier, $items_code)) ? md5(serialize($items[$identifier])) : '';
 
       // Configs in code are not the same as what was just saved in activestore.
       if ($from_activestore == TRUE && $md5_datastore != $md5_activestore) {
@@ -262,7 +263,7 @@ function configuration_check_node($identifier) {
         
       // Store the config array in cache for easy access
       if ($status != CONFIGURATION_IN_SYNC) {
-        $configuration[$component][$identifier]['activestore'] = $items[$identifier];
+        $configuration[$component][$identifier]['activestore'] = (is_array($items_code) && array_key_exists($identifier, $items_code)) ? $items[$identifier] : '';
         $configuration[$component][$identifier]['datastore'] = (is_array($items_code) && array_key_exists($identifier, $items_code)) ? $items_code[$identifier] : '';
         cache_set("$component:$identifier", $configuration, 'cache_configuration');
       }

@@ -125,6 +125,7 @@ function configuration_filter_format_load($name) {
 function configuration_check_filter($identifier) {
   // Get static variable that we can access across this request.
   $from_activestore = &drupal_static('configuration_from_activestore');
+  $component = 'filter';
   
   if (file_exists("config://configuration.filter.inc")) {
     // Load the current configuration file on disk
@@ -157,7 +158,7 @@ function configuration_check_filter($identifier) {
     $component = 'filter';
     $status = $config[$component][$identifier]['status'];
     $md5_datastore = (is_array($formats_code) && array_key_exists($identifier, $formats_code)) ? md5(serialize($formats_code[$identifier])) : '';
-    $md5_activestore = md5(serialize($formats[$identifier]));
+    $md5_activestore = (is_array($formats_code) && array_key_exists($identifier, $formats_code)) ? md5(serialize($formats[$identifier])) : '';
     
     // Configs in code are not the same as what was just saved in activestore.
     if ($from_activestore == TRUE && $md5_datastore != $md5_activestore) {
@@ -183,7 +184,7 @@ function configuration_check_filter($identifier) {
 
     // Store the config array in cache for easy access
     if ($status != CONFIGURATION_IN_SYNC) {
-      $configuration[$component][$identifier]['activestore'] = $formats[$identifier];
+      $configuration[$component][$identifier]['activestore'] = (is_array($formats_code) && array_key_exists($identifier, $formats_code)) ? $formats[$identifier] : '';
       $configuration[$component][$identifier]['datastore'] = (is_array($formats_code) && array_key_exists($identifier, $formats_code)) ? $formats_code[$identifier] : '';
       cache_set("$component:$identifier", $configuration, 'cache_configuration');
     }

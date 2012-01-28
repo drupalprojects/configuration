@@ -280,6 +280,7 @@ function _user_configuration_get_permissions($by_role = TRUE) {
 function configuration_check_user_permission($identifier) {
   // Get static variable that we can access across this request.
   $from_activestore = &drupal_static('configuration_from_activestore');
+  $component = 'user_permission';
   
   if (file_exists("config://configuration.user_permission.inc")) {
     // Load the current configuration file on disk
@@ -312,7 +313,7 @@ function configuration_check_user_permission($identifier) {
       $component = 'user_permission';
       $status = $config[$component][$identifier]['status'];
       $md5_datastore = (is_array($permissions_code) && array_key_exists($identifier, $permissions_code)) ? md5(serialize($permissions_code[$identifier])) : '';
-      $md5_activestore = md5(serialize($permissions[$identifier]));
+      $md5_activestore = (is_array($permissions_code) && array_key_exists($identifier, $permissions_code)) ? md5(serialize($permissions[$identifier])) : '';
       
       // Configs in code are not the same as what was just saved in activestore.
       if ($from_activestore == TRUE && $md5_datastore != $md5_activestore) {
@@ -338,7 +339,7 @@ function configuration_check_user_permission($identifier) {
 
       // Store the config array in cache for easy access
       if ($status != CONFIGURATION_IN_SYNC) {
-        $configuration[$component][$identifier]['activestore'] = $permissions[$identifier];
+        $configuration[$component][$identifier]['activestore'] = (is_array($permissions_code) && array_key_exists($identifier, $permissions_code)) ? $permissions[$identifier] : '';
         $configuration[$component][$identifier]['datastore'] = (is_array($permissions_code) && array_key_exists($identifier, $permissions_code)) ? $permissions_code[$identifier] : '';
         cache_set("$component:$identifier", $configuration, 'cache_configuration');
       }
@@ -367,6 +368,7 @@ function configuration_hash_user_permission($identifier) {
 function configuration_check_user_role($identifier) {
   // Get static variable that we can access across this request.
   $from_activestore = &drupal_static('configuration_from_activestore');
+  $component = 'user_role';
   
   if (file_exists("config://configuration.user_role.inc")) {
     // Load the current configuration file on disk
@@ -406,8 +408,7 @@ function configuration_check_user_role($identifier) {
       }
     }
     $md5_datastore = (is_array($roles_code) && array_key_exists($identifier, $roles_code)) ? md5(serialize($roles_code[$identifier])) : '';
-    // Supress error, there may not be anything in activestore
-    $md5_activestore = @md5(serialize($roles[$identifier]));
+    $md5_activestore = (is_array($roles_code) && array_key_exists($identifier, $roles_code)) ? md5(serialize($roles[$identifier])) : '';
     
     // When checking for new configurations, check to see if configurations are
     // the same in datastore as last activestore
@@ -431,7 +432,7 @@ function configuration_check_user_role($identifier) {
     // Store the config array in cache for easy access
     if ($status != CONFIGURATION_IN_SYNC) {
       // Supress error, there may not be anything in activestore
-      $configuration[$component][$identifier]['activestore'] = @$roles[$identifier];
+      $configuration[$component][$identifier]['activestore'] = (is_array($roles_code) && array_key_exists($identifier, $roles_code)) ? $roles[$identifier] : '';
       $configuration[$component][$identifier]['datastore'] = (is_array($roles_code) && array_key_exists($identifier, $roles_code)) ? $roles_code[$identifier] : '';
       cache_set("$component:$identifier", $configuration, 'cache_configuration');
     }

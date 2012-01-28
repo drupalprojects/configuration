@@ -418,7 +418,7 @@ function ctools_configuration_check($identifier) {
     $return = '';
     $status = $config[$component][$identifier]['status'];
     $md5_datastore = (is_array($export_code) && array_key_exists($identifier, $export_code)) ? md5(serialize($export_code[$identifier])) : ''; 
-    $md5_activestore = md5(serialize($export[$identifier]));
+    $md5_activestore = (is_array($export_code) && array_key_exists($identifier, $export_code)) ? md5(serialize($export[$identifier])) : '';
     
     // Configs in code are not the same as what was just saved in activestore.
     // There is no way of telling if the change was in the activestore or the
@@ -449,7 +449,7 @@ function ctools_configuration_check($identifier) {
     
     // Store the config array in cache for easy access
     if ($status != CONFIGURATION_IN_SYNC) {
-      $configuration[$component][$identifier]['activestore'] = $export[$identifier];
+      $configuration[$component][$identifier]['activestore'] = (is_array($export_code) && array_key_exists($identifier, $export_code)) ? $export[$identifier] : '';
       $configuration[$component][$identifier]['datastore'] = (is_array($export_code) && array_key_exists($identifier, $export_code)) ? $export_code[$identifier] : '';
       cache_set("$component:$identifier", $configuration, 'cache_configuration');
     }  

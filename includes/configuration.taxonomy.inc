@@ -108,6 +108,7 @@ function taxonomy_configuration_rebuild($identifiers, $module_name = 'configurat
 function configuration_check_taxonomy($identifier) {
   // Get static variable that we can access across this request.
   $from_activestore = &drupal_static('configuration_from_activestore');
+  $component = 'taxonomy';
   
   if (file_exists("config://configuration.taxonomy.inc")) {
     // Load the current configuration file on disk
@@ -136,7 +137,7 @@ function configuration_check_taxonomy($identifier) {
     $component = 'taxonomy';
     $status = $config[$component][$identifier]['status'];
     $md5_datastore = (is_array($vocab_code) && array_key_exists($identifier, $vocab_code)) ? md5(serialize($vocab_code[$identifier])) : '';
-    $md5_activestore = md5(serialize($vocab[$identifier]));
+    $md5_activestore = (is_array($vocab_code) && array_key_exists($identifier, $vocab_code)) ? md5(serialize($vocab[$identifier])) : '';
     
     // Configs in code are not the same as what was just saved in activestore.
     if ($from_activestore == TRUE && $md5_datastore != $md5_activestore) {
@@ -162,7 +163,7 @@ function configuration_check_taxonomy($identifier) {
       
     // Store the config array in cache for easy access
     if ($status != CONFIGURATION_IN_SYNC) {
-      $configuration[$component][$identifier]['activestore'] = $vocab[$identifier];
+      $configuration[$component][$identifier]['activestore'] = (is_array($vocab_code) && array_key_exists($identifier, $vocab_code)) ? $vocab[$identifier] : '';
       $configuration[$component][$identifier]['datastore'] = (is_array($vocab_code) && array_key_exists($identifier, $vocab_code)) ? $vocab_code[$identifier] : '';
       cache_set("$component:$identifier", $configuration, 'cache_configuration');
     }

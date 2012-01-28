@@ -107,6 +107,7 @@ function _image_configuration_style_sanitize(&$style, $child = FALSE) {
 function configuration_check_image($identifier) {
   // Get static variable that we can access across this request.
   $from_activestore = &drupal_static('configuration_from_activestore');
+  $component = 'image';
   
   if (file_exists("config://configuration.inc")) {
     // Load the current configuration file on disk
@@ -138,7 +139,7 @@ function configuration_check_image($identifier) {
       $component = 'image';
       $status = $config[$component][$identifier]['status'];
       $md5_datastore = (is_array($styles_code) && array_key_exists($identifier, $styles_code)) ? md5(serialize($styles_code[$identifier])) : '';
-      $md5_activestore = md5(serialize($styles[$identifier]));
+      $md5_activestore = (is_array($styles_code) && array_key_exists($identifier, $styles_code)) ? md5(serialize($styles[$identifier])) : '';
       
       // Configs in code are not the same as what was just saved in activestore.
       if ($from_activestore == TRUE && $md5_datastore != $md5_activestore) {
@@ -164,7 +165,7 @@ function configuration_check_image($identifier) {
 
       // Store the config array in cache for easy access
       if ($status != CONFIGURATION_IN_SYNC) {
-        $configuration[$component][$identifier]['activestore'] = $styles[$identifier];
+        $configuration[$component][$identifier]['activestore'] = (is_array($styles_code) && array_key_exists($identifier, $styles_code)) ? $styles[$identifier] : '';
         $configuration[$component][$identifier]['datastore'] = (is_array($styles_code) && array_key_exists($identifier, $styles_code)) ? $styles_code[$identifier] : '';
         cache_set("$component:$identifier", $configuration, 'cache_configuration');
       }
