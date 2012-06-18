@@ -29,7 +29,9 @@ function configuration_user_permissions_update(&$form, &$form_state) {
   $config = configuration_get_configuration();
   
   module_load_include('inc', 'configuration', "includes/configuration.user");
-  configuration_check_user_permission(array_keys($config['user_permission']));
+  if(isset($config['user_permission']))
+    configuration_check_user_permission(array_keys($config['user_permission']));
+  
   configuration_write_export_file();
 }
 
