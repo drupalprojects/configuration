@@ -318,7 +318,7 @@ function configuration_check_menu_links($identifier) {
   // Get static variable that we can access across this request.
   $from_activestore = &drupal_static('configuration_from_activestore');
   $component = 'menu_links';
-  
+
   if (file_exists("config://configuration.menu_links.inc")) {
     // Load the current configuration file on disk
     include_once "config://configuration.menu_links.inc";
@@ -327,10 +327,11 @@ function configuration_check_menu_links($identifier) {
     module_load_include('inc', 'configuration', "configuration.export");
 
     // Export the field we just saved and evaluate the export to $fields
-    eval(array_pop(menu_links_configuration_export_render('configuration', array($identifier))));
+    $code = menu_links_configuration_export_render('configuration', array($identifier));
+    eval(array_pop($code));
 
     $menu_links_code = configuration_menu_default_menu_links();
-    
+
     // If the activestore doesn't exist it is most likely because this configuration
     // only exists in code.
     if (empty($menu_links)) {
@@ -347,7 +348,7 @@ function configuration_check_menu_links($identifier) {
     $status = $config[$component][$identifier]['status'];
     $md5_datastore = (is_array($menu_links_code) && array_key_exists($identifier, $menu_links_code)) ? md5(serialize($menu_links_code[$identifier])) : '';
     $md5_activestore = (is_array($menu_links_code) && array_key_exists($identifier, $menu_links_code)) ? md5(serialize($menu_links[$identifier])) : '';
-    
+
     // Configs in code are not the same as what was just saved in activestore.
     if ($from_activestore == TRUE && $md5_datastore != $md5_activestore) {
       $status = $status | CONFIGURATION_ACTIVESTORE_OVERRIDDEN;
@@ -369,7 +370,7 @@ function configuration_check_menu_links($identifier) {
       $status = $status & ~CONFIGURATION_DATASTORE_OVERRIDDEN;
       configuration_set_status($component, $identifier, $status);
     }
-      
+
     // Store the config array in cache for easy access
     if ($status != CONFIGURATION_IN_SYNC) {
       $configuration[$component][$identifier]['activestore'] = (is_array($menu_links_code) && array_key_exists($identifier, $menu_links_code)) ? $menu_links[$identifier] : '';
@@ -384,9 +385,10 @@ function configuration_hash_menu_links($identifier) {
   module_load_include('inc', 'configuration', 'configuration.export');
 
   $data = menu_links_configuration_export_options();
-  
+
   // Export the field we just saved and evaluate the export to hash
-  eval(array_pop(menu_links_configuration_export_render('configuration', array($identifier))));
+  $code = menu_links_configuration_export_render('configuration', array($identifier));
+  eval(array_pop($code));
 
   return md5(serialize($menu_links[$identifier]));
 }
@@ -395,7 +397,7 @@ function configuration_check_menu_custom($identifier, $from_activestore = false)
   // Get static variable that we can access across this request.
   $from_activestore = &drupal_static('configuration_from_activestore');
   $component = 'menu_custom';
-  
+
   if (file_exists("config://configuration.menu_custom.inc")) {
     // Load the current configuration file on disk
     include_once "config://configuration.menu_custom.inc";
@@ -404,10 +406,11 @@ function configuration_check_menu_custom($identifier, $from_activestore = false)
     module_load_include('inc', 'configuration', 'configuration.export');
 
     // Export the field we just saved and evaluate the export to $fields
-    eval(array_pop(menu_custom_configuration_export_render('configuration', array($identifier))));
+    $code = menu_custom_configuration_export_render('configuration', array($identifier));
+    eval(array_pop($code));
 
     $menus_code = configuration_menu_default_menu_custom();
-    
+
     // If the activestore doesn't exist it is most likely because this configuration
     // only exists in code.
     if (empty($menus)) {
@@ -425,7 +428,7 @@ function configuration_check_menu_custom($identifier, $from_activestore = false)
     $status = $config[$component][$identifier]['status'];
     $md5_datastore = (is_array($menus_code) && array_key_exists($identifier, $menus_code)) ? md5(serialize($menus_code[$identifier])) : '';
     $md5_activestore = (is_array($menus_code) && array_key_exists($identifier, $menus_code)) ? md5(serialize($menus[$identifier])) : '';
-    
+
     // Configs in code are not the same as what was just saved in activestore.
     if ($from_activestore == TRUE && $md5_datastore != $md5_activestore) {
       $status = $status | CONFIGURATION_ACTIVESTORE_OVERRIDDEN;
@@ -464,7 +467,8 @@ function configuration_hash_menu_custom($identifier) {
   $data = menu_custom_configuration_export_options();
 
   // Export the field we just saved and evaluate the export to hash
-  eval(array_pop(menu_custom_configuration_export_render('configuration', array($identifier))));
+  $code = menu_custom_configuration_export_render('configuration', array($identifier));
+  eval(array_pop($code));
 
   return md5(serialize($menus[$identifier]));
 }

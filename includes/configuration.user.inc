@@ -64,12 +64,12 @@ function user_permission_configuration_export_options() {
 /**
  * Implements hook_configuration_export_render().
  */
-function user_permission_configuration_export_render($module, $data) {  
+function user_permission_configuration_export_render($module, $data) {
   $perm_modules = &drupal_static(__FUNCTION__ . '_perm_modules');
   if (!isset($perm_modules)) {
     $perm_modules = user_permission_get_modules();
   }
-  
+
   $code = array();
   $code[] = '  $permissions = array();';
   $code[] = '';
@@ -139,7 +139,7 @@ function user_permission_configuration_rebuild($identifiers, $module_name = 'con
     foreach ($roles as $rid => $role) {
       if (isset($permissions_by_role[$role])) {
         user_role_change_permissions($rid, $permissions_by_role[$role]);
-        
+
       }
     }
     foreach ($identifiers as $identifier) {
@@ -281,7 +281,7 @@ function configuration_check_user_permission($identifier) {
   // Get static variable that we can access across this request.
   $from_activestore = &drupal_static('configuration_from_activestore');
   $component = 'user_permission';
-  
+
   if (file_exists("config://configuration.user_permission.inc")) {
     // Load the current configuration file on disk
     include_once "config://configuration.user_permission.inc";
@@ -294,11 +294,12 @@ function configuration_check_user_permission($identifier) {
     $identifiers = is_array($identifier) ? $identifier : array($identifier);
 
     // Export the field we just saved and evaluate the export to $fields
-    eval(array_pop(user_permission_configuration_export_render('configuration', $identifiers)));
+    $code = user_permission_configuration_export_render('configuration', $identifiers);
+    eval(array_pop($code));
 
     // Get the permissions on disk.
     $permissions_code = configuration_user_default_permissions();
-    
+
     // If the activestore doesn't exist it is most likely because this configuration
     // only exists in code.
     if (empty($permissions)) {
@@ -314,7 +315,7 @@ function configuration_check_user_permission($identifier) {
       $status = $config[$component][$identifier]['status'];
       $md5_datastore = (is_array($permissions_code) && array_key_exists($identifier, $permissions_code)) ? md5(serialize($permissions_code[$identifier])) : '';
       $md5_activestore = (is_array($permissions_code) && array_key_exists($identifier, $permissions_code)) ? md5(serialize($permissions[$identifier])) : '';
-      
+
       // Configs in code are not the same as what was just saved in activestore.
       if ($from_activestore == TRUE && $md5_datastore != $md5_activestore) {
         $status = $status | CONFIGURATION_ACTIVESTORE_OVERRIDDEN;
@@ -343,7 +344,7 @@ function configuration_check_user_permission($identifier) {
         $configuration[$component][$identifier]['datastore'] = (is_array($permissions_code) && array_key_exists($identifier, $permissions_code)) ? $permissions_code[$identifier] : '';
         cache_set("$component:$identifier", $configuration, 'cache_configuration');
       }
-    } 
+    }
   }
 }
 
@@ -354,10 +355,12 @@ function configuration_hash_user_permission($identifier) {
   $data = user_permission_configuration_export_options();
 
   // Export the field we just saved and evaluate the export to hash
-  eval(array_pop(user_permission_configuration_export_render('configuration', array($identifier))));
+  $code = user_permission_configuration_export_render('configuration', array($identifier));
+  eval(array_pop($code));
 
   return md5(serialize($permissions[$identifier]));
 }
+
 /**
  * User roles are unique in that the name of the config and the name of the role
  * are the same.  If you change the name of the role, you are effectively
@@ -369,7 +372,7 @@ function configuration_check_user_role($identifier) {
   // Get static variable that we can access across this request.
   $from_activestore = &drupal_static('configuration_from_activestore');
   $component = 'user_role';
-  
+
   if (file_exists("config://configuration.user_role.inc")) {
     // Load the current configuration file on disk
     include_once "config://configuration.user_role.inc";
@@ -382,7 +385,8 @@ function configuration_check_user_role($identifier) {
     $config = configuration_get_configuration('user_role');
 
     // Export the field we just saved and evaluate the export to $fields
-    eval(array_pop(user_role_configuration_export_render('configuration', array($identifier))));
+    $code = user_role_configuration_export_render('configuration', array($identifier));
+    eval(array_pop($code));
 
     // If the activestore doesn't exist it is most likely because this configuration
     // only exists in code.
@@ -409,7 +413,7 @@ function configuration_check_user_role($identifier) {
     }
     $md5_datastore = (is_array($roles_code) && array_key_exists($identifier, $roles_code)) ? md5(serialize($roles_code[$identifier])) : '';
     $md5_activestore = (is_array($roles_code) && array_key_exists($identifier, $roles_code)) ? md5(serialize($roles[$identifier])) : '';
-    
+
     // When checking for new configurations, check to see if configurations are
     // the same in datastore as last activestore
     if (!$from_activestore && (isset($config[$identifier]) && isset($roles_code[$identifier])) && $md5_datastore == $config[$identifier]['hash']) {
@@ -428,7 +432,7 @@ function configuration_check_user_role($identifier) {
       $status = $settings['status'] | CONFIGURATION_DATASTORE_OVERRIDDEN;
       configuration_set_status($component, $identifier, $status);
     }
-    
+
     // Store the config array in cache for easy access
     if ($status != CONFIGURATION_IN_SYNC) {
       // Supress error, there may not be anything in activestore
@@ -453,7 +457,8 @@ function configuration_hash_user_role($identifier) {
   $data = user_role_configuration_export_options();
 
   // Export the field we just saved and evaluate the export to hash
-  eval(array_pop(user_role_configuration_export_render('configuration', array($identifier))));
+  $code = user_role_configuration_export_render('configuration', array($identifier));
+  eval(array_pop($code));
 
   return md5(serialize($roles[$identifier]));
 }

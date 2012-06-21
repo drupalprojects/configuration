@@ -126,11 +126,11 @@ function configuration_check_filter($identifier) {
   // Get static variable that we can access across this request.
   $from_activestore = &drupal_static('configuration_from_activestore');
   $component = 'filter';
-  
+
   if (file_exists("config://configuration.filter.inc")) {
     // Load the current configuration file on disk
     include_once "config://configuration.filter.inc";
-    
+
     // Clear the filter cache to get a fresh export.
     cache_clear_all('filter_list_format', 'cache', TRUE);
     drupal_static_reset('filter_list_format');
@@ -139,7 +139,8 @@ function configuration_check_filter($identifier) {
     module_load_include('inc', 'configuration', 'configuration.export');
 
     // Export the field we just saved and evaluate the export to $fields
-    eval(array_pop(filter_configuration_export_render('configuration', array($identifier))));
+    $code = filter_configuration_export_render('configuration', array($identifier));
+    eval(array_pop($code));
 
     $formats_code = configuration_filter_default_formats();
 
@@ -159,7 +160,7 @@ function configuration_check_filter($identifier) {
     $status = $config[$component][$identifier]['status'];
     $md5_datastore = (is_array($formats_code) && array_key_exists($identifier, $formats_code)) ? md5(serialize($formats_code[$identifier])) : '';
     $md5_activestore = (is_array($formats_code) && array_key_exists($identifier, $formats_code)) ? md5(serialize($formats[$identifier])) : '';
-    
+
     // Configs in code are not the same as what was just saved in activestore.
     if ($from_activestore == TRUE && $md5_datastore != $md5_activestore) {
       $status = $status | CONFIGURATION_ACTIVESTORE_OVERRIDDEN;
@@ -196,9 +197,10 @@ function configuration_hash_filter($identifier) {
   module_load_include('inc', 'configuration', 'configuration.export');
 
   $data = filter_configuration_export_options();
-  
+
   // Export the format we just saved and evaluate the export to hash
-  eval(array_pop(filter_configuration_export_render('configuration', array($identifier))));
+  $code = filter_configuration_export_render('configuration', array($identifier));
+  eval(array_pop($code));
 
   return md5(serialize($formats[$identifier]));
 }

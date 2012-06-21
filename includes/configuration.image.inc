@@ -108,7 +108,7 @@ function configuration_check_image($identifier) {
   // Get static variable that we can access across this request.
   $from_activestore = &drupal_static('configuration_from_activestore');
   $component = 'image';
-  
+
   if (file_exists("config://configuration.inc")) {
     // Load the current configuration file on disk
     include_once "config://configuration.inc";
@@ -120,10 +120,11 @@ function configuration_check_image($identifier) {
       module_load_include('inc', 'configuration', 'configuration.export');
 
       // Export the field we just saved and evaluate the export to $fields
-      eval(array_pop(image_configuration_export_render('configuration', array($identifier))));
+      $code = image_configuration_export_render('configuration', array($identifier));
+      eval(array_pop($code));
 
       $styles_code = configuration_configuration_image_default_styles();
-      
+
       // If the activestore doesn't exist it is most likely because this configuration
       // only exists in code.
       if (empty($styles)) {
@@ -140,7 +141,7 @@ function configuration_check_image($identifier) {
       $status = $config[$component][$identifier]['status'];
       $md5_datastore = (is_array($styles_code) && array_key_exists($identifier, $styles_code)) ? md5(serialize($styles_code[$identifier])) : '';
       $md5_activestore = (is_array($styles_code) && array_key_exists($identifier, $styles_code)) ? md5(serialize($styles[$identifier])) : '';
-      
+
       // Configs in code are not the same as what was just saved in activestore.
       if ($from_activestore == TRUE && $md5_datastore != $md5_activestore) {
         $status = $status | CONFIGURATION_ACTIVESTORE_OVERRIDDEN;
@@ -178,9 +179,10 @@ function configuration_hash_image($identifier) {
   module_load_include('inc', 'configuration', 'configuration.export');
 
   $data = image_configuration_export_options();
-  
+
   // Export the field we just saved and evaluate the export to hash
-  eval(array_pop(image_configuration_export_render('configuration', array($identifier))));
+  $code = image_configuration_export_render('configuration', array($identifier));
+  eval(array_pop($code));
 
   return md5(serialize($styles[$identifier]));
 }

@@ -109,7 +109,7 @@ function configuration_check_taxonomy($identifier) {
   // Get static variable that we can access across this request.
   $from_activestore = &drupal_static('configuration_from_activestore');
   $component = 'taxonomy';
-  
+
   if (file_exists("config://configuration.taxonomy.inc")) {
     // Load the current configuration file on disk
     include_once "config://configuration.taxonomy.inc";
@@ -118,7 +118,8 @@ function configuration_check_taxonomy($identifier) {
     module_load_include('inc', 'configuration', 'configuration.export');
 
     // Export the field we just saved and evaluate the export to $fields
-    eval('$vocab = '. substr(array_pop(taxonomy_configuration_export_render('configuration', array($identifier))), 8));
+    $code = taxonomy_configuration_export_render('configuration', array($identifier));
+    eval('$vocab = '. substr(array_pop($code), 8));
 
     $vocab_code = configuration_taxonomy_default_vocabularies();
 
@@ -138,7 +139,7 @@ function configuration_check_taxonomy($identifier) {
     $status = $config[$component][$identifier]['status'];
     $md5_datastore = (is_array($vocab_code) && array_key_exists($identifier, $vocab_code)) ? md5(serialize($vocab_code[$identifier])) : '';
     $md5_activestore = (is_array($vocab_code) && array_key_exists($identifier, $vocab_code)) ? md5(serialize($vocab[$identifier])) : '';
-    
+
     // Configs in code are not the same as what was just saved in activestore.
     if ($from_activestore == TRUE && $md5_datastore != $md5_activestore) {
       $status = $status | CONFIGURATION_ACTIVESTORE_OVERRIDDEN;
@@ -147,7 +148,7 @@ function configuration_check_taxonomy($identifier) {
     // Menu in the activestore is the same as what is in code.
     if ($md5_activestore == $md5_datastore) {
       $status = CONFIGURATION_IN_SYNC;
-      configuration_set_status($component, $identifier, $status); 
+      configuration_set_status($component, $identifier, $status);
       configuration_set_hash($component, $identifier, $md5_activestore);
     }
     if ($md5_activestore != $md5_datastore) {
@@ -160,7 +161,7 @@ function configuration_check_taxonomy($identifier) {
       $status = $status & ~CONFIGURATION_DATASTORE_OVERRIDDEN;
       configuration_set_status($component, $identifier, $status);
     }
-      
+
     // Store the config array in cache for easy access
     if ($status != CONFIGURATION_IN_SYNC) {
       $configuration[$component][$identifier]['activestore'] = (is_array($vocab_code) && array_key_exists($identifier, $vocab_code)) ? $vocab[$identifier] : '';
@@ -177,7 +178,8 @@ function configuration_hash_taxonomy($identifier) {
   $data = taxonomy_configuration_export_options();
 
   // Export the field we just saved and evaluate the export to hash
-  eval('$vocab = '. substr(array_pop(taxonomy_configuration_export_render('configuration', array($identifier))), 8));
+  $code = taxonomy_configuration_export_render('configuration', array($identifier));
+  eval('$vocab = '. substr(array_pop($code), 8));
 
   return md5(serialize($vocab[$identifier]));
 }

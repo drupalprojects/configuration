@@ -150,7 +150,7 @@ function ctools_component_configuration_export($component, $data, &$export, $mod
   // Add the components
   foreach ($data as $object_name) {
     if ($object = _ctools_configuration_export_crud_load($component, $object_name)) {
-      // If this object is provided as a default by a different module, add 
+      // If this object is provided as a default by a different module, add
       // that module as a dependency.
       if (!empty($object->export_module) && $object->export_module !== $module_name) {
         $new_dependencies[$object->export_module] = $object->export_module;
@@ -170,7 +170,7 @@ function ctools_component_configuration_export($component, $data, &$export, $mod
 function ctools_component_configuration_export_render($component, $module, $data) {
   ctools_include('export');
   $schema = ctools_export_get_schema($component);
-  
+
   if (function_exists($schema['export']['to hook code callback'])) {
     $export = $schema['export']['to hook code callback']($data, $module);
     $code = explode("{\n", $export);
@@ -248,7 +248,7 @@ function _ctools_configuration_get_info($identifier = NULL, $reset = FALSE) {
       return $components[$identifier];
     }
     // New API identifier. Allows non-exportables related CTools APIs to be
-    // supported by an explicit `module:api:current_version` key. 
+    // supported by an explicit `module:api:current_version` key.
     else if (substr_count($identifier, ':') === 2) {
       list($module, $api, $current_version) = explode(':', $identifier);
       // If a schema component matches the provided identifier, provide that
@@ -326,7 +326,7 @@ function _ctools_configuration_export_crud_save($table, $name, $object) {
       $object->{$schema['export']['primary key']} = $in_activestore->{$schema['export']['primary key']};
       $object->export_type = $in_activestore->export_type;
     }
-    
+
     // @todo: Panel pages can't import from datastore this way.  Have to figure
     // out how to get panel pages imported.
     // page_manager_get_tasks();
@@ -345,7 +345,7 @@ function page_manager_pages_configuration_export_render($module, $data) {
   // Reset the static counter for pids
   $pid_counter = &drupal_static('panels_export_display');
   $pid_counter = 0;
-  
+
   // Ensure that handlers have their code included before exporting.
   page_manager_get_tasks();
   return ctools_component_configuration_export_render('page_manager_pages', $module, $data);
@@ -361,15 +361,15 @@ function configuration_hash_page_manager_pages($identifier) {
 function ctools_configuration_check($identifier) {
   // Set a static variable that we can access across this request.
   $from_activestore = &drupal_static('configuration_from_activestore');
-  
+
   // The component name is the name of the function that called this function
   // after the string configuration_check_<component>
   $backtrace = @debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
   $component = substr($backtrace[1]['function'], strlen('configuration_check_'));
-  
+
   // Load the current configuration file on disk
   $info = _ctools_configuration_get_info();
-  
+
   if (file_exists('config://'. $info[$component]['default_filename'] .'.inc')) {
     // Page Manager has it's export callback in a file that is not autoloaded.
     // PM also doesn not use the export variable, we have to set it here.
@@ -377,29 +377,30 @@ function ctools_configuration_check($identifier) {
     if ($component == 'page_manager_pages') {
       ctools_include('page', 'page_manager', 'plugins/tasks');
       $export = &$pages;
-    }    
-    
+    }
+
     include_once 'config://'. $info[$component]['default_filename'] .'.inc';
     // Export just the field we're tracking.
     module_load_include('inc', 'configuration', 'configuration.export');
 
     $data = ctools_component_configuration_export_options($component);
     // Export the field we just saved and evaluate the export to $export
-    eval(array_pop(ctools_component_configuration_export_render($component, 'configuration', array($identifier))));
+    $code = ctools_component_configuration_export_render($component, 'configuration', array($identifier));
+    eval(array_pop($code));
 
     $export_code = call_user_func('configuration_'. $info[$component]['default_hook']);
 
     // If this was the previous configuration in activestore don't mark this as changed.
     $config = configuration_get_configuration();
-    
+
     // If the activestore doesn't exist it is most likely because this configuration
     // only exists in code.
     if (empty($export)) {
       configuration_set_status($component, $identifier, CONFIGURATION_TRACKED_DATASTORE_ONLY);
     }
-    
+
     /**
-     * @todo: There is a bug with an object being attached to views when 
+     * @todo: There is a bug with an object being attached to views when
      * exporting. Haven't been able to track down where this is coming from so
      * I'm just going to unset it for now.
      */
@@ -410,16 +411,16 @@ function ctools_configuration_check($identifier) {
         }
       }
     }
-    
-    
+
+
     /**
      * @todo This code is reused in all component files.
      */
     $return = '';
     $status = $config[$component][$identifier]['status'];
-    $md5_datastore = (is_array($export_code) && array_key_exists($identifier, $export_code)) ? md5(serialize($export_code[$identifier])) : ''; 
+    $md5_datastore = (is_array($export_code) && array_key_exists($identifier, $export_code)) ? md5(serialize($export_code[$identifier])) : '';
     $md5_activestore = (is_array($export_code) && array_key_exists($identifier, $export_code)) ? md5(serialize($export[$identifier])) : '';
-    
+
     // Configs in code are not the same as what was just saved in activestore.
     // There is no way of telling if the change was in the activestore or the
     // datastore. Mark them changed in both.
@@ -446,13 +447,13 @@ function ctools_configuration_check($identifier) {
       $status = $status  & ~CONFIGURATION_DATASTORE_OVERRIDDEN;
       configuration_set_status($component, $identifier, $status);
     }
-    
+
     // Store the config array in cache for easy access
     if ($status != CONFIGURATION_IN_SYNC) {
       $configuration[$component][$identifier]['activestore'] = (is_array($export_code) && array_key_exists($identifier, $export_code)) ? $export[$identifier] : '';
       $configuration[$component][$identifier]['datastore'] = (is_array($export_code) && array_key_exists($identifier, $export_code)) ? $export_code[$identifier] : '';
       cache_set("$component:$identifier", $configuration, 'cache_configuration');
-    }  
+    }
   }
 }
 
@@ -465,13 +466,14 @@ function ctools_configuration_hash($identifier) {
   $component = substr($backtrace[1]['function'], strlen('configuration_hash_'));
   $data = ctools_component_configuration_export_options($component);
   // Export the field we just saved and evaluate the export to $export
-  eval(array_pop(ctools_component_configuration_export_render($component, 'configuration', array($identifier))));
-  
+  $code = ctools_component_configuration_export_render($component, 'configuration', array($identifier));
+  eval(array_pop($code));
+
   // Page Manager does not use the export variable, we have to set it here.
   // @todo: Come up with a cleaner way to do this.
   if ($component == 'page_manager_pages') {
     $export = $pages;
   }
 
-  return md5(serialize($export[$identifier])); 
+  return md5(serialize($export[$identifier]));
 }

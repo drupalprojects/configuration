@@ -127,7 +127,7 @@ function field_configuration_export_render($module, $data, $export = NULL) {
     $code[] = configuration_translatables_export($translatables, '  ');
   }
   $code[] = '  return $fields;';
-  
+
   $code = implode("\n", $code);
   return array('field_default_fields' => $code);
 }
@@ -213,7 +213,7 @@ function configuration_check_field($identifier) {
   // Set a static variable that we can access across this request.
   $from_activestore = &drupal_static('configuration_from_activestore');
   $component = 'field';
-  
+
   if (file_exists("config://configuration.field.inc")) {
     // Load the current configuration file on disk
     include_once "config://configuration.field.inc";
@@ -222,8 +222,9 @@ function configuration_check_field($identifier) {
     module_load_include('inc', 'configuration', 'configuration.export');
 
     // Export the field we just saved and evaluate the export to $fields
-    eval(array_pop(field_configuration_export_render('configuration', array($identifier))));
-    
+    $code = field_configuration_export_render('configuration', array($identifier));
+    eval(array_pop($code));
+
     $fields_code = configuration_field_default_fields();
 
     // If this was the previous configuration in activestore don't mark this as changed.
@@ -234,7 +235,7 @@ function configuration_check_field($identifier) {
     if (empty($fields)) {
       configuration_set_status($component, $identifier, CONFIGURATION_TRACKED_DATASTORE_ONLY);
     }
-    
+
     /**
      * @todo This code is reused in all component files.
      */
@@ -243,7 +244,7 @@ function configuration_check_field($identifier) {
     $status = $config[$component][$identifier]['status'];
     $md5_datastore = (is_array($fields_code) && array_key_exists($identifier, $fields_code)) ? md5(serialize($fields_code[$identifier])) : '';
     $md5_activestore = (is_array($fields) && array_key_exists($identifier, $fields)) ? md5(serialize($fields[$identifier])) : '';
-    
+
     // Configs in code are not the same as what was just saved in activestore.
     if ($from_activestore == TRUE && $md5_datastore != $md5_activestore) {
       // dsm('configs in code are not the same as what was just saved in activestore.');
@@ -268,7 +269,7 @@ function configuration_check_field($identifier) {
       $status = $status & ~CONFIGURATION_DATASTORE_OVERRIDDEN;
       configuration_set_status($component, $identifier, $status);
     }
-    
+
     // Store the config array in cache for easy access
     if ($status != CONFIGURATION_IN_SYNC) {
       $configuration[$component][$identifier]['activestore'] = (is_array($fields) && array_key_exists($identifier, $fields)) ? $fields[$identifier] : '';
@@ -283,9 +284,10 @@ function configuration_hash_field($identifier) {
   module_load_include('inc', 'configuration', 'configuration.export');
 
   $data = field_configuration_export_options();
-  
+
   // Export the field we just saved and evaluate the export to hash
-  eval(array_pop(field_configuration_export_render('configuration', array($data[$identifier]))));
+  $code = field_configuration_export_render('configuration', array($data[$identifier]));
+  eval(array_pop($code));
 
   return md5(serialize($fields[$identifier]));
 }

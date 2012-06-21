@@ -41,10 +41,10 @@ function node_configuration_export($data, &$export, $module_name = '') {
         $new_dependencies['node'] = 'node';
         $new_dependencies['configuration'] = 'configuration';
       }
-      
+
       // Merge new dependencies with global.
       $export['dependencies'] = array_merge($export['dependencies'], $new_dependencies);
-      
+
       $fields = field_info_instances('node', $type);
       foreach ($fields as $name => $field) {
         $export['configuration_dependency']['configuration']['field']["node-{$field['bundle']}-{$field['field_name']}"] = $type;
@@ -119,7 +119,7 @@ function node_configuration_revert($identifiers, $module_name = 'configuration')
     }
     configuration_node_types_rebuild($identifiers, $module_name);
     menu_rebuild();
-    
+
     foreach ($default_types as $type_name => $type_info) {
       configuration_check_node($type_name);
     }
@@ -151,7 +151,7 @@ function configuration_node_types_rebuild($identifiers, $module_name = 'configur
       node_type_save($type_object);
     // }
   }
-  
+
   node_types_rebuild();
 }
 
@@ -205,7 +205,7 @@ function configuration_check_node($identifier) {
   // Get static variable that we can access across this request.
   $from_activestore = &drupal_static('configuration_from_activestore');
   $component = 'node';
-  
+
   if (file_exists("config://configuration.inc")) {
     // Load the current configuration file on disk
     include_once "config://configuration.inc";
@@ -217,7 +217,8 @@ function configuration_check_node($identifier) {
       module_load_include('inc', 'configuration', 'configuration.export');
 
       // Export the field we just saved and evaluate the export to $fields
-      eval(array_pop(node_configuration_export_render('configuration', array($identifier))));  
+      $code = node_configuration_export_render('configuration', array($identifier));
+      eval(array_pop($code));
 
       $items_code = configuration_configuration_node_info();
 
@@ -260,7 +261,7 @@ function configuration_check_node($identifier) {
         $status = $status & ~CONFIGURATION_DATASTORE_OVERRIDDEN;
         configuration_set_status($component, $identifier, $status);
       }
-        
+
       // Store the config array in cache for easy access
       if ($status != CONFIGURATION_IN_SYNC) {
         $configuration[$component][$identifier]['activestore'] = (is_array($items_code) && array_key_exists($identifier, $items_code)) ? $items[$identifier] : '';
@@ -278,7 +279,8 @@ function configuration_hash_node($identifier) {
   $data = node_configuration_export_options();
 
   // Export the field we just saved and evaluate the export to hash
-  eval(array_pop(node_configuration_export_render('configuration', array($identifier))));
+  $code = node_configuration_export_render('configuration', array($identifier));
+  eval(array_pop($code));
 
   return md5(serialize($items[$identifier]));
 }
