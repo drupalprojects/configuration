@@ -965,64 +965,65 @@ function _configuration_write_export_table() {
   $config_export = drupal_parse_info_file("config://config.export");
 
   $cids = array();
-  foreach ($config_export['config'] as $component => $config) {
-    foreach ($config as $identifier => $info) {
-      $row = db_query("SELECT cid, name, status, hash FROM {config_export} WHERE name = :name AND owner = :owner", array(':name' => $identifier, ':owner' => $component))
-        ->fetchObject();
+  if (isset($config_export['config']) && is_array($config_export['config'])) {
+    foreach ($config_export['config'] as $component => $config) {
+      foreach ($config as $identifier => $info) {
+        $row = db_query("SELECT cid, name, status, hash FROM {config_export} WHERE name = :name AND owner = :owner", array(':name' => $identifier, ':owner' => $component))
+          ->fetchObject();
 
-      // Add a new record to the config_export table as TRACKED_DATASTORE_ONLY
-      if (!is_object($row)) {
-        $record = array(
-          'name' => $identifier,
-          'owner' => $component,
-          'status' => CONFIGURATION_TRACKED_DATASTORE_ONLY,
-          'hash' => $info['hash'],
-          'parent' => $info['parent'],
-          'dependencies' => $info['dependencies'],
-        );
-        drupal_write_record('config_export', $record);
-        $cids[] = $record['cid'];
-        continue;
-      }
-      // This row exists, store the row id so it is not deleted
-      $cids[] = $row->cid;
-
-      // If the hash in the config.export file is different than what we have in
-      // the database, then the datastore was overridden.
-      if ($info['hash'] && $info['hash'] != $row->hash) {
-        db_update('config_export')
-          ->fields(array(
-            'hash' => 'changed-configuration',
+        // Add a new record to the config_export table as TRACKED_DATASTORE_ONLY
+        if (!is_object($row)) {
+          $record = array(
+            'name' => $identifier,
+            'owner' => $component,
+            'status' => CONFIGURATION_TRACKED_DATASTORE_ONLY,
+            'hash' => $info['hash'],
             'parent' => $info['parent'],
             'dependencies' => $info['dependencies'],
-            'status' => CONFIGURATION_DATASTORE_OVERRIDDEN,
-          ))
-          ->condition('cid', $row->cid)
-          ->execute();
+          );
+          drupal_write_record('config_export', $record);
+          $cids[] = $record['cid'];
+          continue;
+        }
+        // This row exists, store the row id so it is not deleted
+        $cids[] = $row->cid;
+
+        // If the hash in the config.export file is different than what we have in
+        // the database, then the datastore was overridden.
+        if ($info['hash'] && $info['hash'] != $row->hash) {
+          db_update('config_export')
+            ->fields(array(
+              'hash' => 'changed-configuration',
+              'parent' => $info['parent'],
+              'dependencies' => $info['dependencies'],
+              'status' => CONFIGURATION_DATASTORE_OVERRIDDEN,
+            ))
+            ->condition('cid', $row->cid)
+            ->execute();
+        }
       }
     }
-  }
-  $old_config = db_select('config_export', 'c')->fields('c');
-  $removed = db_delete('config_export');
-  
-  if (!empty($cids)) {
-    $old_config->condition('cid', $cids, 'NOT IN');
-    $removed->condition('cid', $cids, 'NOT IN');
-  }
+    $old_config = db_select('config_export', 'c')->fields('c');
+    $removed = db_delete('config_export');
 
-  $old_config = $old_config
-    ->execute()
-    ->fetchAll();
-  $removed = $removed
-    ->execute();
+    if (!empty($cids)) {
+      $old_config->condition('cid', $cids, 'NOT IN');
+      $removed->condition('cid', $cids, 'NOT IN');
+    }
 
-  foreach ($old_config as $old) {
-    $removed_configs[] = $old->name;
+    $old_config = $old_config
+      ->execute()
+      ->fetchAll();
+    $removed = $removed
+      ->execute();
+
+    foreach ($old_config as $old) {
+      $removed_configs[] = $old->name;
+    }
+    if ($removed) {
+      drupal_set_message(t('Removed %num configuration(s). No Longer tracking %config. Not found in datastore.', array('%num' => $removed, '%config' => join(', ', $removed_configs))));
+    }
   }
-  if ($removed) {
-    drupal_set_message(t('Removed %num configuration(s). No Longer tracking %config. Not found in datastore.', array('%num' => $removed, '%config' => join(', ', $removed_configs))));
-  }
-  
 }
 
 /**
