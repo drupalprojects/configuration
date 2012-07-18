@@ -257,13 +257,13 @@ function configuration_init() {
     $overridden = configuration_get_configuration('overridden');
     if (user_access('access configuration management') && $overridden !== 0) {
       if ($overridden | (CONFIGURATION_ACTIVESTORE_OVERRIDDEN | CONFIGURATION_DATASTORE_OVERRIDDEN)) {
-        drupal_set_message(t('Configurations are out of sync and need to be either !write.', array('!write' => l('activated or written to file', 'admin/config/system/configuration/tracking'))), 'warning', false);
+        drupal_set_message(t('Configurations are out of sync and need to be either !write.', array('!write' => l(t('activated or written to file'), 'admin/config/system/configuration/tracking'))), 'warning', false);
       }
       else if ($overridden & CONFIGURATION_DATASTORE_ONLY) {
-        drupal_set_message(t('You have new Configurations that need to be activated.  !click_here to activate your configurations.', array('!click_here' => l('Click here', 'admin/config/system/configuration/activate'))), 'warning', false);
+        drupal_set_message(t('You have new Configurations that need to be activated.  !click_here to activate your configurations.', array('!click_here' => l(t('Click here'), 'admin/config/system/configuration/activate'))), 'warning', false);
       }
       else if ($overridden == CONFIGURATION_CONFLICT) {
-        drupal_set_message(t('You have conflicts with your Configurations. Activating configurations will overwrite what is in the activestore, or you can write what is in the activestore back to datastore.  !click_here to resolve.', array('!click_here' => l('Click here', 'admin/config/system/configuration/activate'))), 'error', false);
+        drupal_set_message(t('You have conflicts with your Configurations. Activating configurations will overwrite what is in the activestore, or you can write what is in the activestore back to datastore.  !click_here to resolve.', array('!click_here' => l(t('Click here'), 'admin/config/system/configuration/activate'))), 'error', false);
       }
     }
   }
