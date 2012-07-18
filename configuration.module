@@ -374,14 +374,14 @@ function configuration_include_defaults($components = NULL, $reset = FALSE) {
         ctools_plugin_api_include($info['module'], $info['api'], $info['current_version'], $info['current_version']);
         $file = 'config://'. $info['default_filename'] .'.inc';
         if (is_file($file)) {
-          include_once $file;
+          include_once drupal_realpath($file);
         }
       }
       // Inclusion of defaults for configuration using CONFIGURATION_DEFAULTS_INCLUDED.
       else {        
         $file = "config://configuration.{$component}.inc";
         if (is_file($file)) {
-          include_once $file;
+          include_once drupal_realpath($file);
         }
       }
       $included[$component] = TRUE;
@@ -390,7 +390,7 @@ function configuration_include_defaults($components = NULL, $reset = FALSE) {
   // Inclusion of the catch all config file
   $file = "config://configuration.inc";
   if (is_file($file)) {
-    include_once $file;
+    include_once drupal_realpath($file);
   }
 }
 

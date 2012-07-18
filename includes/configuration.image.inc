@@ -111,7 +111,7 @@ function configuration_check_image($identifier) {
 
   if (file_exists("config://configuration.inc")) {
     // Load the current configuration file on disk
-    include_once "config://configuration.inc";
+    include_once drupal_realpath("config://configuration.inc");
     if (function_exists('configuration_configuration_image_default_styles')) {
       // Clear all caches and flush.
       image_style_flush($identifier);

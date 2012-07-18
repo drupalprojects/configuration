@@ -216,7 +216,7 @@ function configuration_check_field($identifier) {
 
   if (file_exists("config://configuration.field.inc")) {
     // Load the current configuration file on disk
-    include_once "config://configuration.field.inc";
+    include_once drupal_realpath("config://configuration.field.inc");
 
     // Export just the field we're tracking.
     module_load_include('inc', 'configuration', 'configuration.export');

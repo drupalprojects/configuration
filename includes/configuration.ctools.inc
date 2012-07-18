@@ -379,7 +379,7 @@ function ctools_configuration_check($identifier) {
       $export = &$pages;
     }
 
-    include_once 'config://'. $info[$component]['default_filename'] .'.inc';
+    include_once drupal_realpath('config://'. $info[$component]['default_filename'] .'.inc');
     // Export just the field we're tracking.
     module_load_include('inc', 'configuration', 'configuration.export');
 

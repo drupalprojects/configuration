@@ -284,7 +284,7 @@ function configuration_check_user_permission($identifier) {
 
   if (file_exists("config://configuration.user_permission.inc")) {
     // Load the current configuration file on disk
-    include_once "config://configuration.user_permission.inc";
+    include_once drupal_realpath("config://configuration.user_permission.inc");
 
     module_load_include('inc', 'configuration', "includes/configuration.user");
     module_load_include('inc', 'configuration', 'configuration.export');
@@ -375,7 +375,7 @@ function configuration_check_user_role($identifier) {
 
   if (file_exists("config://configuration.user_role.inc")) {
     // Load the current configuration file on disk
-    include_once "config://configuration.user_role.inc";
+    include_once drupal_realpath("config://configuration.user_role.inc");
 
     $roles = user_roles();
 

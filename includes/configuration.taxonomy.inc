@@ -112,7 +112,7 @@ function configuration_check_taxonomy($identifier) {
 
   if (file_exists("config://configuration.taxonomy.inc")) {
     // Load the current configuration file on disk
-    include_once "config://configuration.taxonomy.inc";
+    include_once drupal_realpath("config://configuration.taxonomy.inc");
 
     // Export just the field we're tracking.
     module_load_include('inc', 'configuration', 'configuration.export');

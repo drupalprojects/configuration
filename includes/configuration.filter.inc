@@ -129,7 +129,7 @@ function configuration_check_filter($identifier) {
 
   if (file_exists("config://configuration.filter.inc")) {
     // Load the current configuration file on disk
-    include_once "config://configuration.filter.inc";
+    include_once drupal_realpath("config://configuration.filter.inc");
 
     // Clear the filter cache to get a fresh export.
     cache_clear_all('filter_list_format', 'cache', TRUE);

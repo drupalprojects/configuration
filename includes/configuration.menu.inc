@@ -321,7 +321,7 @@ function configuration_check_menu_links($identifier) {
 
   if (file_exists("config://configuration.menu_links.inc")) {
     // Load the current configuration file on disk
-    include_once "config://configuration.menu_links.inc";
+    include_once drupal_realpath("config://configuration.menu_links.inc");
 
     // Export just the field we're tracking.
     module_load_include('inc', 'configuration', "configuration.export");
@@ -400,7 +400,7 @@ function configuration_check_menu_custom($identifier, $from_activestore = false)
 
   if (file_exists("config://configuration.menu_custom.inc")) {
     // Load the current configuration file on disk
-    include_once "config://configuration.menu_custom.inc";
+    include_once drupal_realpath("config://configuration.menu_custom.inc");
 
     // Export just the field we're tracking.
     module_load_include('inc', 'configuration', 'configuration.export');
