@@ -97,7 +97,7 @@ function _image_configuration_style_sanitize(&$style, $child = FALSE) {
       if (in_array($k, $omit, TRUE)) {
         unset($style[$k]);
       }
-      else if (is_array($v)) {
+      elseif (is_array($v)) {
         _image_configuration_style_sanitize($style[$k], TRUE);
       }
     }

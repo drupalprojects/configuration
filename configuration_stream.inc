@@ -16,7 +16,7 @@ class ConfigurationStreamWrapper extends DrupalLocalStreamWrapper {
    * In this case there is no directory string, so return an empty string.
    */
   public function getDirectoryPath() {
-    return variable_get('configuration_config_path', conf_path() .'/files/config');
+    return variable_get('configuration_config_path', conf_path() . '/files/config');
   }
 
   /**
@@ -25,6 +25,6 @@ class ConfigurationStreamWrapper extends DrupalLocalStreamWrapper {
    * We will not need to access this from an Url.
    */
   function getExternalUrl() {
-    return false;
+    return FALSE;
   }
 }

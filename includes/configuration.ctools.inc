@@ -7,25 +7,25 @@
 foreach (_ctools_configuration_get_info() as $component => $info) {
   $code = '';
   if (!function_exists("{$info['module']}_configuration_api")) {
-    $code .= 'function '. $info['module'] .'_configuration_api() { return ctools_component_configuration_api("'. $info['module'] .'"); }';
+    $code .= 'function ' . $info['module'] . '_configuration_api() { return ctools_component_configuration_api("' . $info['module'] . '"); }';
   }
   if (!function_exists("{$component}_configuration_export")) {
-    $code .= 'function '. $component .'_configuration_export($data, &$export, $module_name = "") { return ctools_component_configuration_export("'. $component .'", $data, $export, $module_name); }';
+    $code .= 'function ' . $component . '_configuration_export($data, &$export, $module_name = "") { return ctools_component_configuration_export("' . $component . '", $data, $export, $module_name); }';
   }
   if (!function_exists("{$component}_configuration_export_options")) {
-    $code .= 'function '. $component .'_configuration_export_options() { return ctools_component_configuration_export_options("'. $component .'"); }';
+    $code .= 'function ' . $component . '_configuration_export_options() { return ctools_component_configuration_export_options("' . $component . '"); }';
   }
   if (!function_exists("{$component}_configuration_export_render")) {
-    $code .= 'function '. $component .'_configuration_export_render($module, $data) { return ctools_component_configuration_export_render("'. $component .'", $module, $data); }';
+    $code .= 'function ' . $component . '_configuration_export_render($module, $data) { return ctools_component_configuration_export_render("' . $component . '", $module, $data); }';
   }
   if (!function_exists("{$component}_configuration_revert")) {
-    $code .= 'function '. $component .'_configuration_revert($module, $module_name = "configuration") { return ctools_component_configuration_revert("'. $component .'", $module, $module_name); }';
+    $code .= 'function ' . $component . '_configuration_revert($module, $module_name = "configuration") { return ctools_component_configuration_revert("' . $component . '", $module, $module_name); }';
   }
   if (!function_exists("configuration_check_{$component}")) {
-    $code .= 'function configuration_check_'. $component . '($identifier, $from_activestore = false) { return ctools_configuration_check($identifier, $from_activestore); }';
+    $code .= 'function configuration_check_' . $component . '($identifier, $from_activestore = FALSE) { return ctools_configuration_check($identifier, $from_activestore); }';
   }
   if (!function_exists("configuration_hash_{$component}")) {
-    $code .= 'function configuration_hash_'. $component . '($identifier) { return ctools_configuration_hash($identifier); }';
+    $code .= 'function configuration_hash_' . $component . '($identifier) { return ctools_configuration_hash($identifier); }';
   }
   eval($code);
 }
@@ -83,8 +83,8 @@ function ctools_configuration_export_render($module, $data) {
 
     if ($info = _ctools_configuration_get_info($component)) {
 
-      $code[] = '  if ($module == "'. $info['module'] .'" && $api == "'. $info['api'] .'") {';
-      $code[] = '    return array("version" => "'. $info['current_version'] .'");';
+      $code[] = '  if ($module == "' . $info['module'] . '" && $api == "' . $info['api'] . '") {';
+      $code[] = '    return array("version" => "' . $info['current_version'] . '");';
       $code[] = '  }';
     }
     ctools_include('plugins');
@@ -180,7 +180,7 @@ function ctools_component_configuration_export_render($component, $module, $data
     $code = implode('}', $code);
   }
   else {
-    $code = '  $export = array();'."\n\n";
+    $code = '  $export = array();' . "\n\n";
     foreach ($data as $object_name) {
       if ($object = _ctools_configuration_export_crud_load($component, $object_name)) {
         $identifier = $schema['export']['identifier'];
@@ -190,7 +190,7 @@ function ctools_component_configuration_export_render($component, $module, $data
     }
     $code .= '  return $export;';
   }
-  return array('configuration_'. $schema['export']['default hook'] => $code);
+  return array('configuration_' . $schema['export']['default hook'] => $code);
 }
 
 /**
@@ -224,7 +224,7 @@ function _ctools_configuration_get_info($identifier = NULL, $reset = FALSE) {
           $api_module = isset($schema['export']['api']['owner']) ? $schema['export']['api']['owner'] : $module;
           $components[$table] = array(
             'name' => isset($modules[$api_module]->info['name']) ? $modules[$api_module]->info['name'] : $api_module,
-            'default_hook' => 'configuration_'. $schema['export']['default hook'],
+            'default_hook' => 'configuration_' . $schema['export']['default hook'],
             'default_file' => CONFIGURATION_DEFAULTS_CUSTOM,
             'module' => $api_module,
             'feature_source' => TRUE,
@@ -249,7 +249,7 @@ function _ctools_configuration_get_info($identifier = NULL, $reset = FALSE) {
     }
     // New API identifier. Allows non-exportables related CTools APIs to be
     // supported by an explicit `module:api:current_version` key.
-    else if (substr_count($identifier, ':') === 2) {
+    elseif (substr_count($identifier, ':') === 2) {
       list($module, $api, $current_version) = explode(':', $identifier);
       // If a schema component matches the provided identifier, provide that
       // information. This also ensures that the version number is up to date.
@@ -331,7 +331,7 @@ function _ctools_configuration_export_crud_save($table, $name, $object) {
     // out how to get panel pages imported.
     // page_manager_get_tasks();
     // module_load_include('inc', 'panels', 'plugins/task_handlers/panel_context');
-    //     foreach ($object->default_handlers as &$handler){
+    //     foreach ($object->default_handlers as &$handler) {
     //       panels_panel_context_save($handler, '');
     //     }
     ctools_export_crud_save($table, $object);
@@ -370,7 +370,7 @@ function ctools_configuration_check($identifier) {
   // Load the current configuration file on disk
   $info = _ctools_configuration_get_info();
 
-  if (file_exists('config://'. $info[$component]['default_filename'] .'.inc')) {
+  if (file_exists('config://' . $info[$component]['default_filename'] . '.inc')) {
     // Page Manager has it's export callback in a file that is not autoloaded.
     // PM also doesn not use the export variable, we have to set it here.
     // @todo: Come up with a cleaner way to include dependent files.
@@ -379,7 +379,7 @@ function ctools_configuration_check($identifier) {
       $export = &$pages;
     }
 
-    include_once drupal_realpath('config://'. $info[$component]['default_filename'] .'.inc');
+    include_once drupal_realpath('config://' . $info[$component]['default_filename'] . '.inc');
     // Export just the field we're tracking.
     module_load_include('inc', 'configuration', 'configuration.export');
 
@@ -388,7 +388,7 @@ function ctools_configuration_check($identifier) {
     $code = ctools_component_configuration_export_render($component, 'configuration', array($identifier));
     eval(array_pop($code));
 
-    $export_code = call_user_func('configuration_'. $info[$component]['default_hook']);
+    $export_code = call_user_func('configuration_' . $info[$component]['default_hook']);
 
     // If this was the previous configuration in activestore don't mark this as changed.
     $config = configuration_get_configuration();

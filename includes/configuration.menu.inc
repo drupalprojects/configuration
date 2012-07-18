@@ -206,7 +206,7 @@ function menu_links_configuration_export_render($module, $data) {
       unset($link['mlid']);
 
       $code[] = "  // Exported menu link: {$identifier}";
-      $code[] = "  \$menu_links['{$identifier}'] = ". configuration_var_export($link, '  ') .";";
+      $code[] = "  \$menu_links['{$identifier}'] = " . configuration_var_export($link, '  ') . ";";
       $translatables[] = $link['link_title'];
     }
   }
@@ -393,7 +393,7 @@ function configuration_hash_menu_links($identifier) {
   return md5(serialize($menu_links[$identifier]));
 }
 
-function configuration_check_menu_custom($identifier, $from_activestore = false) {
+function configuration_check_menu_custom($identifier, $from_activestore = FALSE) {
   // Get static variable that we can access across this request.
   $from_activestore = &drupal_static('configuration_from_activestore');
   $component = 'menu_custom';

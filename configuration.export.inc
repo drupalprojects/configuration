@@ -150,10 +150,10 @@ function configuration_export_render_hooks($export, $module_name, $reset = FALSE
   configuration_include();
   $code = array();
   $export['reset'] = $reset;
-  
+
   // Sort components to keep exported code consistent
   ksort($export['configuration']);
-  
+
   foreach ($export['configuration'] as $component => $data) {
     if (!empty($data)) {
       // Sort the items so that we don't generate different exports based on order
@@ -173,7 +173,7 @@ function configuration_export_render_hooks($export, $module_name, $reset = FALSE
  * @param $export
  *  An exported feature definition.
  * @param $reset
- *  Boolean flag for resetting the module cache. Only set to true when
+ *  Boolean flag for resetting the module cache. Only set to TRUE when
  *  doing a final export for delivery.
  *
  * @return array of info file and module file contents.
@@ -211,7 +211,7 @@ function configuration_export_render($export, $reset = FALSE) {
 
   // Finalize strings to be written to files
   foreach ($code as $filename => $contents) {
-    $code[$filename] = "<?php\n/**\n * @file\n * {$filename}.inc\n */\n\n". implode("\n\n", $contents) ."\n";
+    $code[$filename] = "<?php\n/**\n * @file\n * {$filename}.inc\n */\n\n" . implode("\n\n", $contents) . "\n";
   }
 
   return $code;
@@ -222,8 +222,8 @@ function configuration_export_render($export, $reset = FALSE) {
  */
 function configuration_detect_overrides($component, $identifier) {
   if (!$cache = cache_get("$component:$identifier", 'cache_configuration')) {
-    drupal_set_message("Could not find diff $component:$identifier", 'error');
-    return false;
+    drupal_set_message(t("Could not find diff $component:$identifier"), 'error');
+    return FALSE;
   }
   return $cache->data;
 }
@@ -285,7 +285,7 @@ function configuration_export_info($info, $parents = array()) {
       $output .= configuration_export_info($v, $child);
     }
   }
-  else if (!empty($info) && count($parents)) {
+  elseif (!empty($info) && count($parents)) {
     $line = array_shift($parents);
     foreach ($parents as $key) {
       $line .= is_numeric($key) ? "[]" : "[{$key}]";
@@ -348,7 +348,7 @@ function configuration_var_export($var, $prefix = '', $init = TRUE) {
   if (is_object($var)) {
     $output = method_exists($var, 'export') ? $var->export() : configuration_var_export((array) $var);
   }
-  else if (is_array($var)) {
+  elseif (is_array($var)) {
     if (empty($var)) {
       $output = 'array()';
     }
@@ -361,17 +361,17 @@ function configuration_var_export($var, $prefix = '', $init = TRUE) {
       $output .= ')';
     }
   }
-  else if (is_bool($var)) {
+  elseif (is_bool($var)) {
     $output = $var ? 'TRUE' : 'FALSE';
   }
-  else if (is_string($var) && strpos($var, "\n") !== FALSE) {
+  elseif (is_string($var) && strpos($var, "\n") !== FALSE) {
     // Replace line breaks in strings with a token for replacement
     // at the very end. This protects whitespace in strings from
     // unintentional indentation.
     $var = str_replace("\n", "***BREAK***", $var);
     $output = var_export($var, TRUE);
   }
-  else if (is_numeric($var)) {
+  elseif (is_numeric($var)) {
     $output = is_int($var) ? var_export((int) $var, TRUE) : var_export((float) $var, TRUE);
   }
   else {
@@ -537,7 +537,7 @@ function configuration_get_default($component, $module_name = NULL, $alter = TRU
       $modules = array('configuration');
     }
   }
-  
+
   // Collect and cache information for each specified module.
   foreach ($modules as $m) {
     if (!isset($cache[$component][$m]) || $reset) {
@@ -555,12 +555,12 @@ function configuration_get_default($component, $module_name = NULL, $alter = TRU
             drupal_alter($default_hook, $cache[$component][$m]);
           }
         }
-        else if ($default_hook && module_exists('ctools') && _ctools_configuration_get_info()) {
+        elseif ($default_hook && module_exists('ctools') && _ctools_configuration_get_info()) {
           // If this is a ctools export, the file containing the hook may not be
           // loaded.  Load the file here.
           $info = _ctools_configuration_get_info();
           if (isset($info[$component])) {
-            $function = $module_name .'_configuration_'. $info[$component]['default_hook'];
+            $function = $module_name . '_configuration_' . $info[$component]['default_hook'];
             if (function_exists($function)) {
               $cache[$component][$m] = call_user_func($function);
             }
@@ -674,7 +674,7 @@ function configuration_get_component_states($configuration = array(), $rebuild_o
             }
           }
           // Component properly implements exportables.
-          else if (!configuration_hook($component, 'configuration_rebuild')) {
+          elseif (!configuration_hook($component, 'configuration_rebuild')) {
             $cache[$feature][$component] = CONFIGURATION_OVERRIDDEN;
           }
           // Component does not implement exportables.
@@ -691,11 +691,11 @@ function configuration_get_component_states($configuration = array(), $rebuild_o
                   $cache[$feature][$component] = CONFIGURATION_OVERRIDDEN;
                 }
                 // DB has no modifications to prior code state (or this is initial install).
-                else if ($codecache == $normal || empty($codecache)) {
+                elseif ($codecache == $normal || empty($codecache)) {
                   $cache[$feature][$component] = CONFIGURATION_REBUILDABLE;
                 }
                 // None of the states match. Requires user intervention.
-                else if ($codecache != $default) {
+                elseif ($codecache != $default) {
                   $cache[$feature][$component] = CONFIGURATION_NEEDS_REVIEW;
                 }
               }
@@ -770,7 +770,7 @@ function _configuration_sanitize(&$array) {
  *
  * Borrowed from: http://www.php.net/manual/en/function.is-array.php#96724
  *
- * @return True is the array is an associative array, false otherwise
+ * @return TRUE if the array is an associative array, FALSE otherwise
  */
 function _configuration_is_assoc($array) {
   return (is_array($array) && (0 !== count(array_diff_key($array, array_keys(array_keys($array)))) || count($array)==0));
@@ -797,7 +797,7 @@ function _configuration_track_dependencies($export) {
       }
     }
   }
-  
+
   if (!empty($save_also)) {
     configuration_save($save_also);
   }
@@ -814,26 +814,26 @@ function configuration_write_export_file($config = NULL, $dest = NULL) {
   $dest = $dest ? $dest : 'config://config.export';
 
   $h = fopen($dest, 'w');
-  foreach($config as $owner => $component) {
+  foreach ($config as $owner => $component) {
     if (is_array($component)) {
-      foreach($component as $name => $settings) {
-        fwrite($h, 'config['. $owner .']['. $name .'][status] = '. $settings['status'] ."\n");
-        fwrite($h, 'config['. $owner .']['. $name .'][hash] = \''. $settings['hash'] ."'\n");
-        fwrite($h, 'config['. $owner .']['. $name .'][parent] = \''. $settings['parent'] ."'\n");
-        fwrite($h, 'config['. $owner .']['. $name .'][dependencies] = \''. $settings['dependencies'] ."'\n\n");
+      foreach ($component as $name => $settings) {
+        fwrite($h, 'config[' . $owner . '][' . $name . '][status] = ' . $settings['status'] . "\n");
+        fwrite($h, 'config[' . $owner . '][' . $name . '][hash] = \'' . $settings['hash'] . "'\n");
+        fwrite($h, 'config[' . $owner . '][' . $name . '][parent] = \'' . $settings['parent'] . "'\n");
+        fwrite($h, 'config[' . $owner . '][' . $name . '][dependencies] = \'' . $settings['dependencies'] . "'\n\n");
       }
     }
-  } 
-  fclose($h);  
+  }
+  fclose($h);
 }
- 
+
 /**
  * Writes configurations to disk.
- * 
+ *
  * @param $components An array of components to write to file.
  * @param $exclude An array $component => $identifier of what to exclude from export.
- * 
- * @return Returns true if write was sucessful
+ *
+ * @return Returns TRUE if write was sucessful
  */
 function configuration_write_exports($components = NULL, $exclude = array()) {
   $config = configuration_get_configuration();
@@ -846,7 +846,7 @@ function configuration_write_exports($components = NULL, $exclude = array()) {
 
       // Track dependencies on config_export table
       _configuration_track_dependencies($export);
-      
+
       // @see configuration_delete_multiple().
       foreach ($exclude as $identifier => $component) {
         unset($export['configuration'][$component][$identifier]);
@@ -857,7 +857,7 @@ function configuration_write_exports($components = NULL, $exclude = array()) {
           unset($export['configuration'][$export_component]);
         }
       }
-      
+
       // Write files to filesystem
       if ($files = configuration_export_render($export, TRUE)) {
         $filenames = array();
@@ -865,7 +865,7 @@ function configuration_write_exports($components = NULL, $exclude = array()) {
           if (!in_array($filename, array('module', 'info'))) {
             $filename .= '.inc';
           }
-          file_put_contents('config://'. $filename, $file_contents);
+          file_put_contents('config://' . $filename, $file_contents);
           drupal_set_message(t('Wrote %file to filesystem', array('%file' => $filename)));
         }
       }
@@ -873,20 +873,20 @@ function configuration_write_exports($components = NULL, $exclude = array()) {
     }
     else {
       // Can't write to datastore.
-      return false;
+      return FALSE;
     }
   }
   catch (Exception $e) {
     watchdog_exception('configuration', $e);
     throw $e;
   }
-  return true;
+  return TRUE;
 }
 
 /**
  * Check components on datastore to see if there are any changes that would be
  * lost as a result of rewriting them.
- * 
+ *
  * @param $changed A Bitmask to check config status against
  * @param $components An array of components to check
  * @param $config An array of configurations to check components in
@@ -899,10 +899,10 @@ function configuration_check_changed($changed, $components, $config = NULL) {
       foreach ($config[$component] as $info) {
         if ($info['status'] & $changed) {
           drupal_set_message(t('Unable to write exports. Your datastore has configs that would be lost in %component.', array('%component' => $component)), 'error');
-          return false;
+          return FALSE;
         }
       }
     }
   }
-  return true;
+  return TRUE;
 }

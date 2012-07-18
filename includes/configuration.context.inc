@@ -51,7 +51,7 @@ function context_configuration_export($data, &$export, $module_name = '') {
  * Implements hook_configuration_revert().
  *
  * @param $module
- * name of module to revert content for
+ *   name of module to revert content for.
  */
 function context_configuration_revert($module = NULL, $module_name = 'configuration') {
   $return = ctools_component_configuration_revert('context', $module, $module_name);

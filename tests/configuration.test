@@ -12,14 +12,14 @@ class ConfigurationWebTestCase extends DrupalWebTestCase {
     $roles = user_roles();
 
     $edit = array();
-    $edit["field[items][node-". $this->type->type ."-body]"] = 1;
+    $edit["field[items][node-" . $this->type->type . "-body]"] = 1;
     $edit["filter[items][filtered_html]"] = 1;
     // Need to create an image preset to store in activestore.
     $edit["image[items][large]"] = 1;
-    $edit["node[items][". $this->type->type ."]"] = 1;
-    $edit["taxonomy[items][". $this->vocab->machine_name ."]"] = 1;
+    $edit["node[items][" . $this->type->type . "]"] = 1;
+    $edit["taxonomy[items][" . $this->vocab->machine_name . "]"] = 1;
     $edit["user_permission[items][access configuration management]"] = 1;
-    $edit["user_role[items][". $roles[3] ."]"] = 1;
+    $edit["user_role[items][" . $roles[3] . "]"] = 1;
 
     $this->tracked = $edit;
     $this->drupalPost('admin/config/system/configuration/notracking', $edit, t('Write to Datastore'));
@@ -112,11 +112,11 @@ class ConfigurationTrackingTest extends ConfigurationWebTestCase {
     $this->trackConfigurations();
 
     $types = array('field', 'filter', 'image', 'node', 'user_permission', 'user_role', 'taxonomy');
-    foreach($types as $type) {
+    foreach ($types as $type) {
       $this->assertRaw(t('Tracking configurations for %type have been saved', array('%type' => $type)));
 
       if (!in_array($type, array('node', 'image'))) {
-        $this->assertRaw(t('Wrote %type to filesystem', array('%type' => 'configuration.'. $type .'.inc')));
+        $this->assertRaw(t('Wrote %type to filesystem', array('%type' => 'configuration.' . $type . '.inc')));
       }
     }
 
@@ -154,10 +154,10 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     ));
 
     $this->adminLogin(array(
-      'administer content types', 
-      'access administration pages', 
-      'access configuration management', 
-      'administer modules', 
+      'administer content types',
+      'access administration pages',
+      'access configuration management',
+      'administer modules',
       'administer site configuration',
       'administer filters',
     ));
@@ -169,27 +169,27 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
   function testOverridden() {
     $this->trackConfigurations();
 
-    $configuration_needs_saving_text = t('Configurations are out of sync and need to be either !write.', array('!write' => l('activated or written to file', 'admin/config/system/configuration/tracking')));
+    $configuration_needs_saving_text = t('Configurations are out of sync and need to be either !write.', array('!write' => l(t('activated or written to file'), 'admin/config/system/configuration/tracking')));
 
     // Testing overridding a field
     $edit = array();
     $edit["instance[widget][settings][rows]"] = 2;
-    $this->drupalPost('admin/structure/types/manage/'. $this->type->type .'/fields/body', $edit, t('Save settings'));
+    $this->drupalPost('admin/structure/types/manage/' . $this->type->type . '/fields/body', $edit, t('Save settings'));
     $this->assertRaw($configuration_needs_saving_text);
 
-    $status = configuration_get_status('field', 'node-'. $this->type->type .'-body');
+    $status = configuration_get_status('field', 'node-' . $this->type->type . '-body');
     $this->assertEqual($status, CONFIGURATION_ACTIVESTORE_OVERRIDDEN);
 
     /* @todo: Fix the following tests:
     // Testing putting the field back to default
     $edit = array();
     $edit["instance[widget][settings][rows]"] = 20;
-    $this->drupalPost('admin/structure/types/manage/'. $this->type->type .'/fields/body', $edit, t('Save settings'));
+    $this->drupalPost('admin/structure/types/manage/' . $this->type->type . '/fields/body', $edit, t('Save settings'));
     $this->assertNoRaw($configuration_needs_saving_text);
-    $status = configuration_get_status('field', 'node-'. $this->type->type .'-body');
+    $status = configuration_get_status('field', 'node-' . $this->type->type . '-body');
     $this->assertEqual($status, CONFIGURATION_IN_SYNC);
 
-    // Testing overriding filters  
+    // Testing overriding filters
     $edit = array();
     $edit["filters[filter_url][settings][filter_url_length]"] = 20;
     $this->drupalPost('admin/config/content/formats/filtered_html', $edit, t('Save configuration'));
@@ -205,7 +205,7 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $status = configuration_get_status('filter', 'filtered_html');
     $this->assertEqual($status, CONFIGURATION_IN_SYNC);
 
-    // Testing overriding filters  
+    // Testing overriding filters
     $edit = array();
     $edit["filters[filter_url][settings][filter_url_length]"] = 20;
     $this->drupalPost('admin/config/content/formats/filtered_html', $edit, t('Save configuration'));

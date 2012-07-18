@@ -9,7 +9,7 @@ function filter_configuration_api() {
       'name' => t('Text formats'),
       'default_hook' => 'filter_default_formats',
       'default_file' => CONFIGURATION_DEFAULTS_INCLUDED,
-      'feature_source' => TRUE
+      'feature_source' => TRUE,
     ),
   );
 }

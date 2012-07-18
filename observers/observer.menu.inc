@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * I'll probably end up putting this code in configuration.menu.inc.  Just want
@@ -11,16 +12,16 @@
 function configuration_menu_update($menu) {
   // Set a static variable that we can access across this request.
   $a = &drupal_static('configuration_from_activestore');
-  $a = true;
-  
+  $a = TRUE;
+
   $identifier = $menu['menu_name'];
   $config = configuration_get_configuration('menu_custom');
-  
+
   if (in_array($identifier, array_keys($config))) {
     module_load_include('inc', 'configuration', "includes/configuration.menu");
-    
+
     configuration_check_menu_custom($identifier);
-    
+
     module_load_include('inc', 'configuration', "configuration.export");
     // Log the change in config_export
     configuration_write_export_file();
@@ -33,20 +34,20 @@ function configuration_menu_update($menu) {
 function configuration_menu_link_update($item) {
   // Set a static variable that we can access across this request.
   $a = &drupal_static('configuration_from_activestore');
-  $a = true;
-  
-  $identifier = $item['menu_name'] .':'. $item['link_path'];
+  $a = TRUE;
+
+  $identifier = $item['menu_name'] . ':' . $item['link_path'];
   $config = configuration_get_configuration('menu_links');
 
   if (in_array($identifier, array_keys($config))) {
     module_load_include('inc', 'configuration', "includes/configuration.menu");
-    
+
     configuration_check_menu_links($identifier);
-    
+
     module_load_include('inc', 'configuration', "configuration.export");
     // Log the change in config_export
     configuration_write_export_file();
-    
+
     // @todo: Think about how I can handle this better.  Do I really want to
     // rebuild cache everytime I make a change?
     cache_clear_all('config_export', 'cache');

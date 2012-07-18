@@ -136,7 +136,7 @@ function configuration_node_types_rebuild($identifiers, $module_name = 'configur
     'names' => array(),
   );
 
-  $info_array = call_user_func($module_name .'_configuration_node_info');
+  $info_array = call_user_func($module_name . '_configuration_node_info');
   foreach ($info_array as $type => $info) {
     if (in_array($type, $identifiers) || $identifiers[0] == '#import_all') {
       $info['type'] = $type;

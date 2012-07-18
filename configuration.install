@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Implements hook_schema().
  */
@@ -59,9 +60,9 @@ function configuration_schema() {
       'plugin' => array('owner'),
     ),
   );
-  
+
   $schema['cache_configuration'] = drupal_get_schema_unprocessed('system', 'cache');
-  
+
   return $schema;
 }
 
@@ -69,15 +70,15 @@ function configuration_schema() {
  * Implements hook_install().
  */
 function configuration_install() {
-  $directory = variable_get('configuration_config_path', conf_path() .'/files/config');
+  $directory = variable_get('configuration_config_path', conf_path() . '/files/config');
   if (!is_dir($directory) && !drupal_mkdir($directory, NULL, TRUE)) {
     // If the directory does not exists and cannot be created.
-    drupal_set_message(t('The directory %directory does not exist and could not be created.', array('%directory' => $directory)), 'error');
+    drupal_set_message(st('The directory %directory does not exist and could not be created.', array('%directory' => $directory)), 'error');
     watchdog('file system', 'The directory %directory does not exist and could not be created.', array('%directory' => $directory), WATCHDOG_ERROR);
   }
   if (is_dir($directory) && !is_writable($directory) && !drupal_chmod($directory)) {
     // If the directory is not writable and cannot be made so.
-    drupal_set_message(t('The directory %directory exists but is not writable and could not be made writable.', array('%directory' => $directory)), 'error');
+    drupal_set_message(st('The directory %directory exists but is not writable and could not be made writable.', array('%directory' => $directory)), 'error');
     watchdog('file system', 'The directory %directory exists but is not writable and could not be made writable.', array('%directory' => $directory), WATCHDOG_ERROR);
   }
   elseif (is_dir($directory)) {
@@ -91,13 +92,15 @@ function configuration_install() {
  * Implements hook_uninstall().
  */
 function configuration_uninstall() {
-  $config_dir = variable_get('configuration_config_path', conf_path() .'/files/config');
-  foreach (glob($config_dir ."/*") as $filename) {
+  $config_dir = variable_get('configuration_config_path', conf_path() . '/files/config');
+  foreach (glob($config_dir . "/*") as $filename) {
     unlink($filename);
   }
-  if (is_file($config_dir .'/.htaccess')) unlink($config_dir .'/.htaccess');
+  if (is_file($config_dir . '/.htaccess')) {
+    unlink($config_dir . '/.htaccess');
+  }
   rmdir($config_dir);
-  variable_del('configuration_config_path');  
+  variable_del('configuration_config_path');
 }
 
 

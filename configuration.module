@@ -3,7 +3,7 @@
 /**
  * @file
  * Module file for the configuration module, which enables the capture and
- * management of configuration in Drupal. 
+ * management of configuration in Drupal.
  */
 
 /**
@@ -20,8 +20,8 @@ define('CONFIGURATION_ACTIVESTORE_OVERRIDDEN', 0x0001);
 
 /**
  * A bit flag used to let us know if a configuration was overridden as a result
- * of changing the datastore directly. 
- * 
+ * of changing the datastore directly.
+ *
  * This flag is set when configuration changes are detected via the "Check for
  * new configurations" button on settings screen.
  */
@@ -112,32 +112,32 @@ define('CONFIGURATION_DUPLICATES_ALLOWED', 1);
  */
 function configuration_menu() {
   $items['admin/config/system/configuration'] = array(
-    'title' => t('Configuration Management'),
+    'title' => 'Configuration Management',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('configuration_tracking_form'),
     'access arguments' => array('access configuration management'),
-    'description' => t('Configuration Management for Drupal 7'),
+    'description' => 'Configuration Management for Drupal 7',
     'type' => MENU_NORMAL_ITEM,
     'file' => 'configuration.admin.inc',
   );
 
   $items['admin/config/system/configuration/tracking'] = array(
-    'title' => t('Tracking'),
+    'title' => 'Tracking',
     'weight' => -1,
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
-  
+
   $items['admin/config/system/configuration/notracking'] = array(
-    'title' => t('Not tracking'),
+    'title' => 'Not tracking',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('configuration_notracking_form'),
     'access arguments' => array('access configuration management'),
     'type' => MENU_LOCAL_TASK,
     'file' => 'configuration.admin.inc',
   );
-  
+
   // $items['admin/config/system/configuration/activate'] = array(
-  //    'title' => t('Activate new configuration'),
+  //    'title' => 'Activate new configuration'),
   //    'page callback' => 'drupal_get_form',
   //    'page arguments' => array('configuration_activate_form'),
   //    'access arguments' => array('access configuration management'),
@@ -145,9 +145,9 @@ function configuration_menu() {
   //    'file' => 'configuration.admin.inc',
   //    'weight' => 5,
   //  );
-  
+
   $items['admin/config/system/configuration/migrate'] = array(
-    'title' => t('Migrate'),
+    'title' => 'Migrate',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('configuration_migrate_form'),
     'access arguments' => array('access configuration management'),
@@ -156,12 +156,12 @@ function configuration_menu() {
     'weight' => 7,
   );
   $items['admin/config/system/configuration/migrate/export'] = array(
-    'title' => t('Export'),
+    'title' => 'Export',
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => 8,
   );
   $items['admin/config/system/configuration/migrate/import'] = array(
-    'title' => t('Import'),
+    'title' => 'Import',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('configuration_import_form'),
     'access arguments' => array('access configuration management'),
@@ -169,10 +169,10 @@ function configuration_menu() {
     'file' => 'configuration.admin.inc',
     'weight' => 9,
   );
-  
-  
+
+
   $items['admin/config/system/configuration/settings'] = array(
-    'title' => t('Settings'),
+    'title' => 'Settings',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('configuration_settings_form'),
     'access arguments' => array('access configuration management'),
@@ -180,15 +180,15 @@ function configuration_menu() {
     'file' => 'configuration.admin.inc',
     'weight' => 10,
   );
-  
+
   $items['admin/config/system/configuration/config/%/%/delete'] = array(
-    'title' => t('Are you sure you want to stop tracking this config?'),
+    'title' => 'Are you sure you want to stop tracking this config?',
     'page callback' => 'configuration_confirm_delete_page',
     'access arguments' => array('access configuration management'),
     'file' => 'configuration.admin.inc',
     'page arguments' => array(5, 6)
   );
-  
+
   if (module_exists('diff')) {
     $items['admin/config/system/configuration/%/%/diff'] = array(
       'title' => 'Review overrides',
@@ -225,12 +225,12 @@ function configuration_theme($existing, $type, $theme, $path) {
     'path' => drupal_get_path('module', 'configuration') . '/theme',
     'file' => 'theme.inc',
   );
-  
+
   $items = array();
   $items['configuration_form_buttons'] = array(
     'render element' => 'element',
   ) + $base;
-  
+
   return $items;
 }
 
@@ -257,13 +257,13 @@ function configuration_init() {
     $overridden = configuration_get_configuration('overridden');
     if (user_access('access configuration management') && $overridden !== 0) {
       if ($overridden | (CONFIGURATION_ACTIVESTORE_OVERRIDDEN | CONFIGURATION_DATASTORE_OVERRIDDEN)) {
-        drupal_set_message(t('Configurations are out of sync and need to be either !write.', array('!write' => l(t('activated or written to file'), 'admin/config/system/configuration/tracking'))), 'warning', false);
+        drupal_set_message(t('Configurations are out of sync and need to be either !write.', array('!write' => l(t('activated or written to file'), 'admin/config/system/configuration/tracking'))), 'warning', FALSE);
       }
-      else if ($overridden & CONFIGURATION_DATASTORE_ONLY) {
-        drupal_set_message(t('You have new Configurations that need to be activated.  !click_here to activate your configurations.', array('!click_here' => l(t('Click here'), 'admin/config/system/configuration/activate'))), 'warning', false);
+      elseif ($overridden & CONFIGURATION_DATASTORE_ONLY) {
+        drupal_set_message(t('You have new Configurations that need to be activated.  !click_here to activate your configurations.', array('!click_here' => l(t('Click here'), 'admin/config/system/configuration/activate'))), 'warning', FALSE);
       }
-      else if ($overridden == CONFIGURATION_CONFLICT) {
-        drupal_set_message(t('You have conflicts with your Configurations. Activating configurations will overwrite what is in the activestore, or you can write what is in the activestore back to datastore.  !click_here to resolve.', array('!click_here' => l(t('Click here'), 'admin/config/system/configuration/activate'))), 'error', false);
+      elseif ($overridden == CONFIGURATION_CONFLICT) {
+        drupal_set_message(t('You have conflicts with your Configurations. Activating configurations will overwrite what is in the activestore, or you can write what is in the activestore back to datastore.  !click_here to resolve.', array('!click_here' => l(t('Click here'), 'admin/config/system/configuration/activate'))), 'error', FALSE);
       }
     }
   }
@@ -358,7 +358,7 @@ function configuration_include_defaults($components = NULL, $reset = FALSE) {
   else {
     $components = $include_components;
   }
-  
+
   foreach (array_keys($components) as $component) {
     if (isset($include_components[$component]) && (!isset($included[$component]) || $reset)) {
       $info = $include_components[$component];
@@ -369,16 +369,16 @@ function configuration_include_defaults($components = NULL, $reset = FALSE) {
         views_module_include('views_default.inc');
       }
       // Inclusion of defaults for CTools.
-      else if (isset($info['api'], $info['module'], $info['current_version'])) {
+      elseif (isset($info['api'], $info['module'], $info['current_version'])) {
         ctools_include('plugins');
         ctools_plugin_api_include($info['module'], $info['api'], $info['current_version'], $info['current_version']);
-        $file = 'config://'. $info['default_filename'] .'.inc';
+        $file = 'config://' . $info['default_filename'] . '.inc';
         if (is_file($file)) {
           include_once drupal_realpath($file);
         }
       }
       // Inclusion of defaults for configuration using CONFIGURATION_DEFAULTS_INCLUDED.
-      else {        
+      else {
         $file = "config://configuration.{$component}.inc";
         if (is_file($file)) {
           include_once drupal_realpath($file);
@@ -415,7 +415,7 @@ function configuration_get_info($type = 'module', $name = NULL, $reset = FALSE) 
     $data = array();
     $ignored = variable_get('configuration_ignored_orphans', array());
     $files = system_rebuild_module_data();
-    
+
     foreach ($files as $row) {
       // If module is no longer enabled, remove it from the ignored orphans list.
       if (in_array($row->name, $ignored, TRUE) && !$row->status) {
@@ -426,7 +426,7 @@ function configuration_get_info($type = 'module', $name = NULL, $reset = FALSE) 
       if (!empty($row->info['configuration'])) {
         // Fix css/js paths
         if (!empty($row->info['stylesheets'])) {
-          foreach($row->info['stylesheets'] as $media => $css) {
+          foreach ($row->info['stylesheets'] as $media => $css) {
             $row->info['stylesheets'][$media] = array_keys($css);
           }
         }
@@ -442,7 +442,7 @@ function configuration_get_info($type = 'module', $name = NULL, $reset = FALSE) 
     // @see install_profile_modules()
     $required = array();
     $non_required = array();
-    
+
     $sorted = array();
     foreach ($required + $non_required as $module => $weight) {
       $sorted[$module] = $data['configuration'][$module];
@@ -519,7 +519,7 @@ function configuration_hook($component, $hook, $reset = FALSE) {
  *
  * @param $configs The $config array to be saved. The array is keyed by component with
  * the value being another array keyed by configuration name and value either being a boolean
- * or the configuration name of any parents. 
+ * or the configuration name of any parents.
  *   $configs = array(
  *     component-name => array(
  *       config-name => dependency array or boolean
@@ -529,23 +529,23 @@ function configuration_hook($component, $hook, $reset = FALSE) {
 function configuration_save($configs) {
   configuration_include();
   module_load_include('inc', 'configuration', 'configuration.export');
-  
+
   $current_config = configuration_get_configuration();
-  
+
   // Check to see if there is anything in datastore that would be lost
   if (!configuration_check_changed((CONFIGURATION_DATASTORE_ONLY), array_keys($configs), $current_config)) {
-    return false;
+    return FALSE;
   }
-  
+
   try {
     $transaction = db_transaction();
     $saved = array();
-    foreach($configs as $component => $config) {
-      foreach($config as $name => $on) {
+    foreach ($configs as $component => $config) {
+      foreach ($config as $name => $on) {
         if ($on) {
           // Using the $on state for dual purpose. When configuration_save is
-          // called with dependencies from the $pipe, $on will hold the 
-          // dependencies.  If this is called from the standard management 
+          // called with dependencies from the $pipe, $on will hold the
+          // dependencies.  If this is called from the standard management
           // screen, $on is a boolean and we need to set empty dependencies.
           $deps = is_numeric($on) || $on == '' ? array('parent' => '', 'modules' => '') : $on;
           $function = "configuration_hash_{$component}";
@@ -559,13 +559,13 @@ function configuration_save($configs) {
             'parent' => $deps['parent'],
             'dependencies' => $deps['modules'],
           );
-          
+
           // Track what configurations we have saved
-          if (!isset($saved[$component])) $saved[$component] = true;
-          
+          if (!isset($saved[$component])) $saved[$component] = TRUE;
+
           // If this is an update, set the primary key
           $pk = isset($current_config[$component][$name]) ? array('name') : array();
-          
+
           drupal_write_record('config_export', $record, $pk);
           $configs[$component][$name] = $name;
         }
@@ -584,7 +584,7 @@ function configuration_save($configs) {
     watchdog_exception('configuration', $e);
     throw $e;
   }
-  
+
   // Write the new configuration to disk.
   configuration_write_exports(array_keys($saved));
 }
@@ -603,23 +603,23 @@ function configuration_delete_multiple($cids) {
   $transaction = db_transaction();
   try {
     // Build an array of configs to exclude when writing to file.  Even though
-    // we deleted the tracking row in the config_export table, configuration 
+    // we deleted the tracking row in the config_export table, configuration
     // module looks through all the config files and will build an $export
     // array which is used to generate the configs again in rebuilt files.  By
     // passing in an exclude array we can ensure these configs do not get
     // exported again.
-    $names = db_query("SELECT name, owner FROM {config_export} WHERE cid IN (". join(',', $cids) .")")->fetchAll();
-    foreach($names as $name) {
+    $names = db_query("SELECT name, owner FROM {config_export} WHERE cid IN (" . join(',', $cids) . ")")->fetchAll();
+    foreach ($names as $name) {
       $exclude[$name->name] = $name->owner;
       $config[$name->owner] = array($name->name => array());
     }
-    
+
     // Pass the configuration I want to disable into the populate functions to
     // see what dependencies this component has.  Then check status of
     // dependencies to make sure they are in sync before rewriting the files.
     $config_populate = configuration_populate_sanitize($config);
     $export = configuration_populate($config_populate, array());
-    
+
     // Track dependencies on config_export table
     _configuration_track_dependencies($export);
 
@@ -627,41 +627,41 @@ function configuration_delete_multiple($cids) {
     if (array_key_exists('configuration_dependency', $export) && !configuration_check_changed(CONFIGURATION_ACTIVESTORE_OVERRIDDEN, array_keys($export['configuration_dependency']['configuration']))) {
       drupal_get_messages();
       drupal_set_message(t('Unable to stop tracking. Dependent configurations that are overridden in the activestore would be written to file. Write configurations in %component component(s) first, then try again.', array('%component' => join(', ', array_keys($export['configuration_dependency']['configuration'])))), 'error');
-      return false;
+      return FALSE;
     }
     if (!configuration_check_changed((CONFIGURATION_DATASTORE_ONLY | CONFIGURATION_DATASTORE_OVERRIDDEN), array_keys($config))) {
       drupal_get_messages();
       drupal_set_message(t('Unable to stop tracking. Configs would be lost when rewriting %component config file. Activate configurations in %component component(s) first, then try again.', array('%component' => join(', ', array_keys($config)))), 'error');
-      return false;
+      return FALSE;
     }
-        
+
     $files = configuration_export_render($export);
     foreach (array_keys($files) as $filename) {
-      unlink("config://". $filename .'.inc');
-      watchdog('configuration', 'Deleted %file for rewrite.', array('%file' => $filename .'.inc'));
+      unlink("config://" . $filename . '.inc');
+      watchdog('configuration', 'Deleted %file for rewrite.', array('%file' => $filename . '.inc'));
     }
-    
+
     // Queue the configuration up for deletion.
     db_update('config_export')
       ->fields(array('status' => CONFIGURATION_DELETE))
       ->condition('cid', $cids, 'IN')
       ->execute();
-    
+
     cache_clear_all('config_export', 'cache');
-    
+
     // Write the new configuration to disk.
     configuration_write_exports(array_keys($config), $exclude);
-    
+
     // Delete the configuration.
     db_delete('config_export')
       ->condition('cid', $cids, 'IN')
       ->execute();
-    
+
     db_update('config_export')
       ->fields(array('parent' => ''))
       ->condition('parent', array_keys($exclude), 'IN')
       ->execute();
-      
+
     cache_clear_all('config_export', 'cache');
   }
   catch (Exception $e) {
@@ -673,27 +673,27 @@ function configuration_delete_multiple($cids) {
 
 /**
  * Add a configuration as datastore only
- * 
+ *
  * @param $component The component of the configuration.
  * @param $name The unique name of the configuration.
  */
 function configuration_add_status($component, $name, $hash) {
   $current_config = configuration_get_configuration();
-  
+
   $record = array(
     'name' => $name,
     'owner' => $component,
     'status' => CONFIGURATION_DATASTORE_ONLY,
     'hash' => $hash,
   );
-  
+
   drupal_write_record('config_export', $record);
   cache_clear_all('config_export', 'cache');
 }
 
 /**
  * Mark a configuration as default, overridden, etc...
- * 
+ *
  * @param $component The name of the component
  * @param $name The name of the configuration.
  * @param $status The status of the configuration
@@ -710,7 +710,7 @@ function configuration_set_status($component, $name, $status) {
 
 /**
  * Update the hash of a configuration
- * 
+ *
  * @param $component The name of the component
  * @param $name The name of the configuration.
  * @param $hash The hash of the configuration
@@ -735,28 +735,28 @@ function configuration_get_status($component, $name) {
  */
 function configuration_populate_sanitize($config) {
   $sanitized = array();
-  
+
   foreach ($config as $component => $value) {
     if (is_array($value)) {
-      foreach($value as $name => $settings) {
+      foreach ($value as $name => $settings) {
         $sanitized[$component][$name] = $name;
       }
     }
   }
-  
+
   return $sanitized;
 }
 
 /**
  * Retrieve configurations that are being tracked
- * 
+ *
  * @param $component
  *   The name of a specific component to return
  */
 function configuration_get_configuration($component = NULL) {
   // Get static variable that we can access across this request.
   $from_activestore = &drupal_static('configuration_from_activestore');
-  
+
   if (!$cache = cache_get('config_export')) {
     $config = configuration_build_configuration_status();
     if (!$from_activestore) {
@@ -772,24 +772,24 @@ function configuration_get_configuration($component = NULL) {
 }
 
 function configuration_build_configuration_status() {
-  $result = db_query("SELECT name, owner, status, hash, parent, dependencies FROM {config_export} WHERE status != :status ORDER BY owner, name", array(':status' => CONFIGURATION_DELETE))->fetchAll();
+  $result = db_query("SELECT name, owner, status, hash, parent, dependencies FROM {config_export} WHERE status <> :status ORDER BY owner, name", array(':status' => CONFIGURATION_DELETE))->fetchAll();
   $config = array('overridden' => 0);
-  foreach($result as $comp) {
+  foreach ($result as $comp) {
     $config[$comp->owner][$comp->name] = array(
       'status' => $comp->status,
       'hash' => $comp->hash,
       'parent' => $comp->parent,
       'dependencies' => $comp->dependencies,
     );
-    
+
     // If anything is overriden, set a flag.
     if ($comp->status & CONFIGURATION_ACTIVESTORE_OVERRIDDEN) {
       $config['overridden'] = $config['overridden'] | $comp->status;
     }
-    else if ($comp->status & CONFIGURATION_DATASTORE_OVERRIDDEN) {
+    elseif ($comp->status & CONFIGURATION_DATASTORE_OVERRIDDEN) {
       $config['overridden'] = $config['overridden'] | $comp->status;
     }
-    else if ($comp->status & CONFIGURATION_DATASTORE_ONLY) {
+    elseif ($comp->status & CONFIGURATION_DATASTORE_ONLY) {
       $config['overridden'] = $config['overridden'] | $comp->status;
     }
   }
@@ -893,7 +893,7 @@ function configuration_enable_configuration($module) {
 
 /**
  * Remove checkboxes from rows that are not overridden
- * 
+ *
  * @see template_preprocess_table
  */
 function configuration_preprocess_table(&$vars) {
@@ -910,21 +910,21 @@ function configuration_preprocess_table(&$vars) {
 
 /**
  * Check to see if a configuration is tracked
- * 
+ *
  * @return Returns the component for the tracked configuration
  */
 function configuration_is_tracked($component, $name) {
   $config = configuration_get_configuration();
   if (isset($config[$component][$name])) {
-    return true;
+    return TRUE;
   }
-  return false;
+  return FALSE;
 }
 
 /**
  * Check each configuration that is being tracked and determine if anything
  * has been overridden.  Not able to just run a diff on an entire file because
- * we need to know which specific configurations are out of sync.  Log any 
+ * we need to know which specific configurations are out of sync.  Log any
  * results as CONFIGURATION_DATASTORE_OVERRIDDEN
  */
 function configuration_check_configurations($reset = FALSE) {
@@ -933,7 +933,7 @@ function configuration_check_configurations($reset = FALSE) {
   }
   module_load_include('inc', 'configuration', 'configuration.export');
   configuration_include();
-  
+
   $config = configuration_get_configuration();
   foreach ($config as $component => $info) {
     if (is_array($info)) {
@@ -958,7 +958,7 @@ function configuration_check_configurations($reset = FALSE) {
 
 /**
  * Import the config.export file on filesystem into the database
- * 
+ *
  * This will take the contents of the file on disk and import it into the db.
  */
 function _configuration_write_export_table() {
@@ -1032,12 +1032,12 @@ function _configuration_write_export_table() {
 function configuration_find_new() {
   static $identifiers = array();
   $config = configuration_get_configuration();
-  
+
   // Load all the files
   configuration_include_defaults();
   $components = configuration_get_components();
   unset($components['ctools']);
-  
+
   foreach ($components as $component => $info) {
     $function = "configuration_{$info['default_hook']}";
     if (function_exists($function)) {
@@ -1091,6 +1091,6 @@ function configuration_hook_info() {
 /**
  * Include the observers
  */
-foreach (file_scan_directory(drupal_get_path('module', 'configuration') .'/observers', '/.*/') as $filename) {
+foreach (file_scan_directory(drupal_get_path('module', 'configuration') . '/observers', '/.*/') as $filename) {
   require $filename->uri;
 }

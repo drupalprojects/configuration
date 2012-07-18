@@ -72,7 +72,7 @@ function taxonomy_configuration_export_render($module, $data) {
       }
     }
   }
-  $code = "  return ". configuration_var_export($code, '  ') .";";
+  $code = "  return " . configuration_var_export($code, '  ') . ";";
   return array('taxonomy_default_vocabularies' => $code);
 }
 
@@ -119,7 +119,7 @@ function configuration_check_taxonomy($identifier) {
 
     // Export the field we just saved and evaluate the export to $fields
     $code = taxonomy_configuration_export_render('configuration', array($identifier));
-    eval('$vocab = '. substr(array_pop($code), 8));
+    eval('$vocab = ' . substr(array_pop($code), 8));
 
     $vocab_code = configuration_taxonomy_default_vocabularies();
 
@@ -179,7 +179,7 @@ function configuration_hash_taxonomy($identifier) {
 
   // Export the field we just saved and evaluate the export to hash
   $code = taxonomy_configuration_export_render('configuration', array($identifier));
-  eval('$vocab = '. substr(array_pop($code), 8));
+  eval('$vocab = ' . substr(array_pop($code), 8));
 
   return md5(serialize($vocab[$identifier]));
 }
