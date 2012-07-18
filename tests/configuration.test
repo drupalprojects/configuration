@@ -153,12 +153,14 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
   
   function testOverridden() {
     $this->trackConfigurations();
-    
+
+    $configuration_needs_saving_text = t('Configurations are out of sync and need to be either !write.', array('!write' => l('activated or written to file', 'admin/config/system/configuration/tracking')));
+
     // Testing overridding a field
     $edit = array();
     $edit["instance[widget][settings][rows]"] = 2;
     $this->drupalPost('admin/structure/types/manage/'. $this->type->type .'/fields/body', $edit, t('Save settings'));
-    $this->assertRaw(t('You have Configurations that need to be written to file.'));
+    $this->assertRaw($configuration_needs_saving_text);
     
     $status = configuration_get_status('field', 'node-'. $this->type->type .'-body');
     $this->assertEqual($status, CONFIGURATION_ACTIVESTORE_OVERRIDDEN);
@@ -167,7 +169,7 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $edit = array();
     $edit["instance[widget][settings][rows]"] = 20;
     $this->drupalPost('admin/structure/types/manage/'. $this->type->type .'/fields/body', $edit, t('Save settings'));
-    $this->assertNoRaw(t('You have Configurations that need to be written to file.'));
+    $this->assertNoRaw($configuration_needs_saving_text);
     $status = configuration_get_status('field', 'node-'. $this->type->type .'-body');
     $this->assertEqual($status, CONFIGURATION_IN_SYNC);
     
@@ -175,7 +177,7 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $edit = array();
     $edit["filters[filter_url][settings][filter_url_length]"] = 20;
     $this->drupalPost('admin/config/content/formats/filtered_html', $edit, t('Save configuration'));
-    $this->assertRaw(t('You have Configurations that need to be written to file.'));
+    $this->assertRaw($configuration_needs_saving_text);
     $status = configuration_get_status('filter', 'filtered_html');
     $this->assertEqual($status, CONFIGURATION_ACTIVESTORE_OVERRIDDEN);
     
@@ -183,7 +185,7 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $edit = array();
     $edit["filters[filter_url][settings][filter_url_length]"] = 72;
     $this->drupalPost('admin/config/content/formats/filtered_html', $edit, t('Save configuration'));
-    $this->assertNoRaw(t('You have Configurations that need to be written to file.'));
+    $this->assertNoRaw($configuration_needs_saving_text);
     $status = configuration_get_status('filter', 'filtered_html');
     $this->assertEqual($status, CONFIGURATION_IN_SYNC);
     
@@ -191,7 +193,7 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $edit = array();
     $edit["filters[filter_url][settings][filter_url_length]"] = 20;
     $this->drupalPost('admin/config/content/formats/filtered_html', $edit, t('Save configuration'));
-    $this->assertRaw(t('You have Configurations that need to be written to file.'));
+    $this->assertRaw($configuration_needs_saving_text);
     $status = configuration_get_status('filter', 'filtered_html');
     $this->assertEqual($status, CONFIGURATION_ACTIVESTORE_OVERRIDDEN);
     
@@ -199,7 +201,7 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $edit = array();
     $edit["filters[filter_url][settings][filter_url_length]"] = 72;
     $this->drupalPost('admin/config/content/formats/filtered_html', $edit, t('Save configuration'));
-    $this->assertNoRaw(t('You have Configurations that need to be written to file.'));
+    $this->assertNoRaw($configuration_needs_saving_text);
     $status = configuration_get_status('filter', 'filtered_html');
     $this->assertEqual($status, CONFIGURATION_IN_SYNC);
   }
