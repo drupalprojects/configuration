@@ -4,6 +4,7 @@
  * User permission component tests for Features
  */
 class ConfigurationWebTestCase extends DrupalWebTestCase {
+
   /**
    * Track Configurations
    */
@@ -23,6 +24,17 @@ class ConfigurationWebTestCase extends DrupalWebTestCase {
 
     $this->tracked = $edit;
     $this->drupalPost('admin/config/system/configuration/notracking', $edit, t('Write to Datastore'));
+
+    // After start traking configurations, a file should be created by each component.
+    $types = array('field', 'filter', 'user_permission', 'user_role', 'taxonomy');
+    foreach ($types as $type) {
+      $config_file_exists = file_exists($this->datastore_path . '/configuration.' . $type . '.inc');
+      $this->assertTrue($config_file_exists, "Configuration file for $type was created.");
+    }
+    // Nodes and images styles are saved into configuration.inc
+    $config_file_exists = file_exists($this->datastore_path . '/configuration.inc');
+    $this->assertTrue($config_file_exists, "Configuration file for nodes and image styles was created.");
+
     $this->assertResponse(200);
   }
 
@@ -48,6 +60,7 @@ class ConfigurationWebTestCase extends DrupalWebTestCase {
     $this->datastore_path = file_directory_temp();
 
     variable_set('configuration_config_path', $this->datastore_path);
+    $this->verbose('Saving configurations into: ' . $this->datastore_path);
     file_prepare_directory(variable_get('configuration_config_path', $this->datastore_path));
 
     // Use the administration interface so config:// is correctly set up.
@@ -74,7 +87,7 @@ class ConfigurationWebTestCase extends DrupalWebTestCase {
       );
     }
 
-     $this->admin_user = $this->drupalCreateUser($permissions);
+    $this->admin_user = $this->drupalCreateUser($permissions);
 
     $this->drupalLogin($this->admin_user);
   }
