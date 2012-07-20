@@ -175,6 +175,7 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
       'administer filters',
       'administer permissions',
       'administer users',
+      'administer image styles',
     ));
 
     $this->type = $this->drupalCreateContentType();
@@ -257,6 +258,24 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $this->drupalPost('admin/people/permissions', $edit, t('Save permissions'));
     $this->assertNoRaw($configuration_needs_saving_text, t('Activestore in sync for User Permissions'));
     $status = configuration_get_status('user_permission', 'access configuration management');
+    $this->assertEqual($status, CONFIGURATION_IN_SYNC);
+
+    // Testing overriden image styles
+    $edit = array();
+    // First unlock the image style
+    $this->drupalPost('admin/config/media/image-styles/edit/large', $edit, t('Override defaults'));
+    $edit = array();
+    $edit['data[width]'] = '400';
+    $this->drupalPost('admin/config/media/image-styles/edit/large/effects/1', $edit, t('Update effect'));
+    $this->assertRaw($configuration_needs_saving_text, t('Activestore overriden for Image Styles'));
+    $status = configuration_get_status('image', 'large');
+    $this->assertEqual($status, CONFIGURATION_ACTIVESTORE_OVERRIDDEN);
+
+    // Testing image styles back to default
+    $edit = array();
+    $this->drupalPost('admin/config/media/image-styles/revert/large', $edit, t('Revert'));
+    $this->assertNoRaw($configuration_needs_saving_text, t('Activestore in sync for Image Styles'));
+    $status = configuration_get_status('image', 'large');
     $this->assertEqual($status, CONFIGURATION_IN_SYNC);
   }
 }
