@@ -412,48 +412,7 @@ function ctools_configuration_check($identifier) {
       }
     }
 
-
-    /**
-     * @todo This code is reused in all component files.
-     */
-    $return = '';
-    $status = $config[$component][$identifier]['status'];
-    $md5_datastore = (is_array($export_code) && array_key_exists($identifier, $export_code)) ? md5(serialize($export_code[$identifier])) : '';
-    $md5_activestore = (is_array($export_code) && array_key_exists($identifier, $export_code)) ? md5(serialize($export[$identifier])) : '';
-
-    // Configs in code are not the same as what was just saved in activestore.
-    // There is no way of telling if the change was in the activestore or the
-    // datastore. Mark them changed in both.
-    if ($md5_datastore == $config[$component][$identifier]['hash'] && $md5_datastore != $md5_activestore) {
-      // dsm('configs in code are not the same as what was just saved in activestore.');
-      $status = $status | CONFIGURATION_ACTIVESTORE_OVERRIDDEN;
-      configuration_set_status($component, $identifier, $status);
-    }
-    // Menu in the activestore is the same as what is in code.
-    if ($md5_activestore == $md5_datastore) {
-      // dsm('config in activestore are same as what is in code');
-      $status = CONFIGURATION_IN_SYNC;
-      configuration_set_status($component, $identifier,  $status);
-      configuration_set_hash($component, $identifier, $md5_activestore);
-    }
-    if ($md5_activestore != $md5_datastore) {
-      $status = $status | CONFIGURATION_DATASTORE_OVERRIDDEN;
-      configuration_set_status($component, $identifier, $status);
-    }
-    // When checking for new configurations, check to see if configurations are
-    // the same in datastore as last activestore
-    if (!$from_activestore && $md5_datastore == $config[$component][$identifier]['hash']) {
-      // dsm('config in code are same as last in activestore');
-      $status = $status  & ~CONFIGURATION_DATASTORE_OVERRIDDEN;
-      configuration_set_status($component, $identifier, $status);
-    }
-
-    // Store the config array in cache for easy access
-    if ($status != CONFIGURATION_IN_SYNC) {
-      $configuration[$component][$identifier]['activestore'] = (is_array($export_code) && array_key_exists($identifier, $export_code)) ? $export[$identifier] : '';
-      $configuration[$component][$identifier]['datastore'] = (is_array($export_code) && array_key_exists($identifier, $export_code)) ? $export_code[$identifier] : '';
-      cache_set("$component:$identifier", $configuration, 'cache_configuration');
-    }
+    configuration_update_compontent($component, $identifier, $export, $export_code, $from_activestore);
   }
 }
 

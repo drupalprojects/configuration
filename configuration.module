@@ -1089,6 +1089,54 @@ function configuration_hook_info() {
 }
 
 /**
+ * Updates the status of a component after it was updated.
+ *
+ * @param $component
+ *   The type of component, i.e node, user_permissions, taxonomy.
+ * @param $identifier
+ *   The identifier for the component, usually the machine name.
+ * @param $items
+ *   Items from the activestore.
+ * @param $items_code
+ *   Items loaded from the datastore.
+ * @param $from_activestore
+ *   @TODO: Explain what this param means.
+ */
+function configuration_update_component_status($component, $identifier, $items, $items_code, $from_activestore) {
+
+  // If this was the previous configuration in activestore don't mark this as changed.
+  $config = configuration_get_configuration();
+
+  $status = $config[$component][$identifier]['status'];
+
+  $md5_datastore = (is_array($items_code) && array_key_exists($identifier, $items_code)) ? md5(serialize($items_code[$identifier])) : '';
+  $md5_activestore = (is_array($items) && array_key_exists($identifier, $items)) ? md5(serialize($items[$identifier])) : '';
+
+  // Configs in code are not the same as what was just saved in activestore.
+  if ($md5_datastore != $md5_activestore) {
+    $status |= ($from_activestore) ? CONFIGURATION_ACTIVESTORE_OVERRIDDEN : CONFIGURATION_DATASTORE_OVERRIDDEN;
+  }
+  // Config in the activestore is the same as what is in code.
+  else {
+    $status = CONFIGURATION_IN_SYNC;
+    configuration_set_hash($component, $identifier, $md5_activestore);
+  }
+  configuration_set_status($component, $identifier, $status);
+
+  // When checking for new configurations, check to see if configurations are
+  // the same in datastore as last activestore. Remove the datastore overridden.
+  if ($md5_datastore == $config[$component][$identifier]['hash']) {
+    $status = $status & ~CONFIGURATION_DATASTORE_OVERRIDDEN;
+    configuration_set_status($component, $identifier, $status);
+  }
+
+  // Store the config array in cache for easy access
+  $configuration[$component][$identifier]['datastore'] = (is_array($items_code) && array_key_exists($identifier, $items_code)) ? $items_code[$identifier] : '';
+  $configuration[$component][$identifier]['activestore'] = (is_array($items) && array_key_exists($identifier, $items)) ? $items[$identifier] : '';
+  cache_set("$component:$identifier", $configuration, 'cache_configuration');
+}
+
+/**
  * Include the observers
  */
 foreach (file_scan_directory(drupal_get_path('module', 'configuration') . '/observers', '/.*/') as $filename) {

@@ -129,45 +129,7 @@ function configuration_check_taxonomy($identifier) {
       configuration_set_status($component, $identifier, CONFIGURATION_TRACKED_DATASTORE_ONLY);
     }
 
-    // If this was the previous configuration in activestore don't mark this as changed.
-    $config = configuration_get_configuration();
-    /**
-     * @todo This code is reused in all component files.
-     */
-    $return = '';
-    $component = 'taxonomy';
-    $status = $config[$component][$identifier]['status'];
-    $md5_datastore = (is_array($vocab_code) && array_key_exists($identifier, $vocab_code)) ? md5(serialize($vocab_code[$identifier])) : '';
-    $md5_activestore = (is_array($vocab_code) && array_key_exists($identifier, $vocab_code)) ? md5(serialize($vocab[$identifier])) : '';
-
-    // Configs in code are not the same as what was just saved in activestore.
-    if ($from_activestore == TRUE && $md5_datastore != $md5_activestore) {
-      $status = $status | CONFIGURATION_ACTIVESTORE_OVERRIDDEN;
-      configuration_set_status($component, $identifier, $status);
-    }
-    // Menu in the activestore is the same as what is in code.
-    if ($md5_activestore == $md5_datastore) {
-      $status = CONFIGURATION_IN_SYNC;
-      configuration_set_status($component, $identifier, $status);
-      configuration_set_hash($component, $identifier, $md5_activestore);
-    }
-    if ($md5_activestore != $md5_datastore) {
-      $status = $status | CONFIGURATION_DATASTORE_OVERRIDDEN;
-      configuration_set_status($component, $identifier, $status);
-    }
-    // When checking for new configurations, check to see if configurations are
-    // the same in datastore as last activestore. Remove the datastore overridden.
-    if ($md5_datastore == $config[$component][$identifier]['hash']) {
-      $status = $status & ~CONFIGURATION_DATASTORE_OVERRIDDEN;
-      configuration_set_status($component, $identifier, $status);
-    }
-
-    // Store the config array in cache for easy access
-    if ($status != CONFIGURATION_IN_SYNC) {
-      $configuration[$component][$identifier]['activestore'] = (is_array($vocab_code) && array_key_exists($identifier, $vocab_code)) ? $vocab[$identifier] : '';
-      $configuration[$component][$identifier]['datastore'] = (is_array($vocab_code) && array_key_exists($identifier, $vocab_code)) ? $vocab_code[$identifier] : '';
-      cache_set("$component:$identifier", $configuration, 'cache_configuration');
-    }
+    configuration_update_component_status($component, $identifier, $vocab, $vocab_code, $from_activestore);
   }
 }
 

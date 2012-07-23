@@ -227,55 +227,13 @@ function configuration_check_field($identifier) {
 
     $fields_code = configuration_field_default_fields();
 
-    // If this was the previous configuration in activestore don't mark this as changed.
-    $config = configuration_get_configuration();
-
     // If the activestore doesn't exist it is most likely because this configuration
     // only exists in code.
     if (empty($fields)) {
       configuration_set_status($component, $identifier, CONFIGURATION_TRACKED_DATASTORE_ONLY);
     }
 
-    /**
-     * @todo This code is reused in all component files.
-     */
-    $return = '';
-    $component = 'field';
-    $status = $config[$component][$identifier]['status'];
-    $md5_datastore = (is_array($fields_code) && array_key_exists($identifier, $fields_code)) ? md5(serialize($fields_code[$identifier])) : '';
-    $md5_activestore = (is_array($fields) && array_key_exists($identifier, $fields)) ? md5(serialize($fields[$identifier])) : '';
-
-    // Configs in code are not the same as what was just saved in activestore.
-    if ($from_activestore == TRUE && $md5_datastore != $md5_activestore) {
-      // dsm('configs in code are not the same as what was just saved in activestore.');
-      $status = $status | CONFIGURATION_ACTIVESTORE_OVERRIDDEN;
-      configuration_set_status($component, $identifier, $status);
-    }
-    // Menu in the activestore is the same as what is in code.
-    if ($md5_activestore == $md5_datastore) {
-      // dsm('config in activestore are same as what is in code');
-      $status = CONFIGURATION_IN_SYNC;
-      configuration_set_status($component, $identifier, $status);
-      configuration_set_hash($component, $identifier, $md5_activestore);
-    }
-    if ($md5_activestore != $md5_datastore && $md5_datastore != $config['field'][$identifier]['hash']) {
-      $status = $status | CONFIGURATION_DATASTORE_OVERRIDDEN;
-      configuration_set_status($component, $identifier, $status);
-    }
-    // When checking for new configurations, check to see if configurations are
-    // the same in datastore as last activestore, and remove bit.
-    if (!$from_activestore && $md5_datastore == $config['field'][$identifier]['hash']) {
-      // dsm('config in code are same as last in activestore');
-      $status = $status & ~CONFIGURATION_DATASTORE_OVERRIDDEN;
-      configuration_set_status($component, $identifier, $status);
-    }
-
-    // Store the config array in cache for easy access
-    if ($status != CONFIGURATION_IN_SYNC) {
-      $configuration[$component][$identifier]['activestore'] = (is_array($fields) && array_key_exists($identifier, $fields)) ? $fields[$identifier] : '';
-      $configuration[$component][$identifier]['datastore'] = (is_array($fields_code) && array_key_exists($identifier, $fields_code)) ? $fields_code[$identifier] : '';
-      cache_set("$component:$identifier", $configuration, 'cache_configuration');
-    }
+    configuration_update_component_status($component, $identifier, $fields, $fields_code, $from_activestore);
   }
 }
 
