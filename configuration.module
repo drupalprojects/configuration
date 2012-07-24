@@ -269,7 +269,17 @@ function configuration_init() {
   }
 }
 
-
+/**
+ * Implements hook_modules_enabled().
+ */
+function hook_modules_enabled($modules) {
+  // When diff module is enabled after this module was enabled
+  // it is necessary to flush the menu cache in order to enable
+  // the /diff tab.
+  if (in_array('diff', $modules)) {
+    drupal_flush_all_caches();
+  }
+}
 
 /**
  * Returns the array of supported components.
