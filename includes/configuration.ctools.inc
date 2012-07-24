@@ -412,7 +412,7 @@ function ctools_configuration_check($identifier) {
       }
     }
 
-    configuration_update_compontent($component, $identifier, $export, $export_code, $from_activestore);
+    configuration_update_component_status($component, $identifier, $export, $export_code, $from_activestore);
   }
 }
 
