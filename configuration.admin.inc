@@ -757,7 +757,7 @@ function configuration_diff($component, $identifier) {
   module_load_include('inc', 'configuration', 'configuration.export');
 
   $overrides = configuration_detect_overrides($component, $identifier);
-
+  $config_in_sync = FALSE;
   $output = '';
   if (!empty($overrides)) {
     module_load_include('inc', 'diff', 'diff.engine');
@@ -784,14 +784,20 @@ function configuration_diff($component, $identifier) {
           drupal_set_message(t('Configuration is in sync.'));
           configuration_set_status($component, $identifier, CONFIGURATION_IN_SYNC);
           cache_clear_all('config_export', 'cache');
+          $config_in_sync = TRUE;
         }
       }
     }
-    $header = array(
-      array('data' => t('Datastore'), 'colspan' => 2),
-      array('data' => t('Activestore'), 'colspan' => 2),
-    );
-    $output .= theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('class' => array('diff', 'configuration-diff'))));
+    if ($config_in_sync) {
+      $output = "<div class='configuration-empty'>" . t('No changes have been made to this configuration.') . "</div>";
+    }
+    else {
+      $header = array(
+        array('data' => t('Datastore'), 'colspan' => 2),
+        array('data' => t('Activestore'), 'colspan' => 2),
+      );
+      $output .= theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('class' => array('diff', 'configuration-diff'))));
+    }
   }
   else {
     $output = "<div class='configuration-empty'>" . t('No changes have been made to this configuration.') . "</div>";

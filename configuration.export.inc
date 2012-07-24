@@ -362,7 +362,7 @@ function configuration_var_export($var, $prefix = '', $init = TRUE) {
     }
   }
   elseif (is_bool($var)) {
-    $output = $var ? 'TRUE' : 'FALSE';
+    $output = $var ? '1' : '0';
   }
   elseif (is_string($var) && strpos($var, "\n") !== FALSE) {
     // Replace line breaks in strings with a token for replacement

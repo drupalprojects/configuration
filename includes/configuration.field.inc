@@ -93,6 +93,11 @@ function field_configuration_export_render($module, $data, $export = NULL) {
   $code[] = '';
   foreach ($data as $identifier) {
     if ($field = configuration_field_load($identifier)) {
+      if (!empty($field['field_instance']['widget']) && !isset($field['field_instance']['widget']['active'])) {
+        // The first time this setting is exported, the active value is not exported.
+        // Set it explicitly to avoid differences when reverting fields
+        $field['field_instance']['widget']['active'] = module_exists($field['field_instance']['widget']['module']);
+      }
       unset($field['field_config']['columns']);
       unset($field['field_config']['locked']);
       // Only remove the 'storage' declaration if the field is using the default

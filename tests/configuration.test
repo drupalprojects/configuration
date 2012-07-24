@@ -187,30 +187,21 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
 
     $configuration_needs_saving_text = t('Configurations are out of sync and need to be either !write.', array('!write' => l(t('activated or written to file'), 'admin/config/system/configuration/tracking')));
 
-
-
-    // @todo: Fix #1664772 beforre uncomment the following tests:
-    //
-    // Overide for fields works, but revert doesn't, For this reason
-    // the system always says that the configurations are out of sync.
-    // The main isue is here: http://drupal.org/node/1664772
-    //
     // Testing overridding a field
-    // $edit = array();
-    // $edit["instance[widget][settings][rows]"] = 2;
-    // $this->drupalPost('admin/structure/types/manage/' . $this->type->type . '/fields/body', $edit, t('Save settings'));
-    // $this->assertRaw($configuration_needs_saving_text);
-    //
-    // $status = configuration_get_status('field', 'node-' . $this->type->type . '-body');
-    // $this->assertEqual($status, CONFIGURATION_ACTIVESTORE_OVERRIDDEN);
-    //
-    // // Testing putting the field back to default
-    // $edit = array();
-    // $edit["instance[widget][settings][rows]"] = 20;
-    // $this->drupalPost('admin/structure/types/manage/' . $this->type->type . '/fields/body', $edit, t('Save settings'));
-    // $this->assertNoRaw($configuration_needs_saving_text);
-    // $status = configuration_get_status('field', 'node-' . $this->type->type . '-body');
-    // $this->assertEqual($status, CONFIGURATION_IN_SYNC);
+    $edit = array();
+    $edit["instance[widget][settings][rows]"] = 2;
+    $this->drupalPost('admin/structure/types/manage/' . $this->type->type . '/fields/body', $edit, t('Save settings'));
+    $this->assertRaw($configuration_needs_saving_text, t('Activestore overriden for Fields'));
+    $status = configuration_get_status('field', 'node-' . $this->type->type . '-body');
+    $this->assertEqual($status, CONFIGURATION_ACTIVESTORE_OVERRIDDEN);
+
+    // Testing putting the field back to default
+    $edit = array();
+    $edit["instance[widget][settings][rows]"] = 20;
+    $this->drupalPost('admin/structure/types/manage/' . $this->type->type . '/fields/body', $edit, t('Save settings'));
+    $this->assertNoRaw($configuration_needs_saving_text, t('Activestore in sync for Fields'));
+    $status = configuration_get_status('field', 'node-' . $this->type->type . '-body');
+    $this->assertEqual($status, CONFIGURATION_IN_SYNC);
 
     // Testing overriding filters
     $edit = array();
