@@ -653,6 +653,13 @@ function configuration_settings_form($form, &$form_state) {
     '#collapsed' => FALSE,
   );
 
+  $form['general_settings']['configuration_display_messages'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Display a message warning that there is changes to write into the datastore'),
+    '#description' => t('If checked, every time that configurations from datastore be overriden, a message will be displayed informing users to write the changes into the datastore.'),
+    '#default_value' => variable_get('configuration_display_messages', TRUE),
+  );
+
   $form['general_settings']['configuration_config_path'] = array(
     '#type' => 'textfield',
     '#title' => t('Configuration directory configs are stored in.'),

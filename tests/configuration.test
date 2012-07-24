@@ -278,4 +278,36 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $status = configuration_get_status('image', 'large');
     $this->assertEqual($status, CONFIGURATION_IN_SYNC);
   }
+
+  function testDisableMessages() {
+    $this->trackConfigurations();
+
+    $configuration_needs_saving_text = t('Configurations are out of sync and need to be either !write.', array('!write' => l(t('activated or written to file'), 'admin/config/system/configuration/tracking')));
+
+    // Expeting message after modify a tracked component
+    $edit = array();
+    $edit["filters[filter_url][settings][filter_url_length]"] = 20;
+    $this->drupalPost('admin/config/content/formats/filtered_html', $edit, t('Save configuration'));
+
+    $this->drupalGet('admin');
+    $this->assertRaw($configuration_needs_saving_text, t('Warning message displayed'));
+
+    // Disable the messages
+    $edit = array();
+    $edit["configuration_display_messages"] = FALSE;
+    $this->drupalPost('admin/config/system/configuration/settings', $edit, t('Save configuration'));
+
+    // Now no message should be displayed
+    $this->drupalGet('admin');
+    $this->assertNoRaw($configuration_needs_saving_text, t('No warning message displayed'));
+
+    // Enable again the messages
+    $edit = array();
+    $edit["configuration_display_messages"] = TRUE;
+    $this->drupalPost('admin/config/system/configuration/settings', $edit, t('Save configuration'));
+
+    // Check if messages are displayed again
+    $this->drupalGet('admin');
+    $this->assertRaw($configuration_needs_saving_text, t('Warning message displayed'));
+  }
 }
