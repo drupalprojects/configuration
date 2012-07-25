@@ -1,50 +1,52 @@
 <?php
+/**
+ * @file
+ * Tests for Configuration Management
+ */
 
 /**
- * Tests for Configuration Management.
+ * Base class for functional tests for configuration management.
  */
 class ConfigurationWebTestCase extends DrupalWebTestCase {
 
-  var $tracked_components;
+  protected $trackedComponents;
 
   /**
-   * Track Configurations
+   * Track Configurations.
    */
-  function trackConfigurations() {
+  public function trackConfigurations() {
 
     $roles = user_roles();
 
-    $this->tracked_components = array(
+    $this->trackedComponents = array(
       'filter' => array('filtered_html'),
       'field' => array('node-' . $this->type->type . '-body'),
       'node' => array($this->type->type),
       'image' => array('large'),
       'taxonomy' => array($this->vocab->machine_name),
       'user_permission' => array('access configuration management'),
-      'user_role' => array($roles[3])
+      'user_role' => array($roles[3]),
     );
 
     $edit = array();
-    foreach ($this->tracked_components as $component => $identifiers) {
+    foreach ($this->trackedComponents as $component => $identifiers) {
       foreach ($identifiers as $identifier) {
         $edit[$component . '[items][' . $identifier . ']'] = 1;
       }
     }
 
-    // $edit["field[items][node-" . $this->type->type . "-body]"] = 1;
-    // $edit["filter[items][filtered_html]"] = 1;
-    // // Need to create an image preset to store in activestore.
-    // $edit["image[items][large]"] = 1;
-    // $edit["node[items][" . $this->type->type . "]"] = 1;
-    // $edit["taxonomy[items][" . $this->vocab->machine_name . "]"] = 1;
-    // $edit["user_permission[items][access configuration management]"] = 1;
-    // $edit["user_role[items][" . $roles[3] . "]"] = 1;
-
     $this->tracked = $edit;
     $this->drupalPost('admin/config/system/configuration/notracking', $edit, t('Write to Datastore'));
 
-    // After start traking configurations, a file should be created by each component.
-    $types = array('field', 'filter', 'user_permission', 'user_role', 'taxonomy');
+    // After start traking configurations, a file should be created by each
+    // component.
+    $types = array(
+      'field',
+      'filter',
+      'user_permission',
+      'user_role',
+      'taxonomy',
+    );
     foreach ($types as $type) {
       $config_file_exists = file_exists($this->datastore_path . '/configuration.' . $type . '.inc');
       $this->assertTrue($config_file_exists, "Configuration file for $type was created.");
@@ -59,7 +61,7 @@ class ConfigurationWebTestCase extends DrupalWebTestCase {
   /**
    * Returns a new vocabulary with random properties.
    */
-  function createVocabulary() {
+  public function createVocabulary() {
     // Create a vocabulary.
     $vocabulary = new stdClass();
     $vocabulary->name = $this->randomName();
@@ -72,9 +74,12 @@ class ConfigurationWebTestCase extends DrupalWebTestCase {
     return $vocabulary;
   }
 
-  function setUp($modules = array()) {
+  /**
+   * Implementation of DrupalWebTestCase::setUp().
+   */
+  public function setUp($modules = array()) {
     parent::setUp($modules);
-    //Generate an unique path for this test based on the database prefix.
+    // Generate an unique path for this test based on the database prefix.
     $this->datastore_path = file_directory_temp();
 
     variable_set('configuration_config_path', $this->datastore_path);
@@ -89,10 +94,13 @@ class ConfigurationWebTestCase extends DrupalWebTestCase {
     $this->drupalLogout();
   }
   /**
-   * Logs in as an administrative user. If $this->admin_user is empty, it
-   * creates a new admin user with the given $permissions.
+   * Logs in as an administrative user.
    *
-   * @param array $permissions an array of permissions for the admin user.
+   * If $this->admin_user is empty, it creates a new admin user with the
+   * given $permissions.
+   *
+   * @param array $permissions
+   *   An array of permissions for the admin user.
    */
   public function adminLogin($permissions = NULL) {
     if ($permissions == NULL) {
@@ -145,10 +153,21 @@ class ConfigurationTrackingTest extends ConfigurationWebTestCase {
     $this->vocab = $this->createVocabulary();
   }
 
+  /**
+   * Tests that configurations get tracked.
+   */
   public function testTracking() {
     $this->trackConfigurations();
 
-    $types = array('field', 'filter', 'image', 'node', 'user_permission', 'user_role', 'taxonomy');
+    $types = array(
+      'field',
+      'filter',
+      'image',
+      'node',
+      'user_permission',
+      'user_role',
+      'taxonomy',
+    );
     foreach ($types as $type) {
       $this->assertRaw(t('Tracking configurations for %type have been saved', array('%type' => $type)));
 
@@ -195,12 +214,15 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $this->vocab = $this->createVocabulary();
   }
 
-  function testOverridden() {
+  /**
+   * Tests that configurations get marked as overriden.
+   */
+  public function testOverridden() {
     $this->trackConfigurations();
 
     $configuration_needs_saving_text = t('Configurations are out of sync and need to be either !write.', array('!write' => l(t('activated or written to file'), 'admin/config/system/configuration/tracking')));
 
-    // Testing overridding a field
+    // Testing overridding a field.
     $edit = array();
     $edit["instance[widget][settings][rows]"] = 2;
     $this->drupalPost('admin/structure/types/manage/' . $this->type->type . '/fields/body', $edit, t('Save settings'));
@@ -208,7 +230,7 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $status = configuration_get_status('field', 'node-' . $this->type->type . '-body');
     $this->assertEqual($status, CONFIGURATION_ACTIVESTORE_OVERRIDDEN);
 
-    // Testing putting the field back to default
+    // Testing putting the field back to default.
     $edit = array();
     $edit["instance[widget][settings][rows]"] = 20;
     $this->drupalPost('admin/structure/types/manage/' . $this->type->type . '/fields/body', $edit, t('Save settings'));
@@ -216,7 +238,7 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $status = configuration_get_status('field', 'node-' . $this->type->type . '-body');
     $this->assertEqual($status, CONFIGURATION_IN_SYNC);
 
-    // Testing overriding filters
+    // Testing overriding filters.
     $edit = array();
     $edit["filters[filter_url][settings][filter_url_length]"] = 20;
     $this->drupalPost('admin/config/content/formats/filtered_html', $edit, t('Save configuration'));
@@ -224,7 +246,7 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $status = configuration_get_status('filter', 'filtered_html');
     $this->assertEqual($status, CONFIGURATION_ACTIVESTORE_OVERRIDDEN);
 
-    // Testing filters back to default
+    // Testing filters back to default.
     $edit = array();
     $edit["filters[filter_url][settings][filter_url_length]"] = 72;
     $this->drupalPost('admin/config/content/formats/filtered_html', $edit, t('Save configuration'));
@@ -232,7 +254,7 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $status = configuration_get_status('filter', 'filtered_html');
     $this->assertEqual($status, CONFIGURATION_IN_SYNC);
 
-    // Testing overriding filters
+    // Testing overriding filters.
     $edit = array();
     $edit["filters[filter_url][settings][filter_url_length]"] = 20;
     $this->drupalPost('admin/config/content/formats/filtered_html', $edit, t('Save configuration'));
@@ -240,7 +262,7 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $status = configuration_get_status('filter', 'filtered_html');
     $this->assertEqual($status, CONFIGURATION_ACTIVESTORE_OVERRIDDEN);
 
-    // Testing filters back to default
+    // Testing filters back to default.
     $edit = array();
     $edit["filters[filter_url][settings][filter_url_length]"] = 72;
     $this->drupalPost('admin/config/content/formats/filtered_html', $edit, t('Save configuration'));
@@ -248,7 +270,7 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $status = configuration_get_status('filter', 'filtered_html');
     $this->assertEqual($status, CONFIGURATION_IN_SYNC);
 
-    // Testing overriden user permissions
+    // Testing overriden user permissions.
     $edit = array();
     $edit['2[access configuration management]'] = TRUE;
     $this->drupalPost('admin/people/permissions', $edit, t('Save permissions'));
@@ -256,7 +278,7 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $status = configuration_get_status('user_permission', 'access configuration management');
     $this->assertEqual($status, CONFIGURATION_ACTIVESTORE_OVERRIDDEN);
 
-    // Testing user permissions back to default
+    // Testing user permissions back to default.
     $edit = array();
     $edit['2[access configuration management]'] = FALSE;
     $this->drupalPost('admin/people/permissions', $edit, t('Save permissions'));
@@ -264,9 +286,9 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $status = configuration_get_status('user_permission', 'access configuration management');
     $this->assertEqual($status, CONFIGURATION_IN_SYNC);
 
-    // Testing overriden image styles
+    // Testing overriden image styles.
     $edit = array();
-    // First unlock the image style
+    // First unlock the image style.
     $this->drupalPost('admin/config/media/image-styles/edit/large', $edit, t('Override defaults'));
     $edit = array();
     $edit['data[width]'] = '400';
@@ -275,7 +297,7 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $status = configuration_get_status('image', 'large');
     $this->assertEqual($status, CONFIGURATION_ACTIVESTORE_OVERRIDDEN);
 
-    // Testing image styles back to default
+    // Testing image styles back to default.
     $edit = array();
     $this->drupalPost('admin/config/media/image-styles/revert/large', $edit, t('Revert'));
     $this->assertNoRaw($configuration_needs_saving_text, t('Activestore in sync for Image Styles'));
@@ -313,20 +335,24 @@ class ConfigurationUITest extends ConfigurationWebTestCase {
     $this->vocab = $this->createVocabulary();
   }
 
+  /**
+   * Tests the tracking UI.
+   */
   public function testTrackingUI() {
     $this->trackConfigurations();
     $roles = user_roles();
 
     $this->drupalGet('admin/config/system/configuration/tracking');
 
-    // If non there are not overriden configurations, the link 'Activestore Changed' shouldn't exists in this UI
+    // If non there are not overriden configurations, the link 'Activestore
+    // Changed' shouldn't exists in this UI.
     $this->assertNoLink('Activestore Changed', 'Activestore Changed link not found');
 
-    // For each tracked component (except for those that are dependencies of others),
-    // there should be a link to stop tracking the component.
+    // For each tracked component (except for those that are dependencies of
+    // others), there should be a link to stop tracking the component.
     $config = configuration_get_configuration();
 
-    foreach ($this->tracked_components as $component => $identifiers) {
+    foreach ($this->trackedComponents as $component => $identifiers) {
       foreach ($identifiers as $identifier) {
         if (empty($config[$component][$identifier]['parent'])) {
           $this->assertRaw('admin/config/system/configuration/config/' . $component . '/' . str_replace(' ', '%20', $identifier) . '/delete', t('Stop tracking link for @component (@identifier) found', array('@component' => $component, '@identifier' => $identifier)));
@@ -335,55 +361,69 @@ class ConfigurationUITest extends ConfigurationWebTestCase {
     }
   }
 
+  /**
+   * Tests the "no tracking" page.
+   */
   public function testNoTrackingUI() {
     $this->trackConfigurations();
     $roles = user_roles();
 
-    // For each tracked component, it shouldn't be a checkbox in the 'no tracking tab'
-
+    // For each tracked component, it shouldn't be a checkbox in the 'no
+    // tracking tab'.
     $this->drupalGet('admin/config/system/configuration/notracking');
-    foreach ($this->tracked_components as $component => $identifiers) {
+    foreach ($this->trackedComponents as $component => $identifiers) {
       foreach ($identifiers as $identifier) {
-        $this->assertNoFieldByName($component . '[items][' . $identifier .']', $identifier, t('Checkbox for @component (@identifier) not found', array('@component' => $component, '@identifier' => $identifier)));
+        $this->assertNoFieldByName($component . '[items][' . $identifier . ']',
+          $identifier, t('Checkbox for @component (@identifier) not found', array(
+            '@component' => $component,
+            '@identifier' => $identifier,
+          )));
       }
     }
   }
 
+  /**
+   * Tests the "stop tracking" page.
+   */
   public function testStopTrackingUI() {
     $this->trackConfigurations();
 
-    // For tracked components, should exists a page to stop the tracking
+    // For tracked components, should exists a page to stop the tracking.
     $config = configuration_get_configuration();
 
-    foreach ($this->tracked_components as $component => $identifiers) {
+    foreach ($this->trackedComponents as $component => $identifiers) {
       foreach ($identifiers as $identifier) {
-        $this->drupalGet('admin/config/system/configuration/config/' . $component. '/' . $identifier . '/delete');
+        $this->drupalGet('admin/config/system/configuration/config/' . $component . '/' . $identifier . '/delete');
         if (empty($config[$component][$identifier]['parent'])) {
           $this->assertResponse(200, t('Stop tracking page for tracked component: @component (@identifier) exists', array('@component' => $component, '@identifier' => $identifier)));
         }
       }
     }
-    // For non-tracked components, it shouldn't exists that page page
+    // For non-tracked components, it shouldn't exists that page page.
     $this->drupalGet('admin/config/system/configuration/config/filter/full_html/delete');
     $this->assertResponse(404, 'Stop tracking page for non tracked component does not exists');
 
-    // Test Stop Tracking feature
+    // Test Stop Tracking feature.
     $edit = array();
     $this->drupalPost('admin/config/system/configuration/config/filter/filtered_html/delete', array(), t('Stop Tracking'));
-    // The checkbox for filtered_html should not be found
+    // The checkbox for filtered_html should not be found.
     $this->assertNoFieldByName('filter[items][filtered_html]', "filtered_html", "Checkbox for filtered_html found");
 
-    // For the recently untracked component, it shouldn't exists a page to stop the tracking
+    // For the recently untracked component, it shouldn't exists a page to stop
+    // the tracking.
     $this->drupalGet('admin/config/system/configuration/config/filter/filtered_html/delete');
     $this->assertResponse(404, 'Stop tracking page for non tracked component does not exists');
   }
 
-  function testDisableMessages() {
+  /**
+   * Tests the disable messages functionality.
+   */
+  public function testDisableMessages() {
     $this->trackConfigurations();
 
     $configuration_needs_saving_text = t('Configurations are out of sync and need to be either !write.', array('!write' => l(t('activated or written to file'), 'admin/config/system/configuration/tracking')));
 
-    // Expeting message after modify a tracked component
+    // Expeting message after modify a tracked component.
     $edit = array();
     $edit["filters[filter_url][settings][filter_url_length]"] = 20;
     $this->drupalPost('admin/config/content/formats/filtered_html', $edit, t('Save configuration'));
@@ -391,21 +431,21 @@ class ConfigurationUITest extends ConfigurationWebTestCase {
     $this->drupalGet('admin');
     $this->assertRaw($configuration_needs_saving_text, t('Warning message displayed'));
 
-    // Disable the messages
+    // Disable the messages.
     $edit = array();
     $edit["configuration_display_messages"] = FALSE;
     $this->drupalPost('admin/config/system/configuration/settings', $edit, t('Save configuration'));
 
-    // Now no message should be displayed
+    // Now no message should be displayed.
     $this->drupalGet('admin');
     $this->assertNoRaw($configuration_needs_saving_text, t('No warning message displayed'));
 
-    // Enable again the messages
+    // Enable again the messages.
     $edit = array();
     $edit["configuration_display_messages"] = TRUE;
     $this->drupalPost('admin/config/system/configuration/settings', $edit, t('Save configuration'));
 
-    // Check if messages are displayed again
+    // Check if messages are displayed again.
     $this->drupalGet('admin');
     $this->assertRaw($configuration_needs_saving_text, t('Warning message displayed'));
   }
