@@ -1,9 +1,11 @@
 <?php
 
 /**
- * User permission component tests for Features
+ * Tests for Configuration Management.
  */
 class ConfigurationWebTestCase extends DrupalWebTestCase {
+
+  var $tracked_components;
 
   /**
    * Track Configurations
@@ -12,15 +14,31 @@ class ConfigurationWebTestCase extends DrupalWebTestCase {
 
     $roles = user_roles();
 
+    $this->tracked_components = array(
+      'filter' => array('filtered_html'),
+      'field' => array('node-' . $this->type->type . '-body'),
+      'node' => array($this->type->type),
+      'image' => array('large'),
+      'taxonomy' => array($this->vocab->machine_name),
+      'user_permission' => array('access configuration management'),
+      'user_role' => array($roles[3])
+    );
+
     $edit = array();
-    $edit["field[items][node-" . $this->type->type . "-body]"] = 1;
-    $edit["filter[items][filtered_html]"] = 1;
-    // Need to create an image preset to store in activestore.
-    $edit["image[items][large]"] = 1;
-    $edit["node[items][" . $this->type->type . "]"] = 1;
-    $edit["taxonomy[items][" . $this->vocab->machine_name . "]"] = 1;
-    $edit["user_permission[items][access configuration management]"] = 1;
-    $edit["user_role[items][" . $roles[3] . "]"] = 1;
+    foreach ($this->tracked_components as $component => $identifiers) {
+      foreach ($identifiers as $identifier) {
+        $edit[$component . '[items][' . $identifier . ']'] = 1;
+      }
+    }
+
+    // $edit["field[items][node-" . $this->type->type . "-body]"] = 1;
+    // $edit["filter[items][filtered_html]"] = 1;
+    // // Need to create an image preset to store in activestore.
+    // $edit["image[items][large]"] = 1;
+    // $edit["node[items][" . $this->type->type . "]"] = 1;
+    // $edit["taxonomy[items][" . $this->vocab->machine_name . "]"] = 1;
+    // $edit["user_permission[items][access configuration management]"] = 1;
+    // $edit["user_role[items][" . $roles[3] . "]"] = 1;
 
     $this->tracked = $edit;
     $this->drupalPost('admin/config/system/configuration/notracking', $edit, t('Write to Datastore'));
@@ -83,7 +101,11 @@ class ConfigurationWebTestCase extends DrupalWebTestCase {
         'access administration pages',
         'access configuration management',
         'administer modules',
-        'administer site configuration'
+        'administer site configuration',
+        'administer filters',
+        'administer permissions',
+        'administer users',
+        'administer image styles',
       );
     }
 
@@ -92,6 +114,8 @@ class ConfigurationWebTestCase extends DrupalWebTestCase {
     $this->drupalLogin($this->admin_user);
   }
 }
+
+
 class ConfigurationTrackingTest extends ConfigurationWebTestCase {
   /**
    * Test info.
@@ -166,18 +190,7 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
       'taxonomy',
     ));
 
-    $this->adminLogin(array(
-      'administer content types',
-      'access administration pages',
-      'access configuration management',
-      'administer modules',
-      'administer site configuration',
-      'administer filters',
-      'administer permissions',
-      'administer users',
-      'administer image styles',
-    ));
-
+    $this->adminLogin();
     $this->type = $this->drupalCreateContentType();
     $this->vocab = $this->createVocabulary();
   }
@@ -269,6 +282,101 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $status = configuration_get_status('image', 'large');
     $this->assertEqual($status, CONFIGURATION_IN_SYNC);
   }
+}
+
+class ConfigurationUITest extends ConfigurationWebTestCase {
+  /**
+   * Test info.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => t('Test User Interface'),
+      'description' => t('Test different components of the user interface'),
+      'group' => t('Configuration'),
+    );
+  }
+
+  /**
+   * Set up test.
+   */
+  public function setUp() {
+    parent::setUp(array(
+      'configuration',
+      'field',
+      'filter',
+      'image',
+      'taxonomy',
+    ));
+
+    $this->adminLogin();
+    $this->type = $this->drupalCreateContentType();
+    $this->vocab = $this->createVocabulary();
+  }
+
+  public function testTrackingUI() {
+    $this->trackConfigurations();
+    $roles = user_roles();
+
+    $this->drupalGet('admin/config/system/configuration/tracking');
+
+    // If non there are not overriden configurations, the link 'Activestore Changed' shouldn't exists in this UI
+    $this->assertNoLink('Activestore Changed', 'Activestore Changed link not found');
+
+    // For each tracked component (except for those that are dependencies of others),
+    // there should be a link to stop tracking the component.
+    $config = configuration_get_configuration();
+
+    foreach ($this->tracked_components as $component => $identifiers) {
+      foreach ($identifiers as $identifier) {
+        if (empty($config[$component][$identifier]['parent'])) {
+          $this->assertRaw('admin/config/system/configuration/config/' . $component . '/' . str_replace(' ', '%20', $identifier) . '/delete', t('Stop tracking link for @component (@identifier) found', array('@component' => $component, '@identifier' => $identifier)));
+        }
+      }
+    }
+  }
+
+  public function testNoTrackingUI() {
+    $this->trackConfigurations();
+    $roles = user_roles();
+
+    // For each tracked component, it shouldn't be a checkbox in the 'no tracking tab'
+
+    $this->drupalGet('admin/config/system/configuration/notracking');
+    foreach ($this->tracked_components as $component => $identifiers) {
+      foreach ($identifiers as $identifier) {
+        $this->assertNoFieldByName($component . '[items][' . $identifier .']', $identifier, t('Checkbox for @component (@identifier) not found', array('@component' => $component, '@identifier' => $identifier)));
+      }
+    }
+  }
+
+  public function testStopTrackingUI() {
+    $this->trackConfigurations();
+
+    // For tracked components, should exists a page to stop the tracking
+    $config = configuration_get_configuration();
+
+    foreach ($this->tracked_components as $component => $identifiers) {
+      foreach ($identifiers as $identifier) {
+        $this->drupalGet('admin/config/system/configuration/config/' . $component. '/' . $identifier . '/delete');
+        if (empty($config[$component][$identifier]['parent'])) {
+          $this->assertResponse(200, t('Stop tracking page for tracked component: @component (@identifier) exists', array('@component' => $component, '@identifier' => $identifier)));
+        }
+      }
+    }
+    // For non-tracked components, it shouldn't exists that page page
+    $this->drupalGet('admin/config/system/configuration/config/filter/full_html/delete');
+    $this->assertResponse(404, 'Stop tracking page for non tracked component does not exists');
+
+    // Test Stop Tracking feature
+    $edit = array();
+    $this->drupalPost('admin/config/system/configuration/config/filter/filtered_html/delete', array(), t('Stop Tracking'));
+    // The checkbox for filtered_html should not be found
+    $this->assertNoFieldByName('filter[items][filtered_html]', "filtered_html", "Checkbox for filtered_html found");
+
+    // For the recently untracked component, it shouldn't exists a page to stop the tracking
+    $this->drupalGet('admin/config/system/configuration/config/filter/filtered_html/delete');
+    $this->assertResponse(404, 'Stop tracking page for non tracked component does not exists');
+  }
 
   function testDisableMessages() {
     $this->trackConfigurations();
@@ -301,4 +409,5 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $this->drupalGet('admin');
     $this->assertRaw($configuration_needs_saving_text, t('Warning message displayed'));
   }
+
 }
