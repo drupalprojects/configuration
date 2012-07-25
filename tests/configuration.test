@@ -397,6 +397,9 @@ class ConfigurationUITest extends ConfigurationWebTestCase {
         if (empty($config[$component][$identifier]['parent'])) {
           $this->assertResponse(200, t('Stop tracking page for tracked component: @component (@identifier) exists', array('@component' => $component, '@identifier' => $identifier)));
         }
+        else {
+          $this->assertResponse(404, 'Stop tracking page for a component that is a dependency of other component does not exists');
+        }
       }
     }
     // For non-tracked components, it shouldn't exists that page page.

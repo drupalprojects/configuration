@@ -532,7 +532,14 @@ function configuration_download_config_submit($form, &$form_state) {
  */
 function configuration_confirm_delete_page($component, $name) {
   if (configuration_is_tracked($component, $name)) {
-    return drupal_get_form('configuration_confirm_delete', $component, $name);
+    $config = configuration_get_configuration();
+    if (!empty($config[$component][$name]['parent'])) {
+      return MENU_NOT_FOUND;
+    }
+    else {
+      return drupal_get_form('configuration_confirm_delete', $component, $name);
+    }
+
   }
   return MENU_NOT_FOUND;
 }
