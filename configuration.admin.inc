@@ -787,7 +787,7 @@ function configuration_diff($component, $identifier) {
           // arrays through the Diff constructor above may not find difference.
           // This is creating FALSE positives and marking configs as not in
           // sync. If the diff system doesn't see a difference, set the status
-          // to CONFIFURATION_IN_SYNC.
+          // to CONFIGURATION_IN_SYNC.
           drupal_set_message(t('Configuration is in sync.'));
           configuration_set_status($component, $identifier, CONFIGURATION_IN_SYNC);
           cache_clear_all('config_export', 'cache');
@@ -820,12 +820,23 @@ function configuration_download_config($configs = NULL) {
   module_load_include('inc', 'configuration', 'configuration.export');
 
   if ($configs) {
+    configuration_include();
+
     // Only set the configurations that were checked to be passed to the
     // configuration_populate function.
     foreach ($configs as $component => $config) {
       foreach ($config as $name => $on) {
         if ($on) {
-          $c[$component][$name] = 1;
+          if (!empty($all_config[$component][$name])) {
+            $c[$component][$name] = $all_config[$component][$name];
+          }
+          else {
+            $function = "configuration_hash_{$component}";
+            $hash =  $function($name);
+            $c[$component][$name]['hash'] = $hash;
+            $c[$component][$name]['status'] = CONFIGURATION_IN_SYNC;
+            $c[$component][$name]['parent'] = '';
+          }
         }
       }
     }
@@ -842,10 +853,13 @@ function configuration_download_config($configs = NULL) {
 
   // Configs passed in by migrate function
   if ($configs) {
-    foreach ($export['configuration_dependency']['configuration'] as $component => $config) {
-      foreach ($config as $name => $parent) {
-        $c[$component][$name]['status'] = CONFIGURATION_DATASTORE_ONLY;
-        $c[$component][$name]['parent'] = $parent;
+    // Check if there is dependencies to export.
+    if (!empty($export['configuration_dependency'])) {
+      foreach ($export['configuration_dependency']['configuration'] as $component => $config) {
+        foreach ($config as $name => $parent) {
+          $c[$component][$name]['status'] = CONFIGURATION_DATASTORE_ONLY;
+          $c[$component][$name]['parent'] = $parent;
+        }
       }
     }
     configuration_write_export_file($c, "temporary://config.export");

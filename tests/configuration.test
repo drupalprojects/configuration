@@ -383,6 +383,55 @@ class ConfigurationUITest extends ConfigurationWebTestCase {
   }
 
   /**
+   * Tests the "Migrate Export" page.
+   */
+  public function testMigrateExportUI() {
+    module_load_include('inc', 'configuration', 'configuration.admin');
+
+    // The purpose of this test is check that no notices are displayed
+    // while exporting configuration.
+
+    $edit = array();
+    // Select all the available components that are available in the UI
+    $components = configuration_get_components();
+    foreach ($components as $component => $component_info) {
+      if ($component != 'menu_links') {
+        $options = configuration_invoke($component, 'configuration_export_options');
+        if (!empty($options)) {
+          foreach (configuration_dom_encode_options($options) as $identifier => $value)
+          $edit[$component . '[items][' . $identifier . ']'] = TRUE;
+        }
+      }
+    }
+    $this->drupalPost('admin/config/system/configuration/migrate', $edit, t('Download Configurations'));
+
+    // Migrate a components that don't have dependencies
+    $edit = array();
+    $edit['filter[items][filtered_html]'] = TRUE;
+    $this->drupalPost('admin/config/system/configuration/migrate', $edit, t('Download Configurations'));
+
+    // Migrate an overriden component
+    $this->trackConfigurations();
+    $edit = array();
+    $edit["filters[filter_url][settings][filter_url_length]"] = 20;
+    $this->drupalPost('admin/config/content/formats/filtered_html', $edit, t('Save configuration'));
+    $edit = array();
+    $edit['filter[items][filtered_html]'] = TRUE;
+    $this->drupalPost('admin/config/system/configuration/migrate', $edit, t('Download Configurations'));
+
+    // Migrate two components. One overriden and other in sync.
+    $edit = array();
+    $edit['filter[items][filtered_html]'] = TRUE;
+    $edit['filter[items][plain_text]'] = TRUE;
+    $this->drupalPost('admin/config/system/configuration/migrate', $edit, t('Download Configurations'));
+
+    // Try to submit the UI without selecting any component
+    $edit = array();
+    $this->drupalPost('admin/config/system/configuration/migrate', $edit, t('Download Configurations'));
+    $this->assertRaw(t('Please choose at least one configuration.'));
+  }
+
+  /**
    * Tests the "stop tracking" page.
    */
   public function testStopTrackingUI() {

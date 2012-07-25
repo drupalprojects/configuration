@@ -818,9 +818,13 @@ function configuration_write_export_file($config = NULL, $dest = NULL) {
     if (is_array($component)) {
       foreach ($component as $name => $settings) {
         fwrite($h, 'config[' . $owner . '][' . $name . '][status] = ' . $settings['status'] . "\n");
-        fwrite($h, 'config[' . $owner . '][' . $name . '][hash] = \'' . $settings['hash'] . "'\n");
+        if (!empty($settings['hash'])) {
+          fwrite($h, 'config[' . $owner . '][' . $name . '][hash] = \'' . $settings['hash'] . "'\n");
+        }
         fwrite($h, 'config[' . $owner . '][' . $name . '][parent] = \'' . $settings['parent'] . "'\n");
-        fwrite($h, 'config[' . $owner . '][' . $name . '][dependencies] = \'' . $settings['dependencies'] . "'\n\n");
+        if (!empty($settings['dependencies'])) {
+          fwrite($h, 'config[' . $owner . '][' . $name . '][dependencies] = \'' . $settings['dependencies'] . "'\n\n");
+        }
       }
     }
   }
