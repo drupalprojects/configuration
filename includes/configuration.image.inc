@@ -9,6 +9,7 @@ function image_configuration_api() {
       'name' => t('Image styles'),
       'feature_source' => TRUE,
       'default_hook' => 'configuration_image_default_styles',
+      'default_file' => CONFIGURATION_DEFAULTS_INCLUDED,
     )
   );
 }
@@ -109,9 +110,9 @@ function configuration_check_image($identifier) {
   $from_activestore = &drupal_static('configuration_from_activestore');
   $component = 'image';
 
-  if (file_exists("config://configuration.inc")) {
+  if (file_exists("config://configuration.image.inc")) {
     // Load the current configuration file on disk
-    include_once drupal_realpath("config://configuration.inc");
+    include_once drupal_realpath("config://configuration.image.inc");
     if (function_exists('configuration_configuration_image_default_styles')) {
       // Clear all caches and flush.
       image_style_flush($identifier);

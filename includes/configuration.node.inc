@@ -9,6 +9,7 @@ function node_configuration_api() {
       'name' => t('Content types'),
       'feature_source' => TRUE,
       'default_hook' => 'configuration_node_info',
+      'default_file' => CONFIGURATION_DEFAULTS_INCLUDED,
     ),
   );
 }
@@ -206,9 +207,9 @@ function configuration_check_node($identifier) {
   $from_activestore = &drupal_static('configuration_from_activestore');
   $component = 'node';
 
-  if (file_exists("config://configuration.inc")) {
+  if (file_exists("config://configuration.node.inc")) {
     // Load the current configuration file on disk
-    include_once drupal_realpath("config://configuration.inc");
+    include_once drupal_realpath("config://configuration.node.inc");
     if (function_exists('configuration_configuration_node_info')) {
       // Clear the node type cache.
       node_type_cache_reset();
