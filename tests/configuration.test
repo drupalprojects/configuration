@@ -169,10 +169,7 @@ class ConfigurationTrackingTest extends ConfigurationWebTestCase {
     );
     foreach ($types as $type) {
       $this->assertRaw(t('Tracking configurations for %type have been saved', array('%type' => $type)));
-
-      if (!in_array($type, array('node', 'image'))) {
-        $this->assertRaw(t('Wrote %type to filesystem', array('%type' => 'configuration.' . $type . '.inc')));
-      }
+      $this->assertRaw(t('Wrote %type to filesystem', array('%type' => 'configuration.' . $type . '.inc')));
     }
 
     // Test that the options being tracked are no longer in list for stuff not
