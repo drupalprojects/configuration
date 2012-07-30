@@ -10,24 +10,29 @@
 class ConfigurationWebTestCase extends DrupalWebTestCase {
 
   protected $trackedComponents;
+  protected $adminUser;
 
   /**
    * Track Configurations.
    */
-  public function trackConfigurations() {
+  public function trackConfigurations($components = NULL, $filenames = array()) {
 
     $roles = user_roles();
 
-    $this->trackedComponents = array(
-      'filter' => array('filtered_html'),
-      'field' => array('node-' . $this->type->type . '-body'),
-      'node' => array($this->type->type),
-      'image' => array('large'),
-      'taxonomy' => array($this->vocab->machine_name),
-      'user_permission' => array('access configuration management'),
-      'user_role' => array($roles[3]),
-    );
-
+    if ($components == NULL) {
+      $this->trackedComponents = array(
+        'filter' => array('filtered_html'),
+        'field' => array('node-' . $this->type->type . '-body'),
+        'node' => array($this->type->type),
+        'image' => array('large'),
+        'taxonomy' => array($this->vocab->machine_name),
+        'user_permission' => array('access configuration management'),
+        'user_role' => array($roles[3]),
+      );
+    }
+    else {
+      $this->trackedComponents = $components;
+    }
     $edit = array();
     foreach ($this->trackedComponents as $component => $identifiers) {
       foreach ($identifiers as $identifier) {
@@ -55,9 +60,17 @@ class ConfigurationWebTestCase extends DrupalWebTestCase {
       'user_role',
       'taxonomy',
     );
-    foreach ($types as $type) {
-      $config_file_exists = file_exists($this->datastore_path . '/configuration.' . $type . '.inc');
-      $this->assertTrue($config_file_exists, "Configuration file for $type was created.");
+
+    // Check created files.
+    if (empty($filenames)) {
+      // Generate a default filename array based on component names.
+      foreach ($types as $type) {
+        $filenames[] = 'configuration.' . $type . '.inc';
+      }
+    }
+    foreach ($filenames as $filename) {
+      $config_file_exists = file_exists($this->datastore_path . '/' . $filename);
+      $this->assertTrue($config_file_exists, "Configuration file $filename was created.");
     }
 
     $this->assertResponse(200);
@@ -91,6 +104,8 @@ class ConfigurationWebTestCase extends DrupalWebTestCase {
     $this->verbose('Saving configurations into: ' . $this->datastore_path);
     file_prepare_directory(variable_get('configuration_config_path', $this->datastore_path));
 
+    // Reset the admin user for each test.
+    $this->adminUser = NULL;
     // Use the administration interface so config:// is correctly set up.
     $this->adminLogin();
     $edit = array();
@@ -101,31 +116,33 @@ class ConfigurationWebTestCase extends DrupalWebTestCase {
   /**
    * Logs in as an administrative user.
    *
-   * If $this->admin_user is empty, it creates a new admin user with the
+   * If $this->adminUser is empty, it creates a new admin user with the
    * given $permissions.
    *
    * @param array $permissions
    *   An array of permissions for the admin user.
    */
   public function adminLogin($permissions = NULL) {
-    if ($permissions == NULL) {
-      $permissions = array(
-        'administer content types',
-        'access administration pages',
-        'access configuration management',
-        'administer modules',
-        'administer site configuration',
-        'administer filters',
-        'administer permissions',
-        'administer users',
-        'administer image styles',
-        'administer taxonomy'
-      );
+    if ($permissions != NULL || !$this->adminUser) {
+      if ($permissions == NULL) {
+        $permissions = array(
+          'administer content types',
+          'access administration pages',
+          'access configuration management',
+          'administer modules',
+          'administer site configuration',
+          'administer filters',
+          'administer permissions',
+          'administer users',
+          'administer image styles',
+          'administer taxonomy'
+        );
+      }
+
+      $this->adminUser = $this->drupalCreateUser($permissions);
     }
 
-    $this->admin_user = $this->drupalCreateUser($permissions);
-
-    $this->drupalLogin($this->admin_user);
+    $this->drupalLogin($this->adminUser);
   }
 }
 
@@ -225,17 +242,19 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
 
     $configuration_needs_saving_text = t('Configurations are out of sync and need to be either !write.', array('!write' => l(t('activated or written to file'), 'admin/config/system/configuration/tracking')));
 
-    // Test content types overrides
+    // Test content types overrides.
     $edit = array();
-    $edit['name'] = $this->type->type . ' Other name'; // Change the name of the content type
+    // Change the name of the content type.
+    $edit['name'] = $this->type->type . ' Other name';
     $this->drupalPost('admin/structure/types/manage/' . $this->type->type, $edit, t('Save content type'));
     $this->assertRaw($configuration_needs_saving_text, t('Activestore overriden for content types'));
     $status = configuration_get_status('node', $this->type->type);
     $this->assertEqual($status, CONFIGURATION_ACTIVESTORE_OVERRIDDEN);
 
-    // Test content types back to default
+    // Test content types back to default.
     $edit = array();
-    $edit['name'] = $this->type->type; // Back to the original name
+    // Back to the original name.
+    $edit['name'] = $this->type->type;
     $this->drupalPost('admin/structure/types/manage/' . $this->type->type, $edit, t('Save content type'));
     $this->assertNoRaw($configuration_needs_saving_text, t('Activestore overriden for content types'));
     $status = configuration_get_status('node', $this->type->type);
@@ -502,15 +521,15 @@ class ConfigurationUITest extends ConfigurationWebTestCase {
 
     // The purpose of this test is check that no notices are displayed
     // while exporting configuration.
-
     $edit = array();
-    // Select all the available components that are available in the UI
+    // Select all the available components that are available in the UI.
     $components = configuration_get_components();
     foreach ($components as $component => $component_info) {
       if ($component != 'menu_links') {
         $options = configuration_invoke($component, 'configuration_export_options');
         if (!empty($options)) {
-          foreach (configuration_dom_encode_options($options) as $identifier => $value) {
+          $dom_options = configuration_dom_encode_options($options);
+          foreach ($dom_options as $identifier => $value) {
             $edit[$component . '[items][' . $identifier . ']'] = TRUE;
           }
         }
@@ -518,12 +537,12 @@ class ConfigurationUITest extends ConfigurationWebTestCase {
     }
     $this->drupalPost('admin/config/system/configuration/migrate', $edit, t('Download Configurations'));
 
-    // Migrate a components that don't have dependencies
+    // Migrate a components that don't have dependencies.
     $edit = array();
     $edit['filter[items][filtered_html]'] = TRUE;
     $this->drupalPost('admin/config/system/configuration/migrate', $edit, t('Download Configurations'));
 
-    // Migrate an overriden component
+    // Migrate an overriden component.
     $this->trackConfigurations();
     $edit = array();
     $edit["filters[filter_url][settings][filter_url_length]"] = 20;
@@ -538,7 +557,7 @@ class ConfigurationUITest extends ConfigurationWebTestCase {
     $edit['filter[items][plain_text]'] = TRUE;
     $this->drupalPost('admin/config/system/configuration/migrate', $edit, t('Download Configurations'));
 
-    // Try to submit the UI without selecting any component
+    // Try to submit the UI without selecting any component.
     $edit = array();
     $this->drupalPost('admin/config/system/configuration/migrate', $edit, t('Download Configurations'));
     $this->assertRaw(t('Please choose at least one configuration.'));

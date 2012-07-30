@@ -1,0 +1,52 @@
+<?php
+/**
+ * @file
+ * Test cases for contrib modules supported by configuration.
+ */
+
+/**
+ * Configuration test case for ctools.
+ */
+class ConfigurationCtoolsWebTestCase extends ConfigurationContribWebTestCase {
+  /**
+   * Test info.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => t('Test Ctools Integration'),
+      'description' => t('Test contributed ctools integration supported by configuration management.') ,
+      'group' => t('Configuration'),
+      'dependencies' => array('ctools','views', 'configuration_test'),
+    );
+  }
+
+  /**
+   * Set up test.
+   */
+  public function setUp() {
+    parent::setUp(array('ctools', 'views'));
+
+    $this->adminLogin();
+  }
+
+  /**
+   * Tests tracking configurations for the views module.
+   */
+  public function testTrackingViews() {
+    // Track default views.
+    $components = array(
+      'views_view' => array(
+        'archive',
+        'backlinks',
+        'frontpage',
+        'glossary',
+        'comments_recent',
+        'taxonomy_term',
+        'tracker',
+      ),
+    );
+    // TODO: This should change after http://drupal.org/node/1538502.
+    $files = array('views_default.inc');
+    $this->trackConfigurations($components, $files);
+  }
+}
