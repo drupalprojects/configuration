@@ -126,7 +126,7 @@ function user_permission_configuration_rebuild($identifiers, $module_name = 'con
       $perm = $permission['name'];
       if (in_array($perm, $identifiers)) {
         foreach ($roles as $role) {
-          if (in_array($role, $permission['roles']) || $identifiers[0] == '#import_all') {
+          if (in_array($role, $permission['roles']) || (!empty($identifiers) && $identifiers[0] == '#import_all')) {
             $permissions_by_role[$role][$perm] = TRUE;
           }
           else {
@@ -212,7 +212,7 @@ function user_role_configuration_revert($module, $module_name = 'configuration')
 function user_role_configuration_rebuild($identifiers, $module_name = 'configuration') {
   if ($defaults = configuration_get_default('user_role', $module_name)) {
     foreach ($defaults as $role) {
-      if (in_array($role['name'], $identifiers) || $identifiers[0] == '#import_all') {
+      if (in_array($role['name'], $identifiers) || (!empty($identifiers) && $identifiers[0] == '#import_all')) {
         $role = (object) $role;
         if ($existing = user_role_load_by_name($role->name)) {
           $role->rid = $existing->rid;

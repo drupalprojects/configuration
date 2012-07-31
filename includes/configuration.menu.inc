@@ -120,7 +120,7 @@ function menu_custom_configuration_revert($identifiers, $module_name = 'configur
 function menu_custom_configuration_rebuild($identifiers, $module_name = 'configuration') {
   if ($defaults = configuration_get_default('menu_custom', $module_name)) {
     foreach ($defaults as $identifier => $menu) {
-      if (in_array($identifier, $identifiers) || $identifiers[0] == '#import_all') {
+      if (in_array($identifier, $identifiers) || (!empty($identifiers) && $identifiers[0] == '#import_all')) {
         menu_save($menu);
       }
     }
@@ -234,7 +234,7 @@ function menu_links_configuration_rebuild($identifiers, $module_name = 'configur
   if ($menu_links = configuration_get_default('menu_links', $module_name)) {
     $links = array();
     foreach ($identifiers as $identifier) {
-      if (array_key_exists($identifier, $menu_links) || $identifiers[0] == '#import_all') {
+      if (array_key_exists($identifier, $menu_links) || (!empty($identifiers) && $identifiers[0] == '#import_all')) {
         $links[$identifier] = $menu_links[$identifier];
       }
     }

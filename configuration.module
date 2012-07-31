@@ -610,6 +610,7 @@ function configuration_delete($cid) {
  * Delete a specific configuration from being tracked.
  */
 function configuration_delete_multiple($cids) {
+  module_load_include('inc', 'configuration', 'configuration.export');
   $transaction = db_transaction();
   try {
     // Build an array of configs to exclude when writing to file.  Even though
@@ -679,6 +680,7 @@ function configuration_delete_multiple($cids) {
     watchdog_exception('configuration', $e);
     throw $e;
   }
+  return TRUE;
 }
 
 /**
@@ -899,23 +901,6 @@ function configuration_enable_configuration($module) {
   $configuration = configuration_load($module);
   $items[$module] = array_keys($configuration->info['configuration']);
   return _configuration_restore('enable', $items);
-}
-
-/**
- * Remove checkboxes from rows that are not overridden
- *
- * @see template_preprocess_table
- */
-function configuration_preprocess_table(&$vars) {
-  if (isset($vars['attributes']['id']) && strpos($vars['attributes']['id'], 'configuration-table-select-') === 0) {
-    // Get the text label for in sync
-    $in_sync = _configuration_get_status_link(CONFIGURATION_IN_SYNC);
-    foreach ($vars['rows'] as &$row) {
-      if ($row['data'][2] == $in_sync || $row['data'][2] == t('Not in Activestore')) {
-        $row['data'][0] = '';
-      }
-    }
-  }
 }
 
 /**

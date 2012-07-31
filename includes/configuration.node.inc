@@ -139,7 +139,7 @@ function configuration_node_types_rebuild($identifiers, $module_name = 'configur
 
   $info_array = call_user_func($module_name . '_configuration_node_info');
   foreach ($info_array as $type => $info) {
-    if (in_array($type, $identifiers) || $identifiers[0] == '#import_all') {
+    if (in_array($type, $identifiers) || (!empty($identifiers) && $identifiers[0] == '#import_all')) {
       $info['type'] = $type;
       $_node_types->types[$type] = node_type_set_defaults($info);
       $_node_types->types[$type]->module = 'configuration';

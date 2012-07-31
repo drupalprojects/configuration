@@ -92,7 +92,7 @@ function taxonomy_configuration_rebuild($identifiers, $module_name = 'configurat
   if ($vocabularies = configuration_get_default('taxonomy', $module_name)) {
     $existing = taxonomy_get_vocabularies();
     foreach ($vocabularies as $vocabulary) {
-      if (in_array($vocabulary['machine_name'], $identifiers) || $identifiers[0] == '#import_all') {
+      if (in_array($vocabulary['machine_name'], $identifiers) || (!empty($identifiers) && $identifiers[0] == '#import_all')) {
         $vocabulary = (object) $vocabulary;
         foreach ($existing as $existing_vocab) {
           if ($existing_vocab->machine_name === $vocabulary->machine_name) {

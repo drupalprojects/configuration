@@ -74,7 +74,7 @@ function image_configuration_export_render($module_name, $data, $export = NULL) 
 function image_configuration_revert($identifiers, $module_name = 'configuration') {
   if ($default_styles = configuration_get_default('image', $module_name)) {
     foreach ($default_styles as $identifier => $default_style) {
-      if (in_array($identifier, $identifiers) || $identifiers[0] == '#import_all') {
+      if (in_array($identifier, $identifiers) || (!empty($identifiers) && $identifiers[0] == '#import_all')) {
         $style = image_style_load($identifier);
         image_default_style_revert($style);
 

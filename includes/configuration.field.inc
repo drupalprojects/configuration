@@ -168,7 +168,7 @@ function field_configuration_rebuild($identifiers, $module_name = 'configuration
   if ($fields = configuration_get_default('field', $module_name)) {
     field_info_cache_clear();
     foreach ($fields as $identifier => $field) {
-      if (in_array($identifier, $identifiers) || $identifiers[0] == '#import_all') {
+      if (in_array($identifier, $identifiers) || (!empty($identifiers) && $identifiers[0] == '#import_all')) {
         // Create or update field.
         $field_config = $field['field_config'];
         if ($existing_field = field_info_field($field_config['field_name'])) {

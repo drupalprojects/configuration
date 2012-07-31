@@ -9,6 +9,13 @@ function configuration_tracking_form($form, &$form_state) {
 
   $config = configuration_get_configuration();
 
+  // Use multi-step forms to be able to stop tracking configurations
+  // using a confirmation form.
+  if (!empty($form_state['page_num']) && $form_state['page_num'] == 2) {
+    return configuration_confirm_delete_multiple($form, $form_state);
+  }
+  $form_state['page_num'] = 1;
+
   // Unset the status variable that is in the config cache
   // @todo: Thinkin about moving this state out of the config cache array.
   unset($config['overridden']);
@@ -84,23 +91,13 @@ function configuration_tracking_form($form, &$form_state) {
       }
 
       $all_items = $items + $delete_items;
-      if (!empty($overridden_items)) {
-        $form[$component]['items'] = array(
-          '#type' => 'tableselect',
-          '#header' => $header,
-          '#options' => $overridden_items + $all_items,
-          '#attributes' => array('id' => 'configuration-table-select-' . $component),
-          '#overridden' => count($overridden_items),
-          // '#value' => isset($form_state[$component]) ? $form_state[$component]['#default_value'] : -1,
-        );
-      }
-      else {
-        $form[$component]['tracked_items'] = array(
-          '#theme' => 'table',
-          '#header' => $header,
-          '#rows' => $all_items,
-        );
-      }
+      $form[$component]['items'] = array(
+        '#type' => 'tableselect',
+        '#header' => $header,
+        '#options' => $overridden_items + $all_items,
+        '#attributes' => array('id' => 'configuration-table-select-' . $component),
+        '#overridden' => count($overridden_items),
+      );
     }
     if ($overridden) {
       $form[$component]['#attributes']['class'] = array('overridden');
@@ -133,6 +130,13 @@ function configuration_tracking_form($form, &$form_state) {
     );
   }
 
+  $form['buttons']['stop_tracking'] = array(
+    '#type' => 'submit',
+    '#value' => t('Stop Tracking'),
+    '#weight' => 20,
+    '#submit' => array('configuration_stop_tracking_form_submit'),
+  );
+
   $form['buttons']['revert'] = array(
     '#type' => 'submit',
     '#value' => t('Import Datastore to Activestore'),
@@ -147,6 +151,7 @@ function configuration_tracking_form($form, &$form_state) {
   // Use the same handlers as the notracking form
   $form['#validate'][] = 'configuration_notracking_form_validate';
   $form['#validate'][] = 'configuration_tracking_form_validate';
+  $form['#validate'][] = 'configuration_stop_tracking_form_validate';
   $form['#submit'][] = 'configuration_notracking_form_submit';
 
   return $form;
@@ -429,7 +434,7 @@ function configuration_import_form($form, &$form_state) {
 }
 
 /**
- * Submit handler for importing configs
+ * Submit handler for importing configs.
  */
 function configuration_import_form_submit($form, &$form_state) {
   module_load_include('inc', 'configuration', 'configuration.export');
@@ -501,27 +506,45 @@ function configuration_import_form_submit($form, &$form_state) {
 }
 
 /**
- * Submit handler for downloading configs
+ * Submit handler for downloading configs.
  */
 function configuration_migrate_form_submit($form, &$form_state)  {
   configuration_download_config($form_state['configuration_export']);
 }
 /**
- * Submit handler for reverting configs
+ * Submit handler for reverting configs.
  */
 function configuration_activate_form_submit($form, &$form_state) {
   configuration_revert($form_state['configuration_export']);
 }
 
 /**
- * Submit handler for reverting configs
+ * Submit handler for stop tracking configs.
+ */
+function configuration_stop_tracking_form_submit($form, &$form_state) {
+  // Values are saved for each page.
+  // to carry forward to subsequent pages in the form.
+  // and we tell FAPI to rebuild the form.
+  $form_state['page_values'][1] = $form_state['values'];
+
+  if (!empty($form_state['page_values'][2])) {
+    $form_state['values'] = $form_state['page_values'][2];
+  }
+
+  // Only when click the "Stop Tracking" button, we move to the step two.
+  $form_state['page_num'] = 2;
+  $form_state['rebuild'] = TRUE;
+}
+
+/**
+ * Submit handler for reverting configs.
  */
 function configuration_revert_config($form, &$form_state) {
   drupal_set_message('Reverting is not implemented yet!');
 }
 
 /**
- * Submit handler for downloading diff
+ * Submit handler for downloading diff.
  */
 function configuration_download_config_submit($form, &$form_state) {
   configuration_download_config();
@@ -545,13 +568,16 @@ function configuration_confirm_delete_page($component, $name) {
 }
 
 /**
- * Form for deleting configs
+ * Form for deleting configs.
  */
 function configuration_confirm_delete($form, &$form_state, $component, $name) {
   module_load_include('inc', 'configuration', 'configuration.export');
   configuration_include();
 
-  $form['config_name'] = array(
+  // Pass the component as an array to re-use this function
+  // with the multiple stop tracking feature.
+  $form['config_name']['#tree'] = TRUE;
+  $form['config_name'][$component . ':' . $name] = array(
     '#type' => 'value',
     '#value' => $component . ':' . $name,
   );
@@ -567,26 +593,116 @@ function configuration_confirm_delete($form, &$form_state, $component, $name) {
 }
 
 /**
- * Submit handler for deleting configs
+ * Form for deleting configs.
+ */
+function configuration_confirm_delete_multiple($form, &$form_state) {
+  module_load_include('inc', 'configuration', 'configuration.export');
+  configuration_include();
+
+  $list_to_delete = array();
+
+  $form['config_name']['#tree'] = TRUE;
+
+  foreach (element_children($form_state['values']) as $component) {
+    if (is_array($form_state['values'][$component])) {
+      foreach (array_keys(array_filter($form_state['values'][$component]['items'])) as $name) {
+        $form['config_name'][$component . ':' . $name] = array(
+          '#type' => 'value',
+          '#value' => $component . ':' . $name,
+        );
+
+        if (!isset($list_to_delete[$component])) {
+          $list_to_delete[$component] = array('data' => $component, 'children' => array());
+        }
+        $list_to_delete[$component]['children'][$name] = array('data' => $name);
+      }
+    }
+  }
+
+  $message = t('Are you sure you want to stop tracking configuration for the following configs?');
+  $message .= '<p>' . theme('item_list', array('items' => $list_to_delete)) . '</p>';
+  $message .= t('This action cannot be undone.');
+
+  $form = confirm_form(
+    $form,
+    t('Are you sure you want to stop tracking configuration for the following configs?'),
+    'admin/config/system/configuration',
+    $message,
+    t('Stop Tracking'),
+    t('Cancel'),
+    'confirm'
+  );
+  $form['#submit'][] = 'configuration_confirm_delete_submit';
+  return $form;
+}
+
+/**
+ * Submit handler for deleting configs.
  */
 function configuration_confirm_delete_submit($form, &$form_state) {
   $a = &drupal_static('configuration_from_activestore');
   $a = TRUE;
 
-  $name = $form_state['values']['config_name'];
-  $parts = explode(":", $name);
-  // Get the cids for this configuration
-  $cids = db_query("SELECT cid FROM {config_export} WHERE owner = :owner AND name = :name", array(":owner" => $parts[0], ":name" => $parts[1]))->fetchAll();
-  $delete = array();
-  foreach ($cids as $cid) {
-    $delete[] = $cid->cid;
+  $to_delete = $form_state['values']['config_name'];
+  $last_count = 0;
+
+  while (count($to_delete) > 0 && $last_count != count($to_delete)) {
+    $last_count = count($to_delete);
+    foreach ($to_delete as $index => $name) {
+      $parts = explode(':', $name);
+      $configs = db_query("SELECT cid, parent FROM {config_export} WHERE owner = :owner AND name = :name", array(":owner" => $parts[0], ":name" => $parts[1]))->fetchAll();
+
+      // Only remove the config is it doesn't have parents that depends of this config
+      foreach ($configs as $config) {
+        if (empty($config->parent)) {
+          $delete[] = $config->cid;
+        }
+      }
+      if (!empty($delete)) {
+        if (configuration_delete_multiple($delete)) {
+          drupal_set_message(t('The configuration %config_name was deleted.', array('%config_name' => $name)));
+          watchdog('content', 'Deleted configuration @config_name and its replies.', array('@config_name' => $name));
+
+          // Remove the item of the list to process
+          unset($to_delete[$index]);
+        }
+      }
+    }
   }
-  if (configuration_delete_multiple($delete)) {
-    drupal_set_message(t('The configuration %config_name was deleted.', array('%config_name' => $name)));
-    watchdog('content', 'Deleted configuration @config_name and its replies.', array('@config_name' => $name));
+
+  if (count($to_delete) > 0) {
+    drupal_set_message(t('Something wrong occurred.'), 'error');
   }
 
   $form_state['redirect'] = "admin/config/system/configuration";
+}
+
+function configuration_stop_tracking_form_validate($form, &$form_state) {
+  if ($form_state['values']['op'] == t('Stop Tracking')) {
+    $configuration_export = $form_state['configuration_export'];
+    $current_config = configuration_get_configuration();
+    foreach ($configuration_export as $component => $config) {
+      foreach (array_keys(array_filter($config)) as $identifier) {
+        // User is trying to Stop Tracking a component that is a dependency of another component
+        if (!empty($current_config[$component][$identifier]['parent'])) {
+          $parent_id = $current_config[$component][$identifier]['parent'];
+          // See if the parent is also being UnTracking.
+          $parent_untracked_too = FALSE;
+          $dependencies = unserialize($current_config[$component][$identifier]['dependencies']);
+          if (!empty($dependencies)) {
+            foreach (array_unique($dependencies) as $dependency) {
+              if (!empty($configuration_export[$dependency][$parent_id])) {
+                $parent_untracked_too = TRUE;
+              }
+            }
+          }
+          if (!$parent_untracked_too) {
+            form_set_error('packages', t('You cannot stop tracking configurations of a component that is a dependency of another component.'));
+          }
+        }
+      }
+    }
+  }
 }
 
 /**
@@ -614,6 +730,7 @@ function configuration_notracking_form_validate($form, &$form_state) {
   }
   $form_state['configuration_export'] = $configuration_export;
 }
+
 function configuration_tracking_form_validate($form, &$form_state) {
   if ($form_state['values']['op'] == t('Write Activestore to Datastore')) {
     $configuration_export = $form_state['configuration_export'];

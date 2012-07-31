@@ -31,7 +31,13 @@ class ConfigurationWebTestCase extends DrupalWebTestCase {
     $edit = array();
     foreach ($this->trackedComponents as $component => $identifiers) {
       foreach ($identifiers as $identifier) {
-        $edit[$component . '[items][' . $identifier . ']'] = 1;
+        // Don't check the checkbox for fields, it is automatically tracked
+        // when the content type is tracked.
+        //
+        // @TODO: This is a bug, fix this.
+        if ($component != 'field') {
+          $edit[$component . '[items][' . $identifier . ']'] = 1;
+        }
       }
     }
 
@@ -460,6 +466,7 @@ class ConfigurationUITest extends ConfigurationWebTestCase {
     foreach ($this->trackedComponents as $component => $identifiers) {
       foreach ($identifiers as $identifier) {
         if (empty($config[$component][$identifier]['parent'])) {
+          $this->assertFieldByName($component . '[items][' . $identifier . ']', $identifier, t("Checkbox for @identifier found", array('@identifier' => $identifier)));
           $this->assertRaw('admin/config/system/configuration/config/' . $component . '/' . str_replace(' ', '%20', $identifier) . '/delete', t('Stop tracking link for @component (@identifier) found', array('@component' => $component, '@identifier' => $identifier)));
         }
       }
@@ -503,8 +510,9 @@ class ConfigurationUITest extends ConfigurationWebTestCase {
       if ($component != 'menu_links') {
         $options = configuration_invoke($component, 'configuration_export_options');
         if (!empty($options)) {
-          foreach (configuration_dom_encode_options($options) as $identifier => $value)
-          $edit[$component . '[items][' . $identifier . ']'] = TRUE;
+          foreach (configuration_dom_encode_options($options) as $identifier => $value) {
+            $edit[$component . '[items][' . $identifier . ']'] = TRUE;
+          }
         }
       }
     }
@@ -570,6 +578,38 @@ class ConfigurationUITest extends ConfigurationWebTestCase {
     // the tracking.
     $this->drupalGet('admin/config/system/configuration/config/filter/filtered_html/delete');
     $this->assertResponse(404, 'Stop tracking page for non tracked component does not exists');
+  }
+
+  /**
+   * Tests the multi "Stop Tracking" feature.
+   */
+  public function testMultiStopTrackingUI() {
+    $this->trackConfigurations();
+
+    // For tracked components, should exists a page to stop the tracking.
+    $config = configuration_get_configuration();
+
+    // Try to stop tracking a component that is a dependency of another component
+    $edit = array();
+    $edit['field[items][node-' . $this->type->type . '-body]'] = 1;
+    $this->drupalPost('admin/config/system/configuration', $edit, t('Stop Tracking'));
+    // Submit the second step of the form
+    $this->drupalPost(NULL, array(), t('Stop Tracking'));
+    $this->assertRaw(t('You cannot stop tracking configurations of a component that is a dependency of another component.'));
+
+    // Try to stop tracking all the components
+    $edit = array();
+    foreach ($this->trackedComponents as $component => $identifiers) {
+      foreach ($identifiers as $identifier) {
+        $edit[$component . '[items][' . $identifier . ']'] = 1;
+      }
+    }
+    $this->drupalPost('admin/config/system/configuration', $edit, t('Stop Tracking'));
+    // Submit the second step of the form
+    $this->drupalPost(NULL, array(), t('Stop Tracking'));
+    $this->assertRaw(t('No Configurations were found. Please use the
+      !export_link page to begin tracking new Configurations.',
+      array('!export_link' => l(t('Not Tracking'), 'admin/config/system/configuration/notracking'))));
   }
 
   /**
