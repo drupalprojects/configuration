@@ -113,6 +113,7 @@ class ConfigurationWebTestCase extends DrupalWebTestCase {
         'administer permissions',
         'administer users',
         'administer image styles',
+        'administer taxonomy'
       );
     }
 
@@ -315,6 +316,98 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $this->assertNoRaw($configuration_needs_saving_text, t('Activestore in sync for Image Styles'));
     $status = configuration_get_status('image', 'large');
     $this->assertEqual($status, CONFIGURATION_IN_SYNC);
+  }
+
+  /**
+   * Tests that configurations that are marked as overriden are reverted properly.
+   */
+  public function testImportDatastoreToActivestore() {
+    $this->trackConfigurations();
+
+    $configuration_needs_saving_text = t('Configurations are out of sync and need to be either !write.', array('!write' => l(t('activated or written to file'), 'admin/config/system/configuration/tracking')));
+
+    // Special tests for configurations with dependencies
+
+    // Test content types overrides
+    $edit = array();
+    $edit['name'] = $this->type->type . ' Other name'; // Change the name of the content type
+    $this->drupalPost('admin/structure/types/manage/' . $this->type->type, $edit, t('Save content type'));
+    $this->assertRaw($configuration_needs_saving_text, t('Activestore overriden'));
+
+    // Try to revert only the parent
+    $edit = array();
+    $edit['node[items][' . $this->type->type . ']'] = TRUE;
+    $this->drupalPost('admin/config/system/configuration', $edit, t('Import Datastore to Activestore'));
+
+    // Testing overridding a field.
+    $edit = array();
+    $edit["instance[widget][settings][rows]"] = 2;
+    $this->drupalPost('admin/structure/types/manage/' . $this->type->type . '/fields/body', $edit, t('Save settings'));
+
+    // Try to revert only the dependency
+    $edit = array();
+    $edit['field[items][node-' . $this->type->type . '-body]'] = TRUE;
+    $this->drupalPost('admin/config/system/configuration', $edit, t('Import Datastore to Activestore'));
+
+    // Test content types overrides
+    $edit = array();
+    $edit['name'] = $this->type->type . ' Other name'; // Change the name of the content type
+    $this->drupalPost('admin/structure/types/manage/' . $this->type->type, $edit, t('Save content type'));
+
+    // Testing overridding a field.
+    $edit = array();
+    $edit["instance[widget][settings][rows]"] = 2;
+    $this->drupalPost('admin/structure/types/manage/' . $this->type->type . '/fields/body', $edit, t('Save settings'));
+
+    // Testing overriding filters.
+    $edit = array();
+    $edit["filters[filter_url][settings][filter_url_length]"] = 20;
+    $this->drupalPost('admin/config/content/formats/filtered_html', $edit, t('Save configuration'));
+
+    // Testing overriding filters.
+    $edit = array();
+    $edit["filters[filter_url][settings][filter_url_length]"] = 20;
+    $this->drupalPost('admin/config/content/formats/filtered_html', $edit, t('Save configuration'));
+
+    // Testing overriden user permissions.
+    $edit = array();
+    $edit['2[access configuration management]'] = TRUE;
+    $this->drupalPost('admin/people/permissions', $edit, t('Save permissions'));
+
+    // Testing overriden taxonomies.
+    $edit = array();
+    $edit['description'] = 'changed';
+    $this->drupalPost('admin/structure/taxonomy/' . $this->vocab->machine_name . '/edit', $edit, t('Save'));
+
+    // Testing overriden image styles.
+    $edit = array();
+    // First unlock the image style.
+    $this->drupalPost('admin/config/media/image-styles/edit/large', $edit, t('Override defaults'));
+    $edit = array();
+    $edit['data[width]'] = '400';
+    $this->drupalPost('admin/config/media/image-styles/edit/large/effects/1', $edit, t('Update effect'));
+
+    // Expect to find the Active Store overriden string.
+    $this->assertRaw($configuration_needs_saving_text, t('Activestore overriden'));
+
+    // Revert all the components.
+    $edit = array();
+    foreach ($this->trackedComponents as $component => $identifiers) {
+      foreach ($identifiers as $identifier) {
+        if ($component != 'user_role') {
+          $edit[$component . '[items][' . $identifier . ']'] = 1;
+        }
+      }
+    }
+    $this->drupalPost('admin/config/system/configuration', $edit, t('Import Datastore to Activestore'));
+
+    // All the components should be IN SYNC now.
+    $this->assertNoRaw($configuration_needs_saving_text, t('Activestore overriden'));
+
+    // Make sure that image styles were reverted properly
+    $this->drupalGet('admin/config/media/image-styles');
+    $this->assertNoRaw(t('revert'), t('No overriden image styles'));
+
   }
 }
 

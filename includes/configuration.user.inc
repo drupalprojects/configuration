@@ -380,7 +380,7 @@ function configuration_check_user_role($identifier) {
       }
     }
     $md5_datastore = (is_array($roles_code) && array_key_exists($identifier, $roles_code)) ? md5(serialize($roles_code[$identifier])) : '';
-    $md5_activestore = (is_array($roles_code) && array_key_exists($identifier, $roles_code)) ? md5(serialize($roles[$identifier])) : '';
+    $md5_activestore = (is_array($roles) && array_key_exists($identifier, $roles)) ? md5(serialize($roles[$identifier])) : '';
 
     // When checking for new configurations, check to see if configurations are
     // the same in datastore as last activestore
@@ -404,7 +404,7 @@ function configuration_check_user_role($identifier) {
     // Store the config array in cache for easy access
     if ($status != CONFIGURATION_IN_SYNC) {
       // Supress error, there may not be anything in activestore
-      $configuration[$component][$identifier]['activestore'] = (is_array($roles_code) && array_key_exists($identifier, $roles_code)) ? $roles[$identifier] : '';
+      $configuration[$component][$identifier]['activestore'] = (is_array($roles) && array_key_exists($identifier, $roles)) ? $roles[$identifier] : '';
       $configuration[$component][$identifier]['datastore'] = (is_array($roles_code) && array_key_exists($identifier, $roles_code)) ? $roles_code[$identifier] : '';
       cache_set("$component:$identifier", $configuration, 'cache_configuration');
     }

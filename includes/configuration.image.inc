@@ -76,15 +76,15 @@ function image_configuration_revert($identifiers, $module_name = 'configuration'
     foreach ($default_styles as $identifier => $default_style) {
       if (in_array($identifier, $identifiers) || $identifiers[0] == '#import_all') {
         $style = image_style_load($identifier);
-        $default_style['isid'] = $style['isid'];
-        foreach ($default_style['effects'] as $ieid => $info) {
-          // $info['ieid'] = $ieid; // @todo: This may create a ton of orphaned records or duplicates
-          $info['isid'] = $style['isid'];
-          image_effect_save($info);
-        }
-        image_style_save($default_style);
+        image_default_style_revert($style);
+
+        $cache = cache_get("image:$identifier", 'cache_configuration');
+        $cache->data['image'][$identifier]['activestore'] = $cache->data['image'][$identifier]['datastore'];
+        cache_set('image:' . $identifier, $cache->data['image'][$identifier], 'cache_configuration');
+        configuration_set_status('image', $identifier, CONFIGURATION_IN_SYNC);
       }
     }
+    configuration_check_configurations(TRUE);
   }
 }
 
