@@ -382,7 +382,7 @@ function configuration_include_defaults($components = NULL, $reset = FALSE) {
       elseif (isset($info['api'], $info['module'], $info['current_version'])) {
         ctools_include('plugins');
         ctools_plugin_api_include($info['module'], $info['api'], $info['current_version'], $info['current_version']);
-        $file = 'config://' . $info['default_filename'] . '.inc';
+        $file = 'config://configuration.' . $component . '.inc';
         if (is_file($file)) {
           include_once drupal_realpath($file);
         }
@@ -1095,17 +1095,20 @@ function configuration_hook_info() {
  * @param $items_code
  *   Items loaded from the datastore.
  * @param $from_activestore
- *   @TODO: Explain what this param means.
+ *   @todo A static variable that make not sense now we have to remove it.
  */
 function configuration_update_component_status($component, $identifier, $items, $items_code, $from_activestore) {
-
+  // @todo re-factory component status logic.
   // If this was the previous configuration in activestore don't mark this as changed.
   $config = configuration_get_configuration();
 
-  $status = $config[$component][$identifier]['status'];
+  $status = (int) $config[$component][$identifier]['status'];
 
   $md5_datastore = (is_array($items_code) && array_key_exists($identifier, $items_code)) ? md5(serialize($items_code[$identifier])) : '';
   $md5_activestore = (is_array($items) && array_key_exists($identifier, $items)) ? md5(serialize($items[$identifier])) : '';
+
+  // @todo remove $from_activestore static variable all around since make no sense now.
+  $from_activestore = ($md5_activestore != $config[$component][$identifier]['hash']);
 
   // Configs in code are not the same as what was just saved in activestore.
   if ($md5_datastore != $md5_activestore) {
@@ -1116,14 +1119,14 @@ function configuration_update_component_status($component, $identifier, $items, 
     $status = CONFIGURATION_IN_SYNC;
     configuration_set_hash($component, $identifier, $md5_activestore);
   }
-  configuration_set_status($component, $identifier, $status);
 
   // When checking for new configurations, check to see if configurations are
   // the same in datastore as last activestore. Remove the datastore overridden.
   if ($md5_datastore == $config[$component][$identifier]['hash']) {
     $status = $status & ~CONFIGURATION_DATASTORE_OVERRIDDEN;
-    configuration_set_status($component, $identifier, $status);
   }
+
+  configuration_set_status($component, $identifier, $status);
 
   // Store the config array in cache for easy access
   $configuration[$component][$identifier]['datastore'] = (is_array($items_code) && array_key_exists($identifier, $items_code)) ? $items_code[$identifier] : '';

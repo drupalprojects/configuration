@@ -22,7 +22,7 @@ foreach (_ctools_configuration_get_info() as $component => $info) {
     $code .= 'function ' . $component . '_configuration_revert($module, $module_name = "configuration") { return ctools_component_configuration_revert("' . $component . '", $module, $module_name); }';
   }
   if (!function_exists("configuration_check_{$component}")) {
-    $code .= 'function configuration_check_' . $component . '($identifier, $from_activestore = FALSE) { return ctools_configuration_check($identifier, $from_activestore); }';
+    $code .= 'function configuration_check_' . $component . '($identifier) { return ctools_configuration_check($identifier); }';
   }
   if (!function_exists("configuration_hash_{$component}")) {
     $code .= 'function configuration_hash_' . $component . '($identifier) { return ctools_configuration_hash($identifier); }';
@@ -225,7 +225,7 @@ function _ctools_configuration_get_info($identifier = NULL, $reset = FALSE) {
           $components[$table] = array(
             'name' => isset($modules[$api_module]->info['name']) ? $modules[$api_module]->info['name'] : $api_module,
             'default_hook' => 'configuration_' . $schema['export']['default hook'],
-            'default_file' => CONFIGURATION_DEFAULTS_CUSTOM,
+            'default_file' => CONFIGURATION_DEFAULTS_INCLUDED,
             'module' => $api_module,
             'feature_source' => TRUE,
           );
@@ -359,6 +359,7 @@ function configuration_hash_page_manager_pages($identifier) {
 
 
 function ctools_configuration_check($identifier) {
+
   // Set a static variable that we can access across this request.
   $from_activestore = &drupal_static('configuration_from_activestore');
 
@@ -370,7 +371,7 @@ function ctools_configuration_check($identifier) {
   // Load the current configuration file on disk
   $info = _ctools_configuration_get_info();
 
-  if (file_exists('config://' . $info[$component]['default_filename'] . '.inc')) {
+  if (file_exists('config://configuration.' . $component . '.inc')) {
     // Page Manager has it's export callback in a file that is not autoloaded.
     // PM also doesn not use the export variable, we have to set it here.
     // @todo: Come up with a cleaner way to include dependent files.
@@ -379,7 +380,7 @@ function ctools_configuration_check($identifier) {
       $export = &$pages;
     }
 
-    include_once drupal_realpath('config://' . $info[$component]['default_filename'] . '.inc');
+    include_once drupal_realpath('config://configuration.' . $component . '.inc');
     // Export just the field we're tracking.
     module_load_include('inc', 'configuration', 'configuration.export');
 

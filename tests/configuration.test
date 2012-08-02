@@ -11,6 +11,7 @@ class ConfigurationWebTestCase extends DrupalWebTestCase {
 
   protected $trackedComponents;
   protected $adminUser;
+  protected $configuration_needs_saving_text;
 
   /**
    * Track Configurations.
@@ -97,6 +98,8 @@ class ConfigurationWebTestCase extends DrupalWebTestCase {
    */
   public function setUp($modules = array()) {
     parent::setUp($modules);
+    $this->configuration_needs_saving_text = t('Configurations are out of sync and need to be either !write.', array('!write' => l(t('activated or written to file'), 'admin/config/system/configuration/tracking')));
+
     // Generate an unique path for this test based on the database prefix.
     $this->datastore_path = file_directory_temp();
 
@@ -240,14 +243,12 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
   public function testOverridden() {
     $this->trackConfigurations();
 
-    $configuration_needs_saving_text = t('Configurations are out of sync and need to be either !write.', array('!write' => l(t('activated or written to file'), 'admin/config/system/configuration/tracking')));
-
     // Test content types overrides.
     $edit = array();
     // Change the name of the content type.
     $edit['name'] = $this->type->type . ' Other name';
     $this->drupalPost('admin/structure/types/manage/' . $this->type->type, $edit, t('Save content type'));
-    $this->assertRaw($configuration_needs_saving_text, t('Activestore overriden for content types'));
+    $this->assertRaw($this->configuration_needs_saving_text, t('Activestore overriden for content types'));
     $status = configuration_get_status('node', $this->type->type);
     $this->assertEqual($status, CONFIGURATION_ACTIVESTORE_OVERRIDDEN);
 
@@ -256,7 +257,7 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     // Back to the original name.
     $edit['name'] = $this->type->type;
     $this->drupalPost('admin/structure/types/manage/' . $this->type->type, $edit, t('Save content type'));
-    $this->assertNoRaw($configuration_needs_saving_text, t('Activestore overriden for content types'));
+    $this->assertNoRaw($this->configuration_needs_saving_text, t('Activestore overriden for content types'));
     $status = configuration_get_status('node', $this->type->type);
     $this->assertEqual($status, CONFIGURATION_IN_SYNC);
 
@@ -264,7 +265,7 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $edit = array();
     $edit["instance[widget][settings][rows]"] = 2;
     $this->drupalPost('admin/structure/types/manage/' . $this->type->type . '/fields/body', $edit, t('Save settings'));
-    $this->assertRaw($configuration_needs_saving_text, t('Activestore overriden for Fields'));
+    $this->assertRaw($this->configuration_needs_saving_text, t('Activestore overriden for Fields'));
     $status = configuration_get_status('field', 'node-' . $this->type->type . '-body');
     $this->assertEqual($status, CONFIGURATION_ACTIVESTORE_OVERRIDDEN);
 
@@ -272,7 +273,7 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $edit = array();
     $edit["instance[widget][settings][rows]"] = 20;
     $this->drupalPost('admin/structure/types/manage/' . $this->type->type . '/fields/body', $edit, t('Save settings'));
-    $this->assertNoRaw($configuration_needs_saving_text, t('Activestore in sync for Fields'));
+    $this->assertNoRaw($this->configuration_needs_saving_text, t('Activestore in sync for Fields'));
     $status = configuration_get_status('field', 'node-' . $this->type->type . '-body');
     $this->assertEqual($status, CONFIGURATION_IN_SYNC);
 
@@ -280,7 +281,7 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $edit = array();
     $edit["filters[filter_url][settings][filter_url_length]"] = 20;
     $this->drupalPost('admin/config/content/formats/filtered_html', $edit, t('Save configuration'));
-    $this->assertRaw($configuration_needs_saving_text, t('Activestore overriden for Filters'));
+    $this->assertRaw($this->configuration_needs_saving_text, t('Activestore overriden for Filters'));
     $status = configuration_get_status('filter', 'filtered_html');
     $this->assertEqual($status, CONFIGURATION_ACTIVESTORE_OVERRIDDEN);
 
@@ -288,7 +289,7 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $edit = array();
     $edit["filters[filter_url][settings][filter_url_length]"] = 72;
     $this->drupalPost('admin/config/content/formats/filtered_html', $edit, t('Save configuration'));
-    $this->assertNoRaw($configuration_needs_saving_text, t('Activestore in sync for Filters'));
+    $this->assertNoRaw($this->configuration_needs_saving_text, t('Activestore in sync for Filters'));
     $status = configuration_get_status('filter', 'filtered_html');
     $this->assertEqual($status, CONFIGURATION_IN_SYNC);
 
@@ -296,7 +297,7 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $edit = array();
     $edit["filters[filter_url][settings][filter_url_length]"] = 20;
     $this->drupalPost('admin/config/content/formats/filtered_html', $edit, t('Save configuration'));
-    $this->assertRaw($configuration_needs_saving_text, t('Activestore overriden for Filters'));
+    $this->assertRaw($this->configuration_needs_saving_text, t('Activestore overriden for Filters'));
     $status = configuration_get_status('filter', 'filtered_html');
     $this->assertEqual($status, CONFIGURATION_ACTIVESTORE_OVERRIDDEN);
 
@@ -304,7 +305,7 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $edit = array();
     $edit["filters[filter_url][settings][filter_url_length]"] = 72;
     $this->drupalPost('admin/config/content/formats/filtered_html', $edit, t('Save configuration'));
-    $this->assertNoRaw($configuration_needs_saving_text, t('Activestore in sync for Filters'));
+    $this->assertNoRaw($this->configuration_needs_saving_text, t('Activestore in sync for Filters'));
     $status = configuration_get_status('filter', 'filtered_html');
     $this->assertEqual($status, CONFIGURATION_IN_SYNC);
 
@@ -312,7 +313,7 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $edit = array();
     $edit['2[access configuration management]'] = TRUE;
     $this->drupalPost('admin/people/permissions', $edit, t('Save permissions'));
-    $this->assertRaw($configuration_needs_saving_text, t('Activestore overriden for User Permissions'));
+    $this->assertRaw($this->configuration_needs_saving_text, t('Activestore overriden for User Permissions'));
     $status = configuration_get_status('user_permission', 'access configuration management');
     $this->assertEqual($status, CONFIGURATION_ACTIVESTORE_OVERRIDDEN);
 
@@ -320,7 +321,7 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $edit = array();
     $edit['2[access configuration management]'] = FALSE;
     $this->drupalPost('admin/people/permissions', $edit, t('Save permissions'));
-    $this->assertNoRaw($configuration_needs_saving_text, t('Activestore in sync for User Permissions'));
+    $this->assertNoRaw($this->configuration_needs_saving_text, t('Activestore in sync for User Permissions'));
     $status = configuration_get_status('user_permission', 'access configuration management');
     $this->assertEqual($status, CONFIGURATION_IN_SYNC);
 
@@ -331,14 +332,14 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $edit = array();
     $edit['data[width]'] = '400';
     $this->drupalPost('admin/config/media/image-styles/edit/large/effects/1', $edit, t('Update effect'));
-    $this->assertRaw($configuration_needs_saving_text, t('Activestore overriden for Image Styles'));
+    $this->assertRaw($this->configuration_needs_saving_text, t('Activestore overriden for Image Styles'));
     $status = configuration_get_status('image', 'large');
     $this->assertEqual($status, CONFIGURATION_ACTIVESTORE_OVERRIDDEN);
 
     // Testing image styles back to default.
     $edit = array();
     $this->drupalPost('admin/config/media/image-styles/revert/large', $edit, t('Revert'));
-    $this->assertNoRaw($configuration_needs_saving_text, t('Activestore in sync for Image Styles'));
+    $this->assertNoRaw($this->configuration_needs_saving_text, t('Activestore in sync for Image Styles'));
     $status = configuration_get_status('image', 'large');
     $this->assertEqual($status, CONFIGURATION_IN_SYNC);
   }
@@ -349,15 +350,13 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
   public function testImportDatastoreToActivestore() {
     $this->trackConfigurations();
 
-    $configuration_needs_saving_text = t('Configurations are out of sync and need to be either !write.', array('!write' => l(t('activated or written to file'), 'admin/config/system/configuration/tracking')));
-
     // Special tests for configurations with dependencies
 
     // Test content types overrides
     $edit = array();
     $edit['name'] = $this->type->type . ' Other name'; // Change the name of the content type
     $this->drupalPost('admin/structure/types/manage/' . $this->type->type, $edit, t('Save content type'));
-    $this->assertRaw($configuration_needs_saving_text, t('Activestore overriden'));
+    $this->assertRaw($this->configuration_needs_saving_text, t('Activestore overriden'));
 
     // Try to revert only the parent
     $edit = array();
@@ -413,7 +412,7 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $this->drupalPost('admin/config/media/image-styles/edit/large/effects/1', $edit, t('Update effect'));
 
     // Expect to find the Active Store overriden string.
-    $this->assertRaw($configuration_needs_saving_text, t('Activestore overriden'));
+    $this->assertRaw($this->configuration_needs_saving_text, t('Activestore overriden'));
 
     // Revert all the components.
     $edit = array();
@@ -427,7 +426,7 @@ class ConfigurationActiveStoreOverriddenTest extends ConfigurationWebTestCase {
     $this->drupalPost('admin/config/system/configuration', $edit, t('Import Datastore to Activestore'));
 
     // All the components should be IN SYNC now.
-    $this->assertNoRaw($configuration_needs_saving_text, t('Activestore overriden'));
+    $this->assertNoRaw($this->configuration_needs_saving_text, t('Activestore overriden'));
 
     // Make sure that image styles were reverted properly
     $this->drupalGet('admin/config/media/image-styles');
@@ -637,15 +636,13 @@ class ConfigurationUITest extends ConfigurationWebTestCase {
   public function testDisableMessages() {
     $this->trackConfigurations();
 
-    $configuration_needs_saving_text = t('Configurations are out of sync and need to be either !write.', array('!write' => l(t('activated or written to file'), 'admin/config/system/configuration/tracking')));
-
     // Expeting message after modify a tracked component.
     $edit = array();
     $edit["filters[filter_url][settings][filter_url_length]"] = 20;
     $this->drupalPost('admin/config/content/formats/filtered_html', $edit, t('Save configuration'));
 
     $this->drupalGet('admin');
-    $this->assertRaw($configuration_needs_saving_text, t('Warning message displayed'));
+    $this->assertRaw($this->configuration_needs_saving_text, t('Warning message displayed'));
 
     // Disable the messages.
     $edit = array();
@@ -654,7 +651,7 @@ class ConfigurationUITest extends ConfigurationWebTestCase {
 
     // Now no message should be displayed.
     $this->drupalGet('admin');
-    $this->assertNoRaw($configuration_needs_saving_text, t('No warning message displayed'));
+    $this->assertNoRaw($this->configuration_needs_saving_text, t('No warning message displayed'));
 
     // Enable again the messages.
     $edit = array();
@@ -663,7 +660,7 @@ class ConfigurationUITest extends ConfigurationWebTestCase {
 
     // Check if messages are displayed again.
     $this->drupalGet('admin');
-    $this->assertRaw($configuration_needs_saving_text, t('Warning message displayed'));
+    $this->assertRaw($this->configuration_needs_saving_text, t('Warning message displayed'));
   }
 
 }
