@@ -644,6 +644,10 @@ class ConfigurationUITest extends ConfigurationWebTestCase {
     $this->drupalGet('admin');
     $this->assertRaw($this->configuration_needs_saving_text, t('Warning message displayed'));
 
+    // Messages are only displayed in admin/* paths.
+    $this->drupalGet('node');
+    $this->assertNoRaw($this->configuration_needs_saving_text, t('Warning message displayed'));
+
     // Disable the messages.
     $edit = array();
     $edit["configuration_display_messages"] = FALSE;
