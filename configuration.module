@@ -1,0 +1,123 @@
+<?php
+
+/**
+ * A bit flag used to let us know if a configuration is the same in both the
+ * activestore and the datastore.
+ */
+define('CONFIGURATION_IN_SYNC', 0x0000);
+
+/**
+ * A bit flag used to let us know if a configuration was overridden as a result
+ * of changing the activestore directly. (config changes via the UI)
+ */
+define('CONFIGURATION_ACTIVESTORE_OVERRIDDEN', 0x0001);
+
+/**
+ * A bit flag used to let us know if a configuration is not currently being
+ * tracked.
+ */
+define('CONFIGURATION_ACTIVESTORE_ONLY', 0X0200);
+
+/**
+ * A bit flag used to let us know if a configuration is only in the datastore.
+ */
+define('CONFIGURATION_DATASTORE_ONLY', 0x0008);
+
+use Drupal\configuration\Config\Configuration;
+
+/**
+ * Implements hook_stream_wrappers().
+ */
+function configuration_stream_wrappers() {
+  return array(
+    'config' => array(
+      'name' => t('Configuration files'),
+      'class' => 'ConfigurationStreamWrapper',
+      'description' => t('Configuration files export directory.'),
+      'type' => STREAM_WRAPPERS_LOCAL_HIDDEN,
+    ),
+  );
+}
+
+/**
+ * Implements hook_configuration_handlers().
+ */
+function configuration_configuration_handlers() {
+  $namespace = 'Drupal\configuration\Config';
+  return array(
+    'content_type' => array(
+      'name' => 'Content Types',
+      'handler' => 'ContentTypeConfiguration',
+      'namespace' => $namespace,
+    ),
+    'field' => array(
+      'name' => 'Fields',
+      'handler' => 'FieldConfiguration',
+      'namespace' => $namespace,
+    ),
+    'image_style' => array(
+      'name' => 'Image Styles',
+      'handler' => 'ImageStyleConfiguration',
+      'namespace' => $namespace,
+    ),
+    'text_format' => array(
+      'name' => 'Text Formats',
+      'handler' => 'TextFormatConfiguration',
+      'namespace' => $namespace,
+    ),
+    'vocabulary' => array(
+      'name' => 'Vocabulary',
+      'handler' => 'VocabularyConfiguration',
+      'namespace' => $namespace,
+    ),
+    'variable' => array(
+      'name' => 'Variable',
+      'handler' => 'VariableConfiguration',
+      'namespace' => $namespace,
+    ),
+    'permission' => array(
+      'name' => 'Permission',
+      'handler' => 'PermissionConfiguration',
+      'namespace' => $namespace,
+    ),
+  );
+}
+
+/**
+ * Export a configuration to the datastore.
+ *
+ * @param $component
+ *   The name of the component to export, i.e, 'content_type',
+ *   'field', 'variable', 'permission', etc.
+ * @param $identifier
+ *   The identifier of the configurarion. Some examples:
+ *   For $component == 'content_type', $identifier = 'article'
+ *   For $component == 'field', $identifier 'node.article.field_image'
+ *   For $component == 'variable', $identifier = 'comment_controls_article'
+ */
+function configuration_export_to_datastore($component, $identifier, $export_dependencies = TRUE) {
+  $handler = Configuration::getConfigurationHandler($component);
+  $configuration = new $handler($identifier);
+  $configuration->build()->exportToDataStore($export_dependencies);
+}
+
+/**
+ * Returns a list of identifiers for a specific component.
+ *
+ * @param $component
+ *   The name of the component to export, i.e, 'content_type',
+ *   'field', 'variable', 'permission', etc.
+ */
+function configurarion_get_identifiers($component) {
+  $handler = Configuration::getConfigurationHandler($component);
+  $identifiers = $handler::getAllIdentifiers();
+  return $identifiers;
+}
+
+/**
+ * Returns a list of componenets that can be exported.
+ */
+function configurarion_get_components() {
+  return Configuration::getAllConfigurationHandlers();
+}
+
