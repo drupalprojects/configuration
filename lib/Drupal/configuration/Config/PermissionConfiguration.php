@@ -15,7 +15,7 @@ class PermissionConfiguration extends Configuration {
 
   function __construct($identifier) {
     parent::__construct($identifier);
-    $this->storage->setFileName('permission.' . str_replace(' ', '_', $identifier) . '.inc');
+    $this->storage->setFileName('permission.' . str_replace(' ', '_', $identifier));
   }
 
   function build($include_dependencies = TRUE) {

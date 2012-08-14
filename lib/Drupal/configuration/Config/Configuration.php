@@ -124,7 +124,15 @@ class Configuration {
   }
 
   public static function defaultHook() {
-
+    $configurations = db_select('configuration_staging', 'cs')
+                        ->fields('cs', array('identifier', 'data'))
+                        ->condition('component', static::$component)
+                        ->execute();
+    $return = array();
+    foreach ($configurations as $configuration) {
+      $return[$configuration->identifier] = unserialize($configuration->data);
+    }
+    return $return;
   }
 
   /**
