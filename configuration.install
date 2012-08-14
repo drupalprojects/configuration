@@ -1,0 +1,54 @@
+<?php
+
+/**
+ * Implements hook_schema().
+ */
+function configuration_schema() {
+  $schema['configuration_staging'] = array(
+    'description' => 'Default active store for the configuration system.',
+    'fields' => array(
+      'component' => array(
+        'description' => 'The component that this configuration belongs).',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'identifier' => array(
+        'description' => 'The identifier for the configuration entry, such as module.example (the name of the file, minus the file extension and the component).',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'status' => array(
+        'description' => 'The status for this configuration: IN SYNC, ACTIVESTORE OVERRIDEN, DATASTORE OVERRIDE, ONLY ACTIVESTORE',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 1,
+      ),
+      'data' => array(
+        'description' => 'The raw data for this configuration entry.',
+        'type' => 'blob',
+        'not null' => TRUE,
+        'size' => 'big',
+        'serialize' => TRUE,
+      ),
+      'dependencies' => array(
+        'description' => 'An array of required configurations to load this configuration',
+        'type' => 'text',
+        'not null' => TRUE,
+        'serialized' => TRUE,
+      ),
+      'modules' => array(
+        'description' => 'An array of modules to load this configuration',
+        'type' => 'text',
+        'not null' => TRUE,
+        'serialized' => TRUE,
+      ),
+    ),
+    'primary key' => array('component' , 'identifier'),
+  );
+
+  return $schema;
+}

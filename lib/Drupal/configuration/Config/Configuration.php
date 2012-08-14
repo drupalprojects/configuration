@@ -54,9 +54,9 @@ class Configuration {
 
   public function __construct($identifier) {
     $this->identifier = $identifier;
-
+    $this->status = CONFIGURATION_IN_SYNC;
     $this->storage = new StoragePhp();
-    $this->storage->setFileName(static::$component . '.' . $identifier . '.inc');
+    $this->storage->setFileName(static::$component . '.' . $identifier);
   }
 
   /**
@@ -97,17 +97,54 @@ class Configuration {
     $storage = new StoragePhp();
     foreach ($files as $file) {
       $storage->reset();
+      // Avoid namespace issues.
       $file_array = (array)$file;
+      $filename = $file_array['name'];
       $storage
-        ->setFileName($file_array['name'])
+        ->setFileName($filename)
         ->load();
 
       $data = $storage->getData();
       $dependencies = $storage->getDependencies();
 
+      // Obtain the identifier of the configuration based on the file name.
+      $identifier = substr($file_array['name'], strpos($file_array['name'], '.') + 1);
+
+      // Create a configuration object, and save it into the staging area.
+      $config = new static($identifier);
+      $config
+        ->setData($data)
+        ->setDependencies($dependencies)
+        ->saveToStaging();
+
+      unset($config);
       // @TODO Build the import order based on the dependencies.
       // @TODO initialize a config object and call to $this->import($data);
     }
+  }
+
+  public static function defaultHook() {
+
+  }
+
+  /**
+   * Save a configuration object into the configuration_staging table.
+   */
+  public function saveToStaging() {
+    db_delete('configuration_staging')
+      ->condition('component', static::$component)
+      ->condition('identifier', $this->getIdentifier())
+      ->execute();
+
+    $fields = array(
+      'component' => static::$component,
+      'identifier' => $this->getIdentifier(),
+      'data' => serialize($this->getData()),
+      'status' => $this->status,
+      'dependencies' => serialize(array()),
+      'modules' => serialize(array()),
+    );
+    db_insert('configuration_staging')->fields($fields)->execute();
   }
 
   /**
@@ -223,31 +260,34 @@ class Configuration {
   }
 
   /**
-   * Returns the list of dependencies of this configuration
-   */
-  public function getDependencies() {
-    return array();
-  }
-
-  /**
-   * Set the component name of this configuration
-   */
-  public function setComponent($value) {
-    $this->name = $value;
-  }
-
-  /**
    * Set the component identifier of this configuration
    */
   public function setIdentifier($value) {
     $this->identifier = $value;
+    return $this;
+  }
+
+  /**
+   * Return the data for this configuration.
+   */
+  public function getData() {
+    return $this->data;
+  }
+
+  /**
+   * Set the data for this configuration.
+   */
+  public function setData($value) {
+    $this->data = $value;
+    return $this;
   }
 
   /**
    * Set the name of the required_modules that provide this configuration.
    */
-  public function setModule($list) {
+  public function setModules($list) {
     $this->required_modules = $list;
+    return $this;
   }
 
   /**
@@ -258,13 +298,6 @@ class Configuration {
   }
 
   /**
-   * Set the depedent configuration objects required to load this object.
-   */
-  public function setDependencies($value) {
-    $this->dependencies = $value;
-  }
-
-  /**
    * Add a new dependency for this configuration.
    */
   public function addToDependencies(Configuration $config) {
@@ -272,6 +305,21 @@ class Configuration {
       $this->dependencies = array();
     }
     $this->dependencies[] = $config;
+    return $this;
+  }
+
+  /**
+   * Returns the list of dependencies of this configuration
+   */
+  public function getDependencies() {
+    return array();
+  }
+
+  /**
+   * Returns the list of dependencies of this configuration
+   */
+  public function setDependencies($dependencies) {
+    $this->dependencies = $dependencies;
     return $this;
   }
 

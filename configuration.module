@@ -121,3 +121,47 @@ function configurarion_get_components() {
   return Configuration::getAllConfigurationHandlers();
 }
 
+/**
+ * @defgroup hooks Hooks for configurations from code
+ * @{
+ * Definition of hooks to load configurations from code.
+ */
+
+/**
+ * Implements hook_node_info().
+ */
+function configuration_node_info() {
+  return \Drupal\configuration\Config\ContentTypeConfiguration::defaultHook();
+}
+
+/**
+ * Implements hook_image_default_styles().
+ */
+function configuration_image_default_styles() {
+  return \Drupal\configuration\Config\ImageStyleConfiguration::defaultHook();
+}
+
+/**
+ * Implements hook_filter_default_formats description().
+ */
+function configuration_filter_default_formats() {
+  return \Drupal\configuration\Config\TextFormatConfiguration::defaultHook();
+}
+
+/**
+ * Implements hook_taxonomy_default_vocabularies().
+ */
+function configuration_taxonomy_default_vocabularies() {
+  return \Drupal\configuration\Config\VocabularyConfiguration::defaultHook();
+}
+
+/**
+ * Implements hook_user_default_permissions().
+ */
+function configuration_user_default_permissions() {
+  return \Drupal\configuration\Config\PermissionConfiguration::defaultHook();
+}
+
+/**
+ * @} End of "defgroup hooks".
+ */
