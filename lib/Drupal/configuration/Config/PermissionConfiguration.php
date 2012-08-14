@@ -11,8 +11,10 @@ use Drupal\configuration\Config\Configuration;
 
 class PermissionConfiguration extends Configuration {
 
+  static protected $component = 'permission';
+
   function __construct($identifier) {
-    parent::__construct('permission', $identifier);
+    parent::__construct($identifier);
     $this->storage->setFileName('permission.' . str_replace(' ', '_', $identifier) . '.inc');
   }
 

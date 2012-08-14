@@ -14,7 +14,7 @@ class Configuration {
   /**
    * The component of this configuration, example, content_type, field, etc.
    */
-  protected $component;
+  static protected $component = '';
 
   /**
    * The identifier that identifies to the component, usually the machine name.
@@ -52,12 +52,11 @@ class Configuration {
    */
   protected $storage;
 
-  public function __construct($component, $identifier) {
-    $this->component = $component;
+  public function __construct($identifier) {
     $this->identifier = $identifier;
 
     $this->storage = new StoragePhp();
-    $this->storage->setFileName($component . '.' . $identifier . '.inc');
+    $this->storage->setFileName(static::$component . '.' . $identifier . '.inc');
   }
 
   /**
@@ -91,13 +90,18 @@ class Configuration {
 
     $path = drupal_realpath('config://');
     $ext = StoragePhp::$file_extension;
-    $files = file_scan_directory($path, '/configuration.' . $this->component . '.*\.' . $ext . '$/');
+    $look_for = '/' . static::$component . '\..*' . $ext . '$/';
+
+    $files = file_scan_directory($path, $look_for);
 
     $storage = new StoragePhp();
     foreach ($files as $file) {
+      $storage->reset();
+      $file_array = (array)$file;
       $storage
-        ->setFileName($file->filename)
+        ->setFileName($file_array['name'])
         ->load();
+
       $data = $storage->getData();
       $dependencies = $storage->getDependencies();
 
@@ -193,8 +197,8 @@ class Configuration {
   /**
    * Returns the component that this configuration represent.
    */
-  public function getComponent() {
-    return $this->component;
+  static public function getComponent() {
+    return static::$component;
   }
 
   /**

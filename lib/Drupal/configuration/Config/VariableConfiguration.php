@@ -11,9 +11,7 @@ use Drupal\configuration\Config\Configuration;
 
 class VariableConfiguration extends Configuration {
 
-  function __construct($identifier) {
-    parent::__construct('variable', $identifier);
-  }
+  static protected $component = 'variable';
 
   function build($include_dependencies = TRUE) {
     $this->data = variable_get($this->getIdentifier(), NULL);
@@ -59,13 +57,13 @@ class VariableConfiguration extends Configuration {
       $entity_type = $config->getEntityType();
       $fields = field_info_instances($entity_type, $config->getIdentifier());
       foreach ($variables as $variable) {
-        $identifier = $variable . '_' .$config->getIdentifier();
+        $identifier = $variable . '_' . $config->getIdentifier();
 
         // Avoid include multiple times the same dependency.
         if (empty($stack['variable.' . $identifier])) {
-          $field = new VariableConfiguration($identifier);
-          $field->build();
-          $config->addToDependencies($field);
+          $var_config = new VariableConfiguration($identifier);
+          $var_config->build();
+          $config->addToDependencies($var_config);
           $stack['variable.' . $identifier] = TRUE;
         }
       }

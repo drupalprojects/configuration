@@ -11,9 +11,7 @@ use Drupal\configuration\Config\Configuration;
 
 class ContentTypeConfiguration extends Configuration {
 
-  function __construct($identifier) {
-    parent::__construct('content_type', $identifier);
-  }
+  static protected $component = 'content_type';
 
   public function configForEntity() {
     return TRUE;

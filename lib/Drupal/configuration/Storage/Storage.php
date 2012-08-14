@@ -52,8 +52,12 @@ class Storage {
   }
 
   public function setFileName($filename) {
-    $this->filename = $filename . self::$file_extension;
+    $this->filename = $filename . static::$file_extension;
     return $this;
+  }
+
+  public function getFileName() {
+    return $this->filename;
   }
 
   public function setData($data) {

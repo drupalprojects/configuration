@@ -11,6 +11,8 @@ use Drupal\configuration\Config\Configuration;
 
 class FieldConfiguration extends Configuration {
 
+  static protected $component = 'field';
+
   /**
    * Set the component identifier of this configuration.
    *
@@ -19,10 +21,6 @@ class FieldConfiguration extends Configuration {
    */
   public function setIdentifier($entity_type, $field_name, $bundle_name) {
     $this->identifier = $entity_type . "." . $field_name  . "." . $bundle_name;
-  }
-
-  function __construct($identifier) {
-    parent::__construct('field', $identifier);
   }
 
   public function build($include_dependencies = TRUE) {

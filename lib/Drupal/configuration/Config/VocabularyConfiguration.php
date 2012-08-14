@@ -11,9 +11,7 @@ use Drupal\configuration\Config\Configuration;
 
 class VocabularyConfiguration extends Configuration {
 
-  function __construct($identifier) {
-    parent::__construct('vocabulary', $identifier);
-  }
+  static protected $component = 'vocabulary';
 
   public function configForEntity() {
     return TRUE;

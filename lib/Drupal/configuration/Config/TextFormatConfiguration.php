@@ -11,9 +11,7 @@ use Drupal\configuration\Config\Configuration;
 
 class TextFormatConfiguration extends Configuration {
 
-  function __construct($identifier) {
-    parent::__construct('text_format', $identifier);
-  }
+  static protected $component = 'text_format';
 
   function build($include_dependencies = TRUE) {
     $this->data = $this->filter_format_load($this->getIdentifier());

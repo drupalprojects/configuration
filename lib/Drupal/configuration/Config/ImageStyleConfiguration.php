@@ -11,9 +11,7 @@ use Drupal\configuration\Config\Configuration;
 
 class ImageStyleConfiguration extends Configuration {
 
-  function __construct($identifier) {
-    parent::__construct('image_style', $identifier);
-  }
+  static protected $component = 'image_style';
 
   public function build($include_dependencies = TRUE) {
     $style = image_style_load($this->getIdentifier());

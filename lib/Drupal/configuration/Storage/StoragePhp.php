@@ -79,7 +79,7 @@ class StoragePhp extends Storage {
     if (empty($this->loaded)) {
       $this->loaded = TRUE;
       if (empty($file_content)) {
-        if (!file_exists('config://' . self::$filename)) {
+        if (!file_exists('config://' . $this->filename)) {
           $this->data = NULL;
         }
         else {
