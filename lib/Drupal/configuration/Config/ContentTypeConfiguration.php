@@ -13,6 +13,19 @@ class ContentTypeConfiguration extends Configuration {
 
   static protected $component = 'content_type';
 
+  function __construct($identifier) {
+    parent::__construct($identifier);
+    $keys = array(
+      'name',
+      'base',
+      'description',
+      'has_title',
+      'title_label',
+      'help',
+    );
+    $this->setKeysToExport($keys);
+  }
+
   public function configForEntity() {
     return TRUE;
   }

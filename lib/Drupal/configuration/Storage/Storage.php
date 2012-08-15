@@ -19,6 +19,8 @@ class Storage {
 
   static public $file_extension = '';
 
+  protected $keys_to_export = array();
+
   public function __construct() {
     $this->reset();
   }
@@ -62,6 +64,15 @@ class Storage {
 
   public function setData($data) {
     $this->data = $data;
+    return $this;
+  }
+
+  /**
+   * Set an array of keys names to export. If the array is empty,
+   * all the keys of the configuration will be exported.
+   */
+  public function setKeysToExport($keys) {
+    $this->keys_to_export = $keys;
     return $this;
   }
 

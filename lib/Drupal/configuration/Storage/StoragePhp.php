@@ -63,7 +63,32 @@ class StoragePhp extends Storage {
    */
   public function save() {
     $filename = $this->filename;
-    $export = '$object = ' . $this->export($this->data) . ";\n\n\$dependencies = " . $this->export($this->dependencies) . ';';
+
+    $data_is_array = FALSE;
+    $data_to_export = NULL;
+    if (is_array($this->data)) {
+      $data_is_array = TRUE;
+      $data_to_export = array();
+    }
+    else {
+      $data_to_export = new \StdClass();
+    }
+
+    if (!empty($this->keys_to_export)) {
+      foreach ($this->keys_to_export as $key) {
+        if ($data_is_array) {
+          $data_to_export[$key] = $this->data[$key];
+        }
+        else {
+          $data_to_export->$key = $this->data->$key;
+        }
+      }
+    }
+    else {
+      $data_to_export = $this->data;
+    }
+
+    $export = '$object = ' . $this->export($data_to_export) . ";\n\n\$dependencies = " . $this->export($this->dependencies) . ';';
     $file_contents = "<?php\n/**\n * @file\n * {$filename}\n */\n\n" . $export;
     file_put_contents('config://' . $filename, $file_contents);
     return $this;

@@ -48,6 +48,12 @@ class Configuration {
   protected $data;
 
   /**
+   * An array of keys names to export. If the array is empty,
+   * all the keys of the configuration will be exported.
+   */
+  protected $keys_to_export = array();
+
+  /**
    * An object to save and load the data from a persistent medium.
    */
   protected $storage;
@@ -166,10 +172,26 @@ class Configuration {
   }
 
   /**
+   * Returns an array of keys names to export. If the array is empty,
+   * all the keys of the configuration will be exported.
+   */
+  public function getKeysToExport() {
+    return $this->keys_to_export;
+  }
+
+  /**
+   * Set an array of keys names to export. If the array is empty,
+   * all the keys of the configuration will be exported.
+   */
+  public function setKeysToExport($keys) {
+    $this->keys_to_export = $keys;
+    return $this;
+  }
+
+  /**
    * Export the data to the DataStore.
    */
   public function exportToDataStore($export_dependencies = TRUE) {
-
     $dependencies = array();
     if ($export_dependencies) {
       foreach ($this->dependencies as $config_dependency) {
@@ -179,6 +201,7 @@ class Configuration {
 
     $this->storage
             ->setData($this->data)
+            ->setKeysToExport($this->getKeysToExport())
             ->setDependencies($dependencies)
             ->save();
 
