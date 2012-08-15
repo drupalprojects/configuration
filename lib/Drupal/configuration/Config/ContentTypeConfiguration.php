@@ -34,17 +34,13 @@ class ContentTypeConfiguration extends Configuration {
     return 'node';
   }
 
-  public function build($include_dependencies = TRUE) {
+  protected function prepareBuild() {
     $this->data = (array)node_type_get_type($this->identifier);
 
     // Force module name to be 'configuration' if set to 'node. If we leave as
     // 'node' the content type will be assumed to be database-stored by
     // the node module.
     $this->data['base'] = ($this->data['base'] === 'node') ? 'configuration' : $this->data['base'];
-
-    if ($include_dependencies) {
-      $this->findDependencies();
-    }
     return $this;
   }
 

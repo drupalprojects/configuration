@@ -13,11 +13,8 @@ class VariableConfiguration extends Configuration {
 
   static protected $component = 'variable';
 
-  function build($include_dependencies = TRUE) {
+  protected function prepareBuild() {
     $this->data = variable_get($this->getIdentifier(), NULL);
-    if ($include_dependencies) {
-      $this->findDependencies();
-    }
     return $this;
   }
 

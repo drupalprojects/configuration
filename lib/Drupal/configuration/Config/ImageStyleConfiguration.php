@@ -13,13 +13,10 @@ class ImageStyleConfiguration extends Configuration {
 
   static protected $component = 'image_style';
 
-  public function build($include_dependencies = TRUE) {
+  protected function prepareBuild() {
     $style = image_style_load($this->getIdentifier());
     $this->style_sanitize($style);
     $this->data = $style;
-    if ($include_dependencies) {
-      $this->findDependencies();
-    }
     return $this;
   }
 

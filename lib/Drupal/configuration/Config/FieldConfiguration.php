@@ -23,11 +23,8 @@ class FieldConfiguration extends Configuration {
     $this->identifier = $entity_type . "." . $field_name  . "." . $bundle_name;
   }
 
-  public function build($include_dependencies = TRUE) {
+  protected function prepareBuild() {
     $this->data = $this->field_load($this->identifier);
-    if ($include_dependencies) {
-      $this->findDependencies();
-    }
     return $this;
   }
 

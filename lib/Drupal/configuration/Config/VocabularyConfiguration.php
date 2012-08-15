@@ -21,15 +21,11 @@ class VocabularyConfiguration extends Configuration {
     return 'vocabulary';
   }
 
-  public function build($include_dependencies = TRUE) {
+  protected function prepareBuild() {
     $vocabularies = taxonomy_get_vocabularies();
     foreach ($vocabularies as $vocabulary) {
       if ($vocabulary->machine_name == $this->identifier) {
         $this->data = $vocabulary;
-
-        if ($include_dependencies) {
-          $this->findDependencies();
-        }
         break;
       }
     }

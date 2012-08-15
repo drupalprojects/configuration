@@ -18,16 +18,13 @@ class PermissionConfiguration extends Configuration {
     $this->storage->setFileName('permission.' . str_replace(' ', '_', $identifier));
   }
 
-  function build($include_dependencies = TRUE) {
+  protected function prepareBuild() {
     $permissions = module_invoke_all('permission');
     $permissions_roles = $this->get_permissions();
     $this->data = array(
       'definition' => $permissions[$this->identifier],
       'roles' => $permissions_roles[$this->identifier],
     );
-    if ($include_dependencies) {
-      $this->findDependencies();
-    }
     return $this;
   }
 

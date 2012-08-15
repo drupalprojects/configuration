@@ -214,6 +214,14 @@ class Configuration {
   }
 
   /**
+   * Gets the structure of the configuration and save
+   * it into the $data attribute.
+   */
+  protected function prepareBuild() {
+    // This method must be overrided by children classes.
+  }
+
+  /**
    * Build the configuration object based on the component name and
    * in the identifier.
    *
@@ -222,7 +230,7 @@ class Configuration {
    * dependencies of this configuration if $include_dependencies is TRUE.
    */
   public function build($include_dependencies = TRUE) {
-    // This method must be overrided by children classes.
+    $this->prepareBuild();
     if ($include_dependencies) {
       $this->findDependencies();
     }
@@ -284,13 +292,6 @@ class Configuration {
   }
 
   /**
-   * Returns the name of the required_modules that provide this configuration.
-   */
-  public function getModule() {
-    return $this->required_modules;
-  }
-
-  /**
    * Set the component identifier of this configuration
    */
   public function setIdentifier($value) {
@@ -311,6 +312,13 @@ class Configuration {
   public function setData($value) {
     $this->data = $value;
     return $this;
+  }
+
+  /**
+   * Returns the name of the required_modules that provide this configuration.
+   */
+  public function getModules() {
+    return $this->required_modules;
   }
 
   /**

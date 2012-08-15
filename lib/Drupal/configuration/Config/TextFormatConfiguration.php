@@ -13,11 +13,8 @@ class TextFormatConfiguration extends Configuration {
 
   static protected $component = 'text_format';
 
-  function build($include_dependencies = TRUE) {
+  protected function prepareBuild() {
     $this->data = $this->filter_format_load($this->getIdentifier());
-    if ($include_dependencies) {
-      $this->findDependencies();
-    }
     return $this;
   }
 
