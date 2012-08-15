@@ -24,7 +24,7 @@ class Configuration {
   /**
    * The required modules to load this configuration.
    */
-  protected $required_modules;
+  protected $required_modules = array();
 
   /**
    * An array of configuration objects required to use this configuration.
@@ -112,6 +112,7 @@ class Configuration {
 
       $data = $storage->getData();
       $dependencies = $storage->getDependencies();
+      $modules = $storage->getModules();
 
       // Obtain the identifier of the configuration based on the file name.
       $identifier = substr($file_array['name'], strpos($file_array['name'], '.') + 1);
@@ -121,6 +122,7 @@ class Configuration {
       $config
         ->setData($data)
         ->setDependencies($dependencies)
+        ->setModules($modules)
         ->saveToStaging();
 
       unset($config);
@@ -192,6 +194,9 @@ class Configuration {
    * Export the data to the DataStore.
    */
   public function exportToDataStore($export_dependencies = TRUE) {
+    // Make sure the configuration is built.
+    $this->build();
+
     $dependencies = array();
     if ($export_dependencies) {
       foreach ($this->dependencies as $config_dependency) {
@@ -199,11 +204,16 @@ class Configuration {
       }
     }
 
+    // Save the configuration into a file.
     $this->storage
             ->setData($this->data)
             ->setKeysToExport($this->getKeysToExport())
             ->setDependencies($dependencies)
+            ->setModules($this->required_modules)
             ->save();
+
+    // Also, save the configuration in the database
+    $this->saveToStaging();
 
     if (!empty($export_dependencies)) {
       foreach ($this->dependencies as $config) {
@@ -234,6 +244,7 @@ class Configuration {
     if ($include_dependencies) {
       $this->findDependencies();
     }
+    $this->findRequiredModules();
     return $this;
   }
 
@@ -330,6 +341,24 @@ class Configuration {
   }
 
   /**
+   * Add the required modules to load this configuration.
+   */
+  public function findRequiredModules() {
+    // Configurations classes should use this method to add the required
+    // modules to load the configuration.
+  }
+
+  /**
+   * Add a new dependency for this configuration.
+   */
+  public function addToModules($module) {
+    if (!in_array($module, $this->required_modules)) {
+      $this->required_modules[] = $module;
+    }
+    return $this;
+  }
+
+  /**
    * Return TRUE if this is the configuration for an entity.
    */
   public function configForEntity() {
@@ -403,6 +432,21 @@ class Configuration {
         return FALSE;
       }
     }
-    // @TODO: Check config dependencies too
+    foreach ($this->dependecies as $dependency) {
+      // First, look for the dependency in the staging table.
+      $exists = db_select('configuration_staging', 'cs')
+                        ->fields('cs', array('identifier'))
+                        ->condition('component', static::$component)
+                        ->condition('identifier', $this->getIdentifier())
+                        ->fetchField();
+
+      if (!$exists) {
+        // If not exists in the database, look into the config:// directory.
+        $file_exists = StoragePHP::configFileExists(static::$component, $this->getIdentifier());
+        if (!$file_exists) {
+          return FALSE;
+        }
+      }
+    }
   }
 }

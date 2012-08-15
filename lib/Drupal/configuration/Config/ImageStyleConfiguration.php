@@ -61,4 +61,10 @@ class ImageStyleConfiguration extends Configuration {
       }
     }
   }
+
+  public function findRequiredModules() {
+    foreach ($this->data['effects'] as $effect) {
+      $this->addToModules($effect['module']);
+    }
+  }
 }

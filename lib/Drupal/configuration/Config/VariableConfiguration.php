@@ -33,23 +33,33 @@ class VariableConfiguration extends Configuration {
   public static function alterDependencies(Configuration $config, &$stack) {
     if ($config->getComponent() == 'content_type') {
       $variables = array(
-        'comment',
-        'comment_anonymous',
-        'comment_controls',
-        'comment_default_mode',
-        'comment_default_order',
-        'comment_default_per_page',
-        'comment_form_location',
-        'comment_preview',
-        'comment_subject_field',
         'field_bundle_settings_node_',
         'language_content_type',
-        'menu_options',
-        'menu_parent',
         'node_options',
         'node_preview',
         'node_submitted',
       );
+
+      if (module_exists('comment')) {
+        $variables += array(
+          'comment',
+          'comment_anonymous',
+          'comment_controls',
+          'comment_default_mode',
+          'comment_default_order',
+          'comment_default_per_page',
+          'comment_form_location',
+          'comment_preview',
+          'comment_subject_field',
+        );
+      }
+
+      if (module_exists('menu')) {
+        $variables += array(
+          'menu_options',
+          'menu_parent',
+        );
+      }
 
       $entity_type = $config->getEntityType();
       $fields = field_info_instances($entity_type, $config->getIdentifier());

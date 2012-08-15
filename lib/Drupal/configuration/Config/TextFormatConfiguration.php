@@ -46,4 +46,12 @@ class TextFormatConfiguration extends Configuration {
     return FALSE;
   }
 
+  public function findRequiredModules() {
+    $filter_info = filter_get_filters();
+    foreach (array_keys($this->data->filters) as $filter) {
+      if (!empty($filter_info[$filter]) && $filter_info[$filter]['module']) {
+        $this->addToModules($filter_info[$filter]['module']);
+      }
+    }
+  }
 }

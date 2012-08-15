@@ -13,6 +13,8 @@ class Storage {
 
   protected $dependencies;
 
+  protected $required_modules;
+
   protected $filename;
 
   protected $loaded;
@@ -20,6 +22,14 @@ class Storage {
   static public $file_extension = '';
 
   protected $keys_to_export = array();
+
+  /**
+   * Returns TRUE if the file for a configuration exists
+   * in the config:// directory.
+   */
+  static public function configFileExists($component, $identifier) {
+    return file_exists('config://' . $component . '.' . $identifier . '.' . static::$file_extension);
+  }
 
   public function __construct() {
     $this->reset();
@@ -76,11 +86,6 @@ class Storage {
     return $this;
   }
 
-  public function setDependencies($dependencies) {
-    $this->dependencies = $dependencies;
-    return $this;
-  }
-
   public function withData() {
     return !empty($this->data);
   }
@@ -91,6 +96,20 @@ class Storage {
 
   public function getDependencies() {
     return $this->dependencies;
+  }
+
+  public function setDependencies($dependencies) {
+    $this->dependencies = $dependencies;
+    return $this;
+  }
+
+  public function getModules() {
+    return $this->dependencies;
+  }
+
+  public function setModules($modules) {
+    $this->required_modules = $modules;
+    return $this;
   }
 
   public function checkForChanges($object) {

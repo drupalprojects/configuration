@@ -51,4 +51,12 @@ class ContentTypeConfiguration extends Configuration {
     return array_keys(node_type_get_types());
   }
 
+  public function findRequiredModules() {
+    if ($this->data['base'] == 'node_content' || $this->data['base'] == 'configuration') {
+      $this->addToModules('node');
+    }
+    else {
+      $this->addToModules($this->data['base']);
+    }
+  }
 }
