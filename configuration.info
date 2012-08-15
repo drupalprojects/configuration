@@ -5,4 +5,5 @@ php = 5.3
 package = "Configuration"
 configure = admin/config/system/configuration
 files[] = configuration_stream.inc
+files[] = tests/configuration.test
 dependencies[] = xautoload

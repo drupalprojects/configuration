@@ -23,7 +23,7 @@ class PermissionConfiguration extends Configuration {
     $permissions_roles = $this->get_permissions();
     $this->data = array(
       'definition' => $permissions[$this->identifier],
-      'roles' => $permissions_roles[$this->identifier],
+      'roles' => !empty($permissions_roles[$this->identifier]) ? $permissions_roles[$this->identifier] : array(),
     );
     return $this;
   }

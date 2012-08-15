@@ -9,5 +9,3 @@ dependencies[] = views
 dependencies[] = context
 dependencies[] = features
 
-files[] = configuration.contrib.test
-files[] = configuration.ctools.test
