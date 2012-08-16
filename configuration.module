@@ -149,6 +149,13 @@ function configuration_filter_default_formats() {
 }
 
 /**
+ * Implements hook_field_default_fields().
+ */
+function configuration_field_attach_create_bundle($entity_type, $bundle) {
+  return \Drupal\configuration\Config\FieldConfiguration::defaultHook($entity_type, $bundle);
+}
+
+/**
  * Implements hook_taxonomy_default_vocabularies().
  */
 function configuration_taxonomy_default_vocabularies() {
