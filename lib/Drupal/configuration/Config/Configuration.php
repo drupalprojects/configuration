@@ -131,7 +131,22 @@ class Configuration {
     }
   }
 
-  public static function defaultHook() {
+  /**
+   * Loads the configuration into the active store.
+   *
+   * Some configurations like fields, permissions, roles, etc doesn't
+   * provide hooks to load configurations from code.
+   * In order to load this configuration, children classes of this kind
+   * of configs, must define the way to load this data into the ActiveStore.
+   */
+  static public function rebuildHook() {
+    // Override
+  }
+
+  /**
+   * Wrapper for all the hook_*_default_* functions.
+   */
+  static public function defaultHook() {
     $configurations = db_select('configuration_staging', 'cs')
                         ->fields('cs', array('identifier', 'data'))
                         ->condition('component', static::$component)

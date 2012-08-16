@@ -89,18 +89,14 @@ class FieldConfiguration extends Configuration {
 
   /**
    * There is no default hook for fields. This function creates the
-   * fields after an entity bundle is saved.
+   * fields when configurarion_rebuild() is called.
    */
-  static function defaultHook($entity_type = NULL, $bundle = NULL) {
-    $query = db_select('configuration_staging', 'c')
-      ->fields('c', array('data'))
-      ->condition('component', 'field');
-
-    if ($entity_type && $bundle) {
-      $query->condition('identifier', db_like($entity_type) . '%' . db_like($bundle), 'LIKE');
-    }
-
-    $fields = $query->execute()->fetchCol();
+  static function rebuildHook() {
+    $fields = db_select('configuration_staging', 'c')
+                ->fields('c', array('data'))
+                ->condition('component', self::$component)
+                ->execute()
+                ->fetchCol();
 
     if ($fields) {
       field_info_cache_clear();

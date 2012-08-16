@@ -54,6 +54,7 @@ function configuration_configuration_handlers() {
       'name' => 'Fields',
       'handler' => 'FieldConfiguration',
       'namespace' => $namespace,
+      'without_default_hook' => TRUE,
     ),
     'image_style' => array(
       'name' => 'Image Styles',
@@ -74,13 +75,22 @@ function configuration_configuration_handlers() {
       'name' => 'Variable',
       'handler' => 'VariableConfiguration',
       'namespace' => $namespace,
+      'without_default_hook' => TRUE,
     ),
     'permission' => array(
       'name' => 'Permission',
       'handler' => 'PermissionConfiguration',
       'namespace' => $namespace,
+      'without_default_hook' => TRUE,
     ),
   );
+}
+
+/**
+ * Implements hook_flush_caches().
+ */
+function configuration_flush_caches() {
+  configuration_rebuild();
 }
 
 /**
@@ -115,9 +125,9 @@ function configurarion_get_identifiers($component) {
 }
 
 /**
- * Returns a list of componenets that can be exported.
+ * Returns a list of components that can be exported.
  */
-function configurarion_get_components() {
+function configurarion_get_handlers() {
   return Configuration::getAllConfigurationHandlers();
 }
 
@@ -126,6 +136,20 @@ function configurarion_get_components() {
  * @{
  * Definition of hooks to load configurations from code.
  */
+
+/**
+ * Loads the configurations that are not provided by hook_*_default_*()
+ * functions.
+ */
+function configuration_rebuild() {
+  $handlers = configurarion_get_handlers();
+  foreach ($handlers as $handler) {
+    if (!empty($handler['without_default_hook'])) {
+      $class = '\\' . $handler['namespace'] . '\\' . $handler['handler'];
+      $class::rebuildHook();
+    }
+  }
+}
 
 /**
  * Implements hook_node_info().
@@ -149,24 +173,10 @@ function configuration_filter_default_formats() {
 }
 
 /**
- * Implements hook_field_default_fields().
- */
-function configuration_field_attach_create_bundle($entity_type, $bundle) {
-  return \Drupal\configuration\Config\FieldConfiguration::defaultHook($entity_type, $bundle);
-}
-
-/**
  * Implements hook_taxonomy_default_vocabularies().
  */
 function configuration_taxonomy_default_vocabularies() {
   return \Drupal\configuration\Config\VocabularyConfiguration::defaultHook();
-}
-
-/**
- * Implements hook_user_default_permissions().
- */
-function configuration_user_default_permissions() {
-  return \Drupal\configuration\Config\PermissionConfiguration::defaultHook();
 }
 
 /**

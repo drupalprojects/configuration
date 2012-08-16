@@ -13,17 +13,21 @@ class PermissionConfiguration extends Configuration {
 
   static protected $component = 'permission';
 
+  // Store the original permission before remove white spaces
+  protected $permission;
+
   function __construct($identifier) {
-    parent::__construct($identifier);
+    $this->permission = $identifier;
+    parent::__construct(str_replace(' ', '_', $identifier));
+
     $this->storage->setFileName('permission.' . str_replace(' ', '_', $identifier));
   }
 
   protected function prepareBuild() {
-    $permissions = module_invoke_all('permission');
     $permissions_roles = $this->get_permissions();
     $this->data = array(
-      'definition' => $permissions[$this->identifier],
-      'roles' => !empty($permissions_roles[$this->identifier]) ? $permissions_roles[$this->identifier] : array(),
+      'permission' => $this->permission,
+      'roles' => !empty($permissions_roles[$this->permission]) ? $permissions_roles[$this->permission] : array(),
     );
     return $this;
   }
@@ -51,10 +55,15 @@ class PermissionConfiguration extends Configuration {
     }
   }
 
+  public function findRequiredModules() {
+    $perm_modules = user_permission_get_modules();
+    $this->addToModules($perm_modules[$this->permission]);
+  }
+
   /**
    * Generate $rid => $role with role names untranslated.
    */
-  protected function get_roles($builtin = TRUE) {
+  static  protected function get_roles($builtin = TRUE) {
     $roles = array();
     foreach (user_roles() as $rid => $name) {
       switch ($rid) {
@@ -79,9 +88,9 @@ class PermissionConfiguration extends Configuration {
   /**
    * Represent the current state of permissions as a perm to role name array map.
    */
-  protected function get_permissions($by_role = TRUE) {
+  static protected function get_permissions($by_role = TRUE) {
     $map = user_permission_get_modules();
-    $roles = $this->get_roles();
+    $roles = static::get_roles();
     $permissions = array();
     foreach (user_role_permissions($roles) as $rid => $role_permissions) {
       if ($by_role) {
@@ -101,5 +110,45 @@ class PermissionConfiguration extends Configuration {
       }
     }
     return $permissions;
+  }
+
+  /**
+   * There is no default hook for permission. This function set the
+   * permissions to the defined roles.
+   */
+  static public function rebuildHook() {
+    $from_staging = db_select('configuration_staging', 'c')
+                      ->fields('c', array('data'))
+                      ->condition('component', self::$component)
+                      ->execute()
+                      ->fetchCol();
+
+    if ($from_staging) {
+      // Make sure the list of available node types is up to date, especially when
+      // installing multiple features at once, for example from an install profile
+      // or via drush.
+      node_types_rebuild();
+
+      $roles = static::get_roles();
+      $permissions_by_role = static::get_permissions(FALSE);
+      foreach ($from_staging as $serialized_permission) {
+        $permission = unserialize($serialized_permission);
+        $perm = $permission['permission'];
+        foreach ($roles as $role) {
+          if (in_array($role, $permission['roles'])) {
+            $permissions_by_role[$role][$perm] = TRUE;
+          }
+          else {
+            $permissions_by_role[$role][$perm] = FALSE;
+          }
+        }
+      }
+      // Write the updated permissions.
+      foreach ($roles as $rid => $role) {
+        if (isset($permissions_by_role[$role])) {
+          user_role_change_permissions($rid, $permissions_by_role[$role]);
+        }
+      }
+    }
   }
 }
