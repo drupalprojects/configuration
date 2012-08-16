@@ -46,14 +46,22 @@ class PermissionConfiguration extends Configuration {
       foreach ($permissions as $identifier => $permission) {
         // Avoid include multiple times the same dependency.
         if (empty($stack['permission.' . $identifier])) {
-          $field = new PermissionConfiguration($identifier);
-          $field->build();
-          $config->addToDependencies($field);
+          $perm = new PermissionConfiguration($identifier);
+          $perm->build();
+
+          // Add the content type as a dependency of the permission.
+          $perm->addToDependencies($config);
+
+          // Add the permission as a child configuration of the content type
+          // The permission is not required to load the content type but is
+          // a nice to have.
+          $config->addToChildConfigurations($perm);
           $stack['permission.' . $identifier] = TRUE;
         }
       }
     }
   }
+
 
   public function findRequiredModules() {
     $perm_modules = user_permission_get_modules();

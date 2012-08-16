@@ -91,6 +91,7 @@ class StoragePhp extends Storage {
 
     $export = '$object = ' . $this->export($data_to_export) . ";\n\n";
     $export .= '$dependencies = ' . $this->export($this->dependencies) . ";\n\n";
+    $export .= '$child_configurations = ' . $this->export($this->child_configurations) . ";\n\n";
     $export .= '$modules = ' . $this->export($this->required_modules) . ";";
 
     $file_contents = "<?php\n/**\n * @file\n * {$filename}\n */\n\n" . $export;

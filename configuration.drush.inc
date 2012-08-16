@@ -17,6 +17,8 @@ function configuration_drush_help($section) {
       return dt("Return the list of configurations components that can be exported.");
     case 'drush:ced':
       return dt("Export a configuration to the datastore.");
+    case 'drush:cinc':
+      return dt("Import new configurations.");
   }
 }
 
@@ -54,6 +56,15 @@ function configuration_drush_command() {
     ),
     'arguments' => array(),
   );
+  $items['config-import-new-configurations'] = array(
+    'callback' => '_configuration_import_new_configurations',
+    'description' => 'Export a configuration to the datastore.',
+    'aliases' => array('cinc'),
+    'examples' => array(
+      'drush cinc' => 'Loads all the files that have configurations into the ActiveStore',
+    ),
+    'arguments' => array(),
+  );
   return $items;
 }
 
@@ -84,4 +95,8 @@ function _configuration_get_components() {
 
 function _configuration_export_to_datastore($component, $identifier) {
   configuration_export_to_datastore($component, $identifier);
+}
+
+function _configuration_import_new_configurations() {
+  configuration_import_new_configurations();
 }

@@ -32,6 +32,12 @@ class Configuration {
   protected $dependencies = array();
 
   /**
+   * An array of configuration objects that are parts of this configurations
+   * but are not required to use this configuration.
+   */
+  protected $child_configurations = array();
+
+  /**
    * The status of this configuration.
    *
    * Possible values:
@@ -208,7 +214,14 @@ class Configuration {
   /**
    * Export the data to the DataStore.
    */
-  public function exportToDataStore($export_dependencies = TRUE) {
+  public function exportToDataStore($export_dependencies = TRUE, &$already_exported = array()) {
+
+    $id = $this->getComponent() . '.' . $this->getIdentifier();
+    if (!empty($already_exported[$id])) {
+      return $this;
+    }
+    $already_exported[$id] = TRUE;
+
     // Make sure the configuration is built.
     $this->build();
 
@@ -219,11 +232,19 @@ class Configuration {
       }
     }
 
+    $child_configurations = array();
+    if ($export_dependencies) {
+      foreach ($this->child_configurations as $child_configuration) {
+        $child_configurations[] = $child_configuration->getComponent() . '.' . $child_configuration->getIdentifier();
+      }
+    }
+
     // Save the configuration into a file.
     $this->storage
             ->setData($this->data)
             ->setKeysToExport($this->getKeysToExport())
             ->setDependencies($dependencies)
+            ->setChildConfigurations($child_configurations)
             ->setModules($this->required_modules)
             ->save();
 
@@ -231,8 +252,11 @@ class Configuration {
     $this->saveToStaging();
 
     if (!empty($export_dependencies)) {
+      foreach ($this->child_configurations as $config) {
+        $config->exportToDataStore($export_dependencies, $already_exported);
+      }
       foreach ($this->dependencies as $config) {
-        $config->exportToDataStore($export_dependencies);
+        $config->exportToDataStore($export_dependencies, $already_exported);
       }
     }
     return $this;
@@ -378,6 +402,32 @@ class Configuration {
    */
   public function configForEntity() {
     return FALSE;
+  }
+
+  /**
+   * Add a new child configuration for this configuration.
+   */
+  public function addToChildConfigurations(Configuration $config) {
+    if (!isset($this->child_configurations)) {
+      $this->child_configurations = array();
+    }
+    $this->child_configurations[] = $config;
+    return $this;
+  }
+
+  /**
+   * Returns the list of child_configurations of this configuration
+   */
+  public function getChildConfigurations() {
+    return array();
+  }
+
+  /**
+   * Returns the list of child_configurations of this configuration
+   */
+  public function setChildConfigurations($child_configurations) {
+    $this->child_configurations = $child_configurations;
+    return $this;
   }
 
   /**

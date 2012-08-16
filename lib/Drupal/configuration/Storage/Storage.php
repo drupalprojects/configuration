@@ -13,6 +13,8 @@ class Storage {
 
   protected $dependencies;
 
+  protected $child_configurations;
+
   protected $required_modules;
 
   protected $filename;
@@ -100,6 +102,15 @@ class Storage {
 
   public function setDependencies($dependencies) {
     $this->dependencies = $dependencies;
+    return $this;
+  }
+
+  public function getChildConfigurations() {
+    return $this->child_configurations;
+  }
+
+  public function setChildConfigurations($child_configurations) {
+    $this->child_configurations = $child_configurations;
     return $this;
   }
 

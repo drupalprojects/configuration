@@ -132,6 +132,21 @@ function configurarion_get_handlers() {
 }
 
 /**
+ * Find non imported configurations from config:// and import they
+ * into the staging area and into the Active Store.
+ */
+function configuration_import_new_configurations() {
+  $handlers = configurarion_get_handlers();
+  foreach ($handlers as $handler) {
+    if (!empty($handler['without_default_hook'])) {
+      $class = '\\' . $handler['namespace'] . '\\' . $handler['handler'];
+      $class::importAllNewConfigurations();
+    }
+  }
+  drupal_flush_all_caches();
+}
+
+/**
  * @defgroup hooks Hooks for configurations from code
  * @{
  * Definition of hooks to load configurations from code.
