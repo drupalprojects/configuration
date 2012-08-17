@@ -32,6 +32,28 @@ class VocabularyConfiguration extends Configuration {
     return $this;
   }
 
+  static public function rebuildHook() {
+    $vocabularies = db_select('configuration_staging', 'c')
+                ->fields('c', array('data'))
+                ->condition('component', self::$component)
+                ->execute()
+                ->fetchCol();
+
+    if ($vocabularies) {
+      $existing = taxonomy_get_vocabularies();
+      foreach ($vocabularies as $serialized_vocabulary) {
+        $vocabulary = unserialize($serialized_vocabulary);
+        $vocabulary = (object) $vocabulary;
+        foreach ($existing as $existing_vocab) {
+          if ($existing_vocab->machine_name === $vocabulary->machine_name) {
+            $vocabulary->vid = $existing_vocab->vid;
+          }
+        }
+        taxonomy_vocabulary_save($vocabulary);
+      }
+    }
+  }
+
   /**
    * Returns all the identifiers available for this component.
    */

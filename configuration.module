@@ -70,6 +70,7 @@ function configuration_configuration_handlers() {
       'name' => 'Vocabulary',
       'handler' => 'VocabularyConfiguration',
       'namespace' => $namespace,
+      'without_default_hook' => TRUE,
     ),
     'variable' => array(
       'name' => 'Variable',
@@ -195,13 +196,6 @@ function configuration_image_default_styles() {
  */
 function configuration_filter_default_formats() {
   return \Drupal\configuration\Config\TextFormatConfiguration::defaultHook();
-}
-
-/**
- * Implements hook_taxonomy_default_vocabularies().
- */
-function configuration_taxonomy_default_vocabularies() {
-  return \Drupal\configuration\Config\VocabularyConfiguration::defaultHook();
 }
 
 /**
