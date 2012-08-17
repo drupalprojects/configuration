@@ -75,7 +75,8 @@ class FieldConfiguration extends Configuration {
         if (empty($stack['field.' . $identifier])) {
           $field = new FieldConfiguration($identifier);
           $field->build();
-          $config->addToDependencies($field);
+          $field->addToDependencies($config);
+          $config->addToOptionalConfigurations($field);
           $stack['field.' . $identifier] = TRUE;
         }
       }

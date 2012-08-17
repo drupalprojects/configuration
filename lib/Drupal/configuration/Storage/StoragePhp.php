@@ -53,8 +53,9 @@ class StoragePhp extends Storage {
 
   public function import($file_content) {
     eval($file_content);
-    $this->data = $object;
+    $this->data = $data;
     $this->dependencies = $dependencies;
+    $this->optional_configurations = $optional;
     $this->required_modules = $modules;
     return $this;
   }
@@ -89,9 +90,9 @@ class StoragePhp extends Storage {
       $data_to_export = $this->data;
     }
 
-    $export = '$object = ' . $this->export($data_to_export) . ";\n\n";
+    $export = '$data = ' . $this->export($data_to_export) . ";\n\n";
     $export .= '$dependencies = ' . $this->export($this->dependencies) . ";\n\n";
-    $export .= '$child_configurations = ' . $this->export($this->child_configurations) . ";\n\n";
+    $export .= '$optional = ' . $this->export($this->optional_configurations) . ";\n\n";
     $export .= '$modules = ' . $this->export($this->required_modules) . ";";
 
     $file_contents = "<?php\n/**\n * @file\n * {$filename}\n */\n\n" . $export;

@@ -55,13 +55,12 @@ class PermissionConfiguration extends Configuration {
           // Add the permission as a child configuration of the content type
           // The permission is not required to load the content type but is
           // a nice to have.
-          $config->addToChildConfigurations($perm);
+          $config->addToOptionalConfigurations($perm);
           $stack['permission.' . $identifier] = TRUE;
         }
       }
     }
   }
-
 
   public function findRequiredModules() {
     $perm_modules = user_permission_get_modules();

@@ -7,8 +7,6 @@
 
 namespace Drupal\configuration\Config;
 
-use Drupal\configuration\Storage\StoragePhp;
-
 class Configuration {
 
   /**
@@ -35,7 +33,7 @@ class Configuration {
    * An array of configuration objects that are parts of this configurations
    * but are not required to use this configuration.
    */
-  protected $child_configurations = array();
+  protected $optional_configurations = array();
 
   /**
    * The status of this configuration.
@@ -67,8 +65,17 @@ class Configuration {
   public function __construct($identifier) {
     $this->identifier = $identifier;
     $this->status = CONFIGURATION_IN_SYNC;
-    $this->storage = new StoragePhp();
-    $this->storage->setFileName(static::$component . '.' . $identifier);
+    $storage_system = static::getStorageSystem();
+    $this->storage = new $storage_system();
+    $this->storage->setFileName($this->getUniqueId());
+  }
+
+  /**
+   * Returns a class with its namespace to save data to the disk.
+   */
+  static protected function getStorageSystem() {
+    $php = '\Drupal\configuration\Storage\StoragePhp';
+    return variable_get('configuration_storage_system', $php);
   }
 
   /**
@@ -101,12 +108,13 @@ class Configuration {
   public static function importAllNewConfigurations() {
 
     $path = drupal_realpath('config://');
-    $ext = StoragePhp::$file_extension;
+    $storage_system = static::getStorageSystem();
+    $ext = $storage_system::$file_extension;
     $look_for = '/' . static::$component . '\..*' . $ext . '$/';
 
     $files = file_scan_directory($path, $look_for);
 
-    $storage = new StoragePhp();
+    $storage = new $storage_system();
     foreach ($files as $file) {
       $storage->reset();
       // Avoid namespace issues.
@@ -232,10 +240,10 @@ class Configuration {
       }
     }
 
-    $child_configurations = array();
+    $optional_configurations = array();
     if ($export_dependencies) {
-      foreach ($this->child_configurations as $child_configuration) {
-        $child_configurations[] = $child_configuration->getComponent() . '.' . $child_configuration->getIdentifier();
+      foreach ($this->optional_configurations as $optional_configuration) {
+        $optional_configurations[] = $optional_configuration->getComponent() . '.' . $optional_configuration->getIdentifier();
       }
     }
 
@@ -244,7 +252,7 @@ class Configuration {
             ->setData($this->data)
             ->setKeysToExport($this->getKeysToExport())
             ->setDependencies($dependencies)
-            ->setChildConfigurations($child_configurations)
+            ->setOptionalConfigurations($optional_configurations)
             ->setModules($this->required_modules)
             ->save();
 
@@ -252,7 +260,7 @@ class Configuration {
     $this->saveToStaging();
 
     if (!empty($export_dependencies)) {
-      foreach ($this->child_configurations as $config) {
+      foreach ($this->optional_configurations as $config) {
         $config->exportToDataStore($export_dependencies, $already_exported);
       }
       foreach ($this->dependencies as $config) {
@@ -318,6 +326,10 @@ class Configuration {
       }
     }
     return $this;
+  }
+
+  public function getUniqueId() {
+    return static::$component . '.' . $this->getIdentifier();
   }
 
   /**
@@ -407,26 +419,26 @@ class Configuration {
   /**
    * Add a new child configuration for this configuration.
    */
-  public function addToChildConfigurations(Configuration $config) {
-    if (!isset($this->child_configurations)) {
-      $this->child_configurations = array();
+  public function addToOptionalConfigurations(Configuration $config) {
+    if (!isset($this->optional_configurations)) {
+      $this->optional_configurations = array();
     }
-    $this->child_configurations[] = $config;
+    $this->optional_configurations[$config->getUniqueId()] = $config;
     return $this;
   }
 
   /**
-   * Returns the list of child_configurations of this configuration
+   * Returns the list of optional_configurations of this configuration
    */
-  public function getChildConfigurations() {
+  public function getOptionalConfigurations() {
     return array();
   }
 
   /**
-   * Returns the list of child_configurations of this configuration
+   * Returns the list of optional_configurations of this configuration
    */
-  public function setChildConfigurations($child_configurations) {
-    $this->child_configurations = $child_configurations;
+  public function setOptionalConfigurations($optional_configurations) {
+    $this->optional_configurations = $optional_configurations;
     return $this;
   }
 
@@ -437,7 +449,7 @@ class Configuration {
     if (!isset($this->dependencies)) {
       $this->dependencies = array();
     }
-    $this->dependencies[] = $config;
+    $this->dependencies[$config->getUniqueId()] = $config;
     return $this;
   }
 
@@ -465,7 +477,7 @@ class Configuration {
     $stack = array();
     // Include this configuration to the stack to avoid add it again
     // in a circular dependency cycle
-    $stack[$this->getComponent() . '.' . $this->getIdentifier()] = TRUE;
+    $stack[$this->getUniqueId()] = TRUE;
 
     foreach ($handlers as $configuration_component => $info) {
       $class = '\\' . $info['namespace'] . '\\' . $info['handler'];
@@ -507,7 +519,8 @@ class Configuration {
 
       if (!$exists) {
         // If not exists in the database, look into the config:// directory.
-        $file_exists = StoragePHP::configFileExists(static::$component, $this->getIdentifier());
+        $storage_system = static::getStorageSystem();
+        $file_exists = $storage_system::configFileExists(static::$component, $this->getIdentifier());
         if (!$file_exists) {
           return FALSE;
         }

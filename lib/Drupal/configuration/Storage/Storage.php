@@ -13,7 +13,7 @@ class Storage {
 
   protected $dependencies;
 
-  protected $child_configurations;
+  protected $optional_configurations;
 
   protected $required_modules;
 
@@ -39,6 +39,9 @@ class Storage {
 
   public function reset() {
     $this->loaded = FALSE;
+    $this->dependencies = array();
+    $this->optional_configurations = array();
+    $this->data = NULL;
   }
 
   public function export($var, $prefix = '') { }
@@ -105,12 +108,12 @@ class Storage {
     return $this;
   }
 
-  public function getChildConfigurations() {
-    return $this->child_configurations;
+  public function getOptionalConfigurations() {
+    return $this->optional_configurations;
   }
 
-  public function setChildConfigurations($child_configurations) {
-    $this->child_configurations = $child_configurations;
+  public function setOptionalConfigurations($optional_configurations) {
+    $this->optional_configurations = $optional_configurations;
     return $this;
   }
 
