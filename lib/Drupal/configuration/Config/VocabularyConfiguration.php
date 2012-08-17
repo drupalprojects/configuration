@@ -36,7 +36,12 @@ class VocabularyConfiguration extends Configuration {
    * Returns all the identifiers available for this component.
    */
   public static function getAllIdentifiers() {
-    return array_keys(taxonomy_get_vocabularies());
+    $return = array();
+    $vocabularies = taxonomy_get_vocabularies();
+    foreach ($vocabularies as $vocabulary) {
+      $return[] = $vocabulary->machine_name;
+    }
+    return $return;
   }
 
   public static function alterDependencies(Configuration $config, &$stack) {
@@ -54,6 +59,10 @@ class VocabularyConfiguration extends Configuration {
         }
       }
     }
+  }
+
+  public function findRequiredModules() {
+    $this->addToModules($this->data->module);
   }
 
 }
