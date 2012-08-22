@@ -65,8 +65,7 @@ class Configuration {
   public function __construct($identifier) {
     $this->identifier = $identifier;
     $this->status = CONFIGURATION_IN_SYNC;
-    $storage_system = static::getStorageSystem();
-    $this->storage = new $storage_system();
+    $this->storage = $this->getStorageInstance();
     $this->storage->setFileName($this->getUniqueId());
   }
 
@@ -74,8 +73,24 @@ class Configuration {
    * Returns a class with its namespace to save data to the disk.
    */
   static protected function getStorageSystem() {
-    $php = '\Drupal\configuration\Storage\StoragePhp';
-    return variable_get('configuration_storage_system', $php);
+    $default = '\Drupal\configuration\Storage\StoragePhp';
+    // Specify a default Storage system
+    $return = variable_get('configuration_storage_system', $default);
+    // Allow to configure the Storage System per configuration component
+    $return = variable_get('configuration_storage_system_' . static::$component, $return);
+    return $return;
+  }
+
+  protected function getStorageInstance() {
+    $storage = static::getStorageSystem();
+    return new $storage();
+  }
+
+  /**
+   * Return TRUE if this class can handle multiple configurations componenets.
+   */
+  static public function multiComponent() {
+    return FALSE;
   }
 
   /**
@@ -98,7 +113,7 @@ class Configuration {
    * Returns a that manages the configurations for the given component.
    */
   public static function getConfigurationHandler($component) {
-    $handlers = self::getAllConfigurationHandlers();
+    $handlers = static::getAllConfigurationHandlers();
     return  '\\' . $handlers[$component]['namespace'] . '\\' . $handlers[$component]['handler'];
   }
 
@@ -114,7 +129,7 @@ class Configuration {
 
     $files = file_scan_directory($path, $look_for);
 
-    $storage = new $storage_system();
+    $storage = $this->getStorageInstance();
     foreach ($files as $file) {
       $storage->reset();
       // Avoid namespace issues.
@@ -473,7 +488,7 @@ class Configuration {
    * to the current configuration that is being exported.
    */
   public function findDependencies() {
-    $handlers = self::getAllConfigurationHandlers();
+    $handlers = static::getAllConfigurationHandlers();
     $stack = array();
     // Include this configuration to the stack to avoid add it again
     // in a circular dependency cycle

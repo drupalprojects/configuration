@@ -78,7 +78,7 @@ function _configuration_get_identifiers($component) {
 }
 
 function _configuration_get_components() {
-  $handlers = configurarion_get_components();
+  $handlers = configurarion_get_handlers();
   $rows = array();
   $rows[] = array(
     'Name',

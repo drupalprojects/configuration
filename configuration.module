@@ -44,7 +44,7 @@ function configuration_stream_wrappers() {
  */
 function configuration_configuration_handlers() {
   $namespace = 'Drupal\configuration\Config';
-  return array(
+  $handlers = array(
     'content_type' => array(
       'name' => 'Content Types',
       'handler' => 'ContentTypeConfiguration',
@@ -95,6 +95,16 @@ function configuration_configuration_handlers() {
       'namespace' => $namespace,
     ),
   );
+
+  if (module_exists('views')) {
+    $handlers['view'] = array(
+      'name' => 'View',
+      'handler' => 'ViewConfiguration',
+      'namespace' => $namespace,
+    );
+  }
+
+  return $handlers;
 }
 
 /**
@@ -119,7 +129,7 @@ function configuration_flush_caches() {
 function configuration_export_to_datastore($component, $identifier, $export_dependencies = TRUE) {
   $handler = Configuration::getConfigurationHandler($component);
   $configuration = new $handler($identifier);
-  $configuration->build()->exportToDataStore($export_dependencies);
+  $configuration->exportToDataStore($export_dependencies);
 }
 
 /**
@@ -131,7 +141,12 @@ function configuration_export_to_datastore($component, $identifier, $export_depe
  */
 function configurarion_get_identifiers($component) {
   $handler = Configuration::getConfigurationHandler($component);
-  $identifiers = $handler::getAllIdentifiers();
+  if ($handler::multiComponent()) {
+    $identifiers = $handler::getAllIdentifiers($component);
+  }
+  else {
+    $identifiers = $handler::getAllIdentifiers();
+  }
   return $identifiers;
 }
 
@@ -192,10 +207,26 @@ function configuration_image_default_styles() {
 }
 
 /**
- * Implements hook_filter_default_formats description().
+ * Implements hook_filter_default_formats().
  */
 function configuration_filter_default_formats() {
   return \Drupal\configuration\Config\TextFormatConfiguration::defaultHook();
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function configuration_views_api() {
+  return array(
+    'api' => 3.0,
+  );
+}
+
+/**
+ * Implements hook_filter_default_formats().
+ */
+function configuration_views_default_views() {
+  return \Drupal\configuration\Config\ViewConfiguration::defaultHook();
 }
 
 /**
