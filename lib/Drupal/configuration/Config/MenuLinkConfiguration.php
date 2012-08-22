@@ -28,6 +28,23 @@ class MenuLinkConfiguration extends Configuration {
     $this->data = menu_link_load($mlid);
     return $this;
   }
+  
+  static public function rebuildHook() {
+    $menulinks = db_select('configuration_staging', 'c')
+                ->fields('c', array('data'))
+                ->condition('component', self::$component)
+                ->execute()
+                ->fetchCol();
+    
+    if ($menulinks) {
+      //$existing = $this->getAllIdentifiers();
+      foreach ($menulinks as $serialized_menulink) {
+        $menulink = unserialize($serialized_menulink);
+        $menulink = (object) $menulink;
+        menu_link_save($menulink);
+      }
+    }
+  }
 
   /**
    * Returns all the identifiers available for this component.

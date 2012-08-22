@@ -88,11 +88,13 @@ function configuration_configuration_handlers() {
       'name' => 'Menu',
       'handler' => 'MenuConfiguration',
       'namespace' => $namespace,
+      'without_default_hook' => TRUE,
     ),
     'menulink' => array(
       'name' => 'MenuLink',
       'handler' => 'MenuLinkConfiguration',
       'namespace' => $namespace,
+      'without_default_hook' => TRUE,
     ),
   );
 

@@ -17,6 +17,23 @@ class MenuConfiguration extends Configuration {
     $this->data = menu_load($this->getIdentifier());
     return $this;
   }
+  
+  static public function rebuildHook() {
+    $menus = db_select('configuration_staging', 'c')
+                ->fields('c', array('data'))
+                ->condition('component', self::$component)
+                ->execute()
+                ->fetchCol();
+    
+    if ($menus) {
+      //$existing = $this->getAllIdentifiers();
+      foreach ($menus as $serialized_menu) {
+        $menu = unserialize($serialized_menu);
+        $menu = (object) $menu;
+        menu_save($menu);
+      }
+    }
+  }
 
   /**
    * Returns all the identifiers available for this component.
