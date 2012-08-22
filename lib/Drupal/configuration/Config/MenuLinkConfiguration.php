@@ -11,16 +11,6 @@ use Drupal\configuration\Config\Configuration;
 
 class MenuLinkConfiguration extends Configuration {
 
-  /**
-   * Set the component identifier of this configuration.
-   *
-   * Identifiers for fields are build using the entity_type,
-   * bundle and field name. For example node.page.body
-   */
-  //public function setIdentifier($entity_type, $field_name, $bundle_name) {
-  //  $this->identifier = $entity_type . "." . $field_name  . "." . $bundle_name;
-  //}
-
   static protected $component = 'menulink';
 
   protected function prepareBuild() {
@@ -40,7 +30,6 @@ class MenuLinkConfiguration extends Configuration {
       //$existing = $this->getAllIdentifiers();
       foreach ($menulinks as $serialized_menulink) {
         $menulink = unserialize($serialized_menulink);
-        $menulink = (object) $menulink;
         menu_link_save($menulink);
       }
     }

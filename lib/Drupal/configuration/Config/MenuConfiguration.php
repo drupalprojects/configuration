@@ -29,7 +29,6 @@ class MenuConfiguration extends Configuration {
       //$existing = $this->getAllIdentifiers();
       foreach ($menus as $serialized_menu) {
         $menu = unserialize($serialized_menu);
-        $menu = (object) $menu;
         menu_save($menu);
       }
     }
