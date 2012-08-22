@@ -14,7 +14,7 @@ abstract class CtoolsConfiguration extends Configuration {
   // The table where the configurations are storaged.
   static protected $table;
 
-  protected function getStorageInstance() {
+  static protected function getStorageInstance() {
     $storage = static::getStorageSystem();
     return new $storage(static::$table);
   }

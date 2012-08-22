@@ -65,7 +65,7 @@ class Configuration {
   public function __construct($identifier) {
     $this->identifier = $identifier;
     $this->status = CONFIGURATION_IN_SYNC;
-    $this->storage = $this->getStorageInstance();
+    $this->storage = static::getStorageInstance();
     $this->storage->setFileName($this->getUniqueId());
   }
 
@@ -81,7 +81,7 @@ class Configuration {
     return $return;
   }
 
-  protected function getStorageInstance() {
+  static protected function getStorageInstance() {
     $storage = static::getStorageSystem();
     return new $storage();
   }
@@ -129,7 +129,7 @@ class Configuration {
 
     $files = file_scan_directory($path, $look_for);
 
-    $storage = $this->getStorageInstance();
+    $storage = static::getStorageInstance();
     foreach ($files as $file) {
       $storage->reset();
       // Avoid namespace issues.
