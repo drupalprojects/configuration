@@ -35,7 +35,7 @@ function configuration_drush_command() {
       'drush cgi content_type' => 'Return the list of all available content types to export',
     ),
     'arguments' => array(
-      'componenet' => 'The name of the component to get the identifiers',
+      'component' => 'The name of the component to get the identifiers',
     ),
   );
   $items['config-get-components'] = array(
@@ -54,7 +54,10 @@ function configuration_drush_command() {
     'examples' => array(
       'drush ced content_type article' => 'Export the content type article and all its dependencies to the datastore',
     ),
-    'arguments' => array(),
+    'arguments' => array(
+      'component' => 'The name of the configuration component.',
+      'identifier' => 'The name of the identifier.',
+    ),
   );
   $items['config-import-new-configurations'] = array(
     'callback' => '_configuration_import_new_configurations',
@@ -69,7 +72,19 @@ function configuration_drush_command() {
   return $items;
 }
 
-function _configuration_get_identifiers($component) {
+function _configuration_get_identifiers() {
+  if ($args = func_get_args()) {
+    if (empty($args)) {
+      return drush_set_error('', 'No components supplied.');
+    }
+  }
+
+  $component = array_shift($args);
+  $handlers = configurarion_get_handlers();
+  if (empty($handlers[$component])) {
+    return drush_set_error('', dt('The component @component is not valid or the module to export the configuration is not installed.', array('@component' => $component)));
+  }
+
   $identifiers = configurarion_get_identifiers($component);
   $rows = array();
   foreach ($identifiers as $identifier) {
@@ -94,8 +109,27 @@ function _configuration_get_components() {
   drush_print_table($rows, TRUE);
 }
 
-function _configuration_export_to_datastore($component, $identifier) {
-  configuration_export_to_datastore($component, $identifier);
+function _configuration_export_to_datastore() {
+  list($component, $identifier) = func_get_args();
+  if (empty($component)) {
+    return drush_set_error('', dt('No configuration component supplied'));
+  }
+
+  $handlers = configurarion_get_handlers();
+  if (empty($handlers[$component])) {
+    return drush_set_error('', dt('The component @component is not valid or the module to export the configuration is not installed.', array('@component' => $component)));
+  }
+
+  if (empty($identifier)) {
+    return drush_set_error('', dt('No identifier supplied.'));
+  }
+
+  $rows = array();
+  foreach (array_keys(configuration_export_to_datastore($component, $identifier)) as $exported) {
+    $rows[]['exported'] = $exported;
+  }
+  drush_log(dt('The configurations for the following items have been created/updated.'), 'ok');
+  drush_print_table($rows);
 }
 
 function _configuration_import_new_configurations() {
