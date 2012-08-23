@@ -120,7 +120,9 @@ class Configuration {
   /**
    * Loads all the non imported configurations.
    */
-  public static function importAllNewConfigurations() {
+  public static function importAllNewConfigurations($list = array()) {
+
+    $import_all = empty($list);
 
     $path = drupal_realpath('config://');
     $storage_system = static::getStorageSystem();
@@ -146,17 +148,18 @@ class Configuration {
       // Obtain the identifier of the configuration based on the file name.
       $identifier = substr($file_array['name'], strpos($file_array['name'], '.') + 1);
 
-      // Create a configuration object, and save it into the staging area.
-      $config = new static($identifier);
-      $config
-        ->setData($data)
-        ->setDependencies($dependencies)
-        ->setModules($modules)
-        ->saveToStaging();
+      if ($import_all || !empty($list[static::$component . '.' . $identifier])) {
+        // Create a configuration object, and save it into the staging area.
+        $config = new static($identifier);
+        $config
+          ->setData($data)
+          ->setDependencies($dependencies)
+          ->setModules($modules)
+          ->saveToStaging();
 
-      unset($config);
+        unset($config);
+      }
       // @TODO Build the import order based on the dependencies.
-      // @TODO initialize a config object and call to $this->import($data);
     }
   }
 

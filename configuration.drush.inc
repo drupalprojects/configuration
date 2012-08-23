@@ -62,6 +62,7 @@ function configuration_drush_command() {
     'aliases' => array('cinc'),
     'examples' => array(
       'drush cinc' => 'Loads all the files that have configurations into the ActiveStore',
+      'drush cinc content_type.article variable.theme_settings' => 'Loads the configurations for content type Article and the variable theme_settings into the ActiveStore',
     ),
     'arguments' => array(),
   );
@@ -98,5 +99,6 @@ function _configuration_export_to_datastore($component, $identifier) {
 }
 
 function _configuration_import_new_configurations() {
-  configuration_import_new_configurations();
+  $args = func_get_args();
+  configuration_import_new_configurations($args);
 }
