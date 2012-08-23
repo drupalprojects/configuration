@@ -83,6 +83,26 @@ class FieldConfiguration extends Configuration {
     }
   }
 
+  public function findDependencies() {
+    list($entity_type, $field_name, $bundle_name) = explode('.', $this->getIdentifier());
+
+    $supported_handler = FALSE;
+    if ($entity_type == 'node') {
+      $handler = Configuration::getConfigurationHandler('content_type');
+      $supported_handler = TRUE;
+    }
+    elseif ($entity_type == 'vocabulary') {
+      $handler = Configuration::getConfigurationHandler('vocabulary');
+      $supported_handler = TRUE;
+    }
+
+    if ($supported_handler) {
+      $parent_config = new $handler($bundle_name);
+      $this->addToDependencies($parent_config);
+    }
+    parent::findDependencies();
+  }
+
   public function findRequiredModules() {
     $this->addToModules($this->data['field_config']['storage']['module']);
     $this->addToModules($this->data['field_instance']['widget']['module']);
