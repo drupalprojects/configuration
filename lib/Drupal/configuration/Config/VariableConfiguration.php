@@ -12,9 +12,21 @@ use Drupal\configuration\Config\Configuration;
 class VariableConfiguration extends Configuration {
 
   static protected $component = 'variable';
+  protected $variable_name = '';
+
+  function __construct($identifier) {
+    $this->variable_name = $identifier;
+    parent::__construct(str_replace(' ', '_', $identifier));
+
+    $this->storage->setFileName('variable.' . str_replace(' ', '_', $identifier));
+  }
+
 
   protected function prepareBuild() {
-    $this->data = variable_get($this->getIdentifier(), NULL);
+    $this->data = array(
+      'name' => $this->variable_name,
+      'content' => variable_get($this->getIdentifier(), NULL),
+    );
     return $this;
   }
 
@@ -28,6 +40,22 @@ class VariableConfiguration extends Configuration {
       $return[] = $variable->name;
     }
     return $return;
+  }
+
+  static public function rebuildHook() {
+    $variables = db_select('configuration_staging', 'c')
+                ->fields('c', array('data'))
+                ->condition('component', self::$component)
+                ->execute()
+                ->fetchCol();
+
+    if ($variables) {
+      foreach ($variables as $serialized_variable) {
+        $variable = unserialize($serialized_variable);
+        $variable = $variable;
+        variable_set($variable['name'], $variable['content']);
+      }
+    }
   }
 
   public static function alterDependencies(Configuration $config, &$stack) {
