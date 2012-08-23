@@ -118,7 +118,7 @@ class Storage {
   }
 
   public function getModules() {
-    return $this->dependencies;
+    return $this->required_modules;
   }
 
   public function setModules($modules) {
