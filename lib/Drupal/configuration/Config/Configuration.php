@@ -131,9 +131,9 @@ class Configuration {
 
     $files = file_scan_directory($path, $look_for);
 
-    $storage = static::getStorageInstance();
     foreach ($files as $file) {
-      $storage->reset();
+      $storage = static::getStorageInstance();
+
       // Avoid namespace issues.
       $file_array = (array)$file;
       $filename = $file_array['name'];
@@ -157,6 +157,7 @@ class Configuration {
           ->setModules($modules)
           ->saveToStaging();
 
+        unset($storage);
         unset($config);
       }
       // @TODO Build the import order based on the dependencies.
