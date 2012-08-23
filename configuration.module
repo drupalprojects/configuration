@@ -65,6 +65,7 @@ function configuration_configuration_handlers() {
       'name' => 'Text Formats',
       'handler' => 'TextFormatConfiguration',
       'namespace' => $namespace,
+      'without_default_hook' => TRUE,
     ),
     'vocabulary' => array(
       'name' => 'Vocabulary',

@@ -46,6 +46,22 @@ class TextFormatConfiguration extends Configuration {
     return FALSE;
   }
 
+  static public function rebuildHook() {
+    $text_formats = db_select('configuration_staging', 'c')
+                ->fields('c', array('data'))
+                ->condition('component', self::$component)
+                ->execute()
+                ->fetchCol();
+
+    if ($text_formats) {
+      foreach ($text_formats as $serialized_text_format) {
+        $text_format = unserialize($serialized_text_format);
+        $text_format = (object) $text_format;
+        filter_format_save($text_format);
+      }
+    }
+  }
+
   public function findRequiredModules() {
     $filter_info = filter_get_filters();
     foreach (array_keys($this->data->filters) as $filter) {
