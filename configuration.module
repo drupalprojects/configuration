@@ -172,8 +172,9 @@ function configuration_import_new_configurations($list = array()) {
   $handlers = configurarion_get_handlers();
   foreach ($handlers as $handler) {
     $class = '\\' . $handler['namespace'] . '\\' . $handler['handler'];
-    $class::importAllNewConfigurations($list);
+    $components = $class::checkNewConfigurations($list);
   }
+  $class::importConfigurations($components);
   drupal_flush_all_caches();
 }
 

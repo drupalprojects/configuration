@@ -110,58 +110,102 @@ class Configuration {
   }
 
   /**
-   * Returns a that manages the configurations for the given component.
+   * Returns a handler that manages the configurations for the given component.
    */
   public static function getConfigurationHandler($component) {
     $handlers = static::getAllConfigurationHandlers();
-    return  '\\' . $handlers[$component]['namespace'] . '\\' . $handlers[$component]['handler'];
+    return '\\' . $handlers[$component]['namespace'] . '\\' . $handlers[$component]['handler'];
   }
 
   /**
-   * Loads all the non imported configurations.
+   * Loads configurations into staging setting status as "needs rebuild".
    */
-  public static function importAllNewConfigurations($list = array()) {
+  public static function importConfigurations($component_stack = array()) {
+    foreach ($component_stack as $component) {
+      list($component_name, $identifier) = explode('.', $component, 2);
+      $handler = Configuration::getConfigurationHandler($component_name);
+      $handler_instance = new $handler($identifier);
+      $handler_instance->storage->load();
+      $data = $handler_instance->storage->getData();
+      $dependencies = $handler_instance->storage->getDependencies();
+      $modules = $handler_instance->storage->getModules();
+      $handler_instance
+          ->setData($data)
+          ->setDependencies($dependencies)
+          ->setModules($modules)
+          ->saveToStaging();
+      // @todo Set state to "needs rebuild" or something like that.
+      unset($handler_instance);
+    }
+  }
 
+  /**
+   * Build an array of components to import based on the dependencies.
+   */
+  public static function checkNewConfigurations($list = array()) {
+    $real_dependencies = &drupal_static(__FUNCTION__);
+    if (!isset($real_dependencies)) {
+      $real_dependencies = array();
+    }
     $import_all = empty($list);
 
     $path = drupal_realpath('config://');
     $storage_system = static::getStorageSystem();
     $ext = $storage_system::$file_extension;
-    $look_for = '/' . static::$component . '\..*' . $ext . '$/';
+    $look_for = '/\A' . static::$component . '\..*' . $ext . '$/';
 
     $files = file_scan_directory($path, $look_for);
 
     foreach ($files as $file) {
-      $storage = static::getStorageInstance();
-
       // Avoid namespace issues.
-      $file_array = (array)$file;
+      $file_array = (array) $file;
       $filename = $file_array['name'];
-      $storage
-        ->setFileName($filename)
-        ->load();
+      if (!in_array($filename, $real_dependencies)) {
+        $storage = static::getStorageInstance();
+        $storage
+            ->setFileName($filename)
+            ->load();
 
-      $data = $storage->getData();
-      $dependencies = $storage->getDependencies();
-      $modules = $storage->getModules();
+        $data = $storage->getData();
+        $dependencies = $storage->getDependencies();
+        $modules = $storage->getModules();
 
-      // Obtain the identifier of the configuration based on the file name.
-      $identifier = substr($file_array['name'], strpos($file_array['name'], '.') + 1);
+        // Obtain the identifier of the configuration based on the file name.
+        $identifier = substr($file_array['name'], strpos($file_array['name'], '.') + 1);
 
-      if ($import_all || !empty($list[static::$component . '.' . $identifier])) {
-        // Create a configuration object, and save it into the staging area.
-        $config = new static($identifier);
-        $config
-          ->setData($data)
-          ->setDependencies($dependencies)
-          ->setModules($modules)
-          ->saveToStaging();
-
-        unset($storage);
-        unset($config);
+        if ($import_all || !empty($list[static::$component . '.' . $identifier])) {
+          $config = new static($identifier);
+          $config->setDependencies($dependencies);
+          $config->getPriorizatedDependencies($real_dependencies);
+          unset($storage);
+          unset($config);
+        }
       }
-      // @TODO Build the import order based on the dependencies.
     }
+    return $real_dependencies;
+  }
+
+  public function getPriorizatedDependencies(&$component_ordered_stack = array()) {
+    $id = $this->getUniqueId();
+    if (empty($this->dependencies)) {
+      $component_ordered_stack[$id] = $id;
+    }
+    else {
+      foreach ($this->dependencies as $dependency) {
+        list($dependency_component, $dependency_identifier) = explode('.', $dependency);
+        if (!in_array($dependency, $component_ordered_stack)) {
+          $handler = Configuration::getConfigurationHandler($dependency_component);
+          $dependency_config = new $handler($dependency_identifier);
+          $dependency_config->storage->load();
+          $dependency_config->setDependencies($dependency_config->storage
+                  ->getDependencies());
+          $dependency_config->getPriorizatedDependencies($component_ordered_stack);
+          unset($dependency_config);
+        }
+      }
+      $component_ordered_stack[$id] = $id;
+    }
+    return $component_ordered_stack;
   }
 
   /**
@@ -546,4 +590,5 @@ class Configuration {
       }
     }
   }
+
 }
