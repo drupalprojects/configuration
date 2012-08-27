@@ -591,4 +591,63 @@ class Configuration {
     }
   }
 
+  /**
+   * Returns a list of modules that are required to run this configuration.
+   *
+   * @return
+   *   A keyed array by module name that idicates the status of each module.
+   */
+  public function getRequiredModules() {
+    $stack = array();
+    foreach ($this->getModules() as $module) {
+      $this->getDependentModules($module, $stack);
+    }
+    return $stack;
+  }
+
+  /**
+   * Determine the status of the given module and of its dependencies.
+   */
+  protected function getDependentModules($module, &$stack) {
+    $available_modules = static::getAvailableModules();
+    if (!isset($available_modules[$module])) {
+      $stack[$module] = CONFIGURATION_MODULE_MISSING;
+      return;
+    }
+    else {
+      if (empty($available_modules[$module]->status)) {
+        $stack[$module] = CONFIGURATION_MODULE_TO_INSTALL;
+        foreach ($available_modules[$module]['requires'] as $required_module) {
+          if (empty($stack[$required_module])) {
+            $this->getRequiredModules($required_module, $stack);
+          }
+        }
+      }
+      else {
+        $stack[$module] = CONFIGURATION_MODULE_INSTALLED;
+      }
+    }
+  }
+
+  /**
+   * Helper for retrieving info from system table.
+   */
+  protected function getAvailableModules($reset = FALSE) {
+    static $modules;
+
+    if (!isset($modules)) {
+      // @todo use cache for this function
+
+      $files = system_rebuild_module_data();
+      $modules = array();
+      foreach($files as $id => $file) {
+        if ($file->type == 'module' && empty($file->info['hidden'])) {
+          $modules[$id] = $file;
+        }
+      }
+    }
+
+    return $modules;
+  }
+
 }

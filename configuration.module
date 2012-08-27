@@ -23,6 +23,23 @@ define('CONFIGURATION_ACTIVESTORE_ONLY', 0X0200);
  */
 define('CONFIGURATION_DATASTORE_ONLY', 0x0008);
 
+/**
+ * A bit flag used to let us know if a module for the configuration is not
+ * available to install in the site.
+ */
+define('CONFIGURATION_MODULE_MISSING', 0x0100);
+
+/**
+ * A bit flag used to let us know if a module for the configuration is disabled
+ * but can be enabled.
+ */
+define('CONFIGURATION_MODULE_TO_INSTALL', 0x0101);
+
+/**
+ * A bit flag used to let us know if a module for the configuration is installed.
+ */
+define('CONFIGURATION_MODULE_INSTALLED', 0x0102);
+
 use Drupal\configuration\Config\Configuration;
 
 /**
