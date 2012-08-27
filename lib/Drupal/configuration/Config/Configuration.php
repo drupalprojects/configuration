@@ -120,23 +120,31 @@ class Configuration {
   /**
    * Loads configurations into staging setting status as "needs rebuild".
    */
-  public static function importConfigurations($component_stack = array()) {
+  public static function importConfigurations($component_stack = array(), $save_to_staging = TRUE) {
+    $to_import = array();
     foreach ($component_stack as $component) {
       list($component_name, $identifier) = explode('.', $component, 2);
       $handler = Configuration::getConfigurationHandler($component_name);
-      $handler_instance = new $handler($identifier);
-      $handler_instance->storage->load();
-      $data = $handler_instance->storage->getData();
-      $dependencies = $handler_instance->storage->getDependencies();
-      $modules = $handler_instance->storage->getModules();
-      $handler_instance
+      $config_instance = new $handler($identifier);
+      $config_instance->storage->load();
+      $data = $config_instance->storage->getData();
+      $dependencies = $config_instance->storage->getDependencies();
+      $modules = $config_instance->storage->getModules();
+      $config_instance
           ->setData($data)
           ->setDependencies($dependencies)
-          ->setModules($modules)
-          ->saveToStaging();
+          ->setModules($modules);
+
+      if ($save_to_staging) {
+        $config_instance->save_to_staging();
+      }
+      else {
+        $to_import[$config_instance->getUniqueId()] = $config_instance;
+      }
+
       // @todo Set state to "needs rebuild" or something like that.
-      unset($handler_instance);
     }
+    return $to_import;
   }
 
   /**
@@ -163,8 +171,8 @@ class Configuration {
       if (!in_array($filename, $real_dependencies)) {
         $storage = static::getStorageInstance();
         $storage
-            ->setFileName($filename)
-            ->load();
+          ->setFileName($filename)
+          ->load();
 
         $data = $storage->getData();
         $dependencies = $storage->getDependencies();
@@ -617,9 +625,9 @@ class Configuration {
     else {
       if (empty($available_modules[$module]->status)) {
         $stack[$module] = CONFIGURATION_MODULE_TO_INSTALL;
-        foreach ($available_modules[$module]['requires'] as $required_module) {
-          if (empty($stack[$required_module])) {
-            $this->getRequiredModules($required_module, $stack);
+        foreach ($available_modules[$module]->requires as $required_module) {
+          if (empty($stack[$required_module['name']])) {
+            $this->getDependentModules($required_module['name'], $stack);
           }
         }
       }

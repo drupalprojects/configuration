@@ -6,6 +6,8 @@
  * Let you perform configuration actions from the console.
  */
 
+use Drupal\configuration\Config\Configuration;
+
 /**
  * Implements of hook_drush_help()
  */
@@ -134,5 +136,61 @@ function _configuration_export_to_datastore() {
 
 function _configuration_import_new_configurations() {
   $args = func_get_args();
-  configuration_import_new_configurations($args);
+  if (in_array('--skip-enable-modules', $args)) {
+    array_shift($args);
+    configuration_import_new_configurations($args);
+  }
+  else {
+    $handlers = configurarion_get_handlers();
+    foreach ($handlers as $handler) {
+      $class = '\\' . $handler['namespace'] . '\\' . $handler['handler'];
+      $components = $class::checkNewConfigurations($args);
+    }
+    $configurations = $class::importConfigurations($components, FALSE);
+
+    $modules = array();
+    foreach ($configurations as $configuration) {
+      $modules = array_merge($modules, $configuration->getRequiredModules());
+    }
+
+    $missing = array();
+    $to_install = array();
+    foreach ($modules as $module_name => $status) {
+      if ($status == CONFIGURATION_MODULE_MISSING) {
+        $missing[] = $module_name;
+      }
+      elseif ($status == CONFIGURATION_MODULE_TO_INSTALL) {
+        $to_install[] = $module_name;
+      }
+    }
+    if (count($missing)) {
+      drush_set_error('', dt('Missing required modules. None configuration was imported.'));
+      drush_set_error('', dt('The following modules are required to import the configurations but are not available to install: !modules', array('!modules' => implode(', ', $missing))));
+      drush_die('Aborting.');
+    }
+    else {
+      if (count($to_install)) {
+        drush_print('The following modules will be installed in order to enable the configurations:');
+        drush_print(implode(', ', $to_install));
+        if (!drush_confirm(dt('Do you really want to continue?'))) {
+          drush_die('Aborting.');
+        }
+
+        foreach ($to_install as $module_name) {
+          if (!module_exists($module_name)) {
+            drush_invoke_process(drush_sitealias_get_record('@self'), 'pm-enable', array($module_name));
+          }
+        }
+      }
+      $rows = array();
+      foreach ($configurations as $configuration) {
+        $configuration->saveToStaging();
+        $rows[]['identifier'] = $configuration->getUniqueId();
+      }
+
+      drush_log(dt('The configurations for the following items have been imported.'), 'ok');
+      drush_print_table($rows);
+      drupal_flush_all_caches();
+    }
+  }
 }
