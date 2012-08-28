@@ -257,8 +257,9 @@ class Configuration {
       'identifier' => $this->getIdentifier(),
       'data' => serialize($this->getData()),
       'status' => $this->status,
-      'dependencies' => serialize(array()),
-      'modules' => serialize(array()),
+      'dependencies' => serialize($this->getDependencies()),
+      'optional' => serialize($this->getOptionalConfigurations()),
+      'modules' => serialize($this->getModules()),
     );
     db_insert('configuration_staging')->fields($fields)->execute();
   }
