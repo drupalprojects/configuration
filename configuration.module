@@ -24,6 +24,11 @@ define('CONFIGURATION_ACTIVESTORE_ONLY', 0X0200);
 define('CONFIGURATION_DATASTORE_ONLY', 0x0008);
 
 /**
+ * A bit flag used to let us know if a configuration needs to be rebuilded.
+ */
+define('CONFIGURATION_NEEDS_REBUILD', 0x0010);
+
+/**
  * A bit flag used to let us know if a module for the configuration is not
  * available to install in the site.
  */
@@ -191,7 +196,7 @@ function configuration_import_new_configurations($list = array()) {
     $class = '\\' . $handler['namespace'] . '\\' . $handler['handler'];
     $components = $class::checkNewConfigurations($list);
   }
-  $class::importConfigurations($components);
+  $class::importConfigurations($components, TRUE);
   drupal_flush_all_caches();
 }
 
@@ -210,7 +215,7 @@ function configuration_rebuild() {
   foreach ($handlers as $handler) {
     if (!empty($handler['without_default_hook'])) {
       $class = '\\' . $handler['namespace'] . '\\' . $handler['handler'];
-      $class::rebuildHook();
+      $class::executeRebuildHook();
     }
   }
 }

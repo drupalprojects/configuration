@@ -134,15 +134,14 @@ class Configuration {
           ->setData($data)
           ->setDependencies($dependencies)
           ->setModules($modules);
-
       if ($save_to_staging) {
-        $config_instance->save_to_staging();
+        $config_instance
+          ->setStatus(CONFIGURATION_NEEDS_REBUILD)
+          ->saveToStaging();
       }
       else {
         $to_import[$config_instance->getUniqueId()] = $config_instance;
       }
-
-      // @todo Set state to "needs rebuild" or something like that.
     }
     return $to_import;
   }
@@ -217,6 +216,39 @@ class Configuration {
   }
 
   /**
+   * Gets a array of components marked for rebuild and process them.
+   */
+  static public function executeRebuildHook() {
+    $components = db_select('configuration_staging', 'c')
+            ->fields('c', array('identifier', 'data'))
+            ->condition('component', static::$component)
+            ->condition('status', CONFIGURATION_NEEDS_REBUILD)
+            ->execute()
+            ->fetchAll();
+    static::rebuildHook($components);
+    /**
+     * @todo
+     * Get actual result for each component rebuild and change status only for
+     * those processed correctly.
+     */
+    db_update('configuration_staging')
+        ->fields(array('status' => CONFIGURATION_IN_SYNC))
+        ->condition('component', static::$component)
+        ->execute();
+  }
+
+  /**
+   * Clear the component configuration in the active store.
+   *
+   * Some configurations provide hooks to load configurations from code.
+   * In order to update this configurations each one has to implement a way to
+   * clear or update the objects in the database.
+   */
+  static public function revertHook() {
+    // Override
+  }
+
+    /**
    * Loads the configuration into the active store.
    *
    * Some configurations like fields, permissions, roles, etc doesn't
@@ -224,7 +256,7 @@ class Configuration {
    * In order to load this configuration, children classes of this kind
    * of configs, must define the way to load this data into the ActiveStore.
    */
-  static public function rebuildHook() {
+  static public function rebuildHook($components = array()) {
     // Override
   }
 
@@ -416,6 +448,14 @@ class Configuration {
    */
   public function getStatus() {
     return $this->status;
+  }
+
+  /**
+   * Update the object status.
+   */
+  public function setStatus($value) {
+    $this->status = $value;
+    return $this;
   }
 
   /**

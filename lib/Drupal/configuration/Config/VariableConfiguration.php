@@ -42,16 +42,10 @@ class VariableConfiguration extends Configuration {
     return $return;
   }
 
-  static public function rebuildHook() {
-    $variables = db_select('configuration_staging', 'c')
-                ->fields('c', array('data'))
-                ->condition('component', self::$component)
-                ->execute()
-                ->fetchCol();
-
+  static public function rebuildHook($variables = array()) {
     if ($variables) {
       foreach ($variables as $serialized_variable) {
-        $variable = unserialize($serialized_variable);
+        $variable = unserialize($serialized_variable->data);
         $variable = $variable;
         variable_set($variable['name'], $variable['content']);
       }

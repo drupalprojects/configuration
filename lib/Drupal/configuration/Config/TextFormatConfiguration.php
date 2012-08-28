@@ -46,16 +46,10 @@ class TextFormatConfiguration extends Configuration {
     return FALSE;
   }
 
-  static public function rebuildHook() {
-    $text_formats = db_select('configuration_staging', 'c')
-                ->fields('c', array('data'))
-                ->condition('component', self::$component)
-                ->execute()
-                ->fetchCol();
-
+  static public function rebuildHook($text_formats = array()) {
     if ($text_formats) {
       foreach ($text_formats as $serialized_text_format) {
-        $text_format = unserialize($serialized_text_format);
+        $text_format = unserialize($serialized_text_format->data);
         $text_format = (object) $text_format;
         filter_format_save($text_format);
       }

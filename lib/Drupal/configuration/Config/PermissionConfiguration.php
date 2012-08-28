@@ -123,14 +123,9 @@ class PermissionConfiguration extends Configuration {
    * There is no default hook for permission. This function set the
    * permissions to the defined roles.
    */
-  static public function rebuildHook() {
-    $from_staging = db_select('configuration_staging', 'c')
-                      ->fields('c', array('data'))
-                      ->condition('component', self::$component)
-                      ->execute()
-                      ->fetchCol();
+  static public function rebuildHook($permissions = array()) {
 
-    if ($from_staging) {
+    if ($permissions) {
       // Make sure the list of available node types is up to date, especially when
       // installing multiple features at once, for example from an install profile
       // or via drush.
@@ -138,8 +133,8 @@ class PermissionConfiguration extends Configuration {
 
       $roles = static::get_roles();
       $permissions_by_role = static::get_permissions(FALSE);
-      foreach ($from_staging as $serialized_permission) {
-        $permission = unserialize($serialized_permission);
+      foreach ($permissions as $serialized_permission) {
+        $permission = unserialize($serialized_permission->data);
         $perm = $permission['permission'];
         foreach ($roles as $role) {
           if (in_array($role, $permission['roles'])) {

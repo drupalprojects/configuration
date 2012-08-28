@@ -112,13 +112,7 @@ class FieldConfiguration extends Configuration {
    * There is no default hook for fields. This function creates the
    * fields when configurarion_rebuild() is called.
    */
-  static function rebuildHook() {
-    $fields = db_select('configuration_staging', 'c')
-                ->fields('c', array('data'))
-                ->condition('component', self::$component)
-                ->execute()
-                ->fetchCol();
-
+  static function rebuildHook($fields = array()) {
     if ($fields) {
       field_info_cache_clear();
 
@@ -127,8 +121,8 @@ class FieldConfiguration extends Configuration {
       $existing_fields = field_info_fields();
       $existing_instances = field_info_instances();
 
-      foreach ($fields as $field_serialized) {
-        $field = unserialize($field_serialized);
+      foreach ($fields as $field_object) {
+        $field = unserialize($field_object->data);
         // Create or update field.
         $field_config = $field['field_config'];
         if (isset($existing_fields[$field_config['field_name']])) {
