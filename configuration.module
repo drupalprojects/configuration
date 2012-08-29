@@ -190,11 +190,11 @@ function configurarion_get_handlers() {
  *
  * @todo check if the configuration was already imported.
  */
-function configuration_import_new_configurations($list = array()) {
+function configuration_import_configurations($list = array()) {
   $handlers = configurarion_get_handlers();
   foreach ($handlers as $handler) {
     $class = '\\' . $handler['namespace'] . '\\' . $handler['handler'];
-    $components = $class::checkNewConfigurations($list);
+    $components = $class::loadFromDataStore($list);
   }
   $class::importConfigurations($components, TRUE);
   drupal_flush_all_caches();

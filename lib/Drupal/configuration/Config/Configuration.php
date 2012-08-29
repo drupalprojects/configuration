@@ -7,6 +7,8 @@
 
 namespace Drupal\configuration\Config;
 
+use \StdClass;
+
 class Configuration {
 
   /**
@@ -122,18 +124,26 @@ class Configuration {
    */
   public static function importConfigurations($component_stack = array(), $save_to_staging = TRUE) {
     $to_import = array();
+    if ($save_to_staging) {
+      static::rebuildHook($component_stack);
+    }
     foreach ($component_stack as $component) {
       list($component_name, $identifier) = explode('.', $component, 2);
       $handler = Configuration::getConfigurationHandler($component_name);
       $config_instance = new $handler($identifier);
       $config_instance->storage->load();
+
       $data = $config_instance->storage->getData();
       $dependencies = $config_instance->storage->getDependencies();
+      $optional = $config_instance->storage->getOptionalConfigurations();
       $modules = $config_instance->storage->getModules();
+
       $config_instance
           ->setData($data)
           ->setDependencies($dependencies)
+          ->setOptionalConfigurations($optional)
           ->setModules($modules);
+
       if ($save_to_staging) {
         $config_instance
           ->setStatus(CONFIGURATION_NEEDS_REBUILD)
@@ -149,7 +159,7 @@ class Configuration {
   /**
    * Build an array of components to import based on the dependencies.
    */
-  public static function checkNewConfigurations($list = array()) {
+  public static function loadFromDataStore($list = array()) {
     $real_dependencies = &drupal_static(__FUNCTION__);
     if (!isset($real_dependencies)) {
       $real_dependencies = array();
@@ -164,25 +174,24 @@ class Configuration {
     $files = file_scan_directory($path, $look_for);
 
     foreach ($files as $file) {
-      // Avoid namespace issues.
-      $file_array = (array) $file;
-      $filename = $file_array['name'];
-      if (!in_array($filename, $real_dependencies)) {
+      if (!in_array($file->name, $real_dependencies)) {
         $storage = static::getStorageInstance();
         $storage
-          ->setFileName($filename)
+          ->setFileName($file->name)
           ->load();
 
         $data = $storage->getData();
         $dependencies = $storage->getDependencies();
+        $optional = $storage->getOptionalConfigurations();
         $modules = $storage->getModules();
 
         // Obtain the identifier of the configuration based on the file name.
-        $identifier = substr($file_array['name'], strpos($file_array['name'], '.') + 1);
+        $identifier = substr($file->name, strpos($file->name, '.') + 1);
 
-        if ($import_all || !empty($list[static::$component . '.' . $identifier])) {
+        if ($import_all || in_array(static::$component . '.' . $identifier, $list)) {
           $config = new static($identifier);
           $config->setDependencies($dependencies);
+          $config->setOptionalConfigurations($optional);
           $config->getPriorizatedDependencies($real_dependencies);
           unset($storage);
           unset($config);
@@ -192,27 +201,36 @@ class Configuration {
     return $real_dependencies;
   }
 
+  /**
+   * Returns a list of all the configurations that should be proccessed based on
+   * the dependencies of the current configuration.
+   */
   public function getPriorizatedDependencies(&$component_ordered_stack = array()) {
     $id = $this->getUniqueId();
-    if (empty($this->dependencies)) {
+    if (in_array($id, $component_ordered_stack)) {
+      return;
+    }
+    $component_ordered_stack[$id] = $id;
+
+    if (empty($this->dependencies) && empty($this->optional_configurations)) {
       $component_ordered_stack[$id] = $id;
     }
     else {
-      foreach ($this->dependencies as $dependency) {
-        list($dependency_component, $dependency_identifier) = explode('.', $dependency);
-        if (!in_array($dependency, $component_ordered_stack)) {
-          $handler = Configuration::getConfigurationHandler($dependency_component);
-          $dependency_config = new $handler($dependency_identifier);
-          $dependency_config->storage->load();
-          $dependency_config->setDependencies($dependency_config->storage
-                  ->getDependencies());
-          $dependency_config->getPriorizatedDependencies($component_ordered_stack);
-          unset($dependency_config);
+      foreach (array('dependencies', 'optional_configurations') as $proccess) {
+        foreach ($this->{$proccess} as $config_uniqueid) {
+          list($config_component, $config_identifier) = explode('.', $config_uniqueid, 2);
+          if (!in_array($config_uniqueid, $component_ordered_stack)) {
+            $handler = Configuration::getConfigurationHandler($config_component);
+            $config_instance = new $handler($config_identifier);
+            $config_instance->storage->load();
+            $config_instance->setDependencies($config_instance->storage->getDependencies());
+            $config_instance->setOptionalConfigurations($config_instance->storage->getOptionalConfigurations());
+            $config_instance->getPriorizatedDependencies($component_ordered_stack);
+            unset($dependency_config);
+          }
         }
       }
-      $component_ordered_stack[$id] = $id;
     }
-    return $component_ordered_stack;
   }
 
   /**
@@ -225,7 +243,9 @@ class Configuration {
             ->condition('status', CONFIGURATION_NEEDS_REBUILD)
             ->execute()
             ->fetchAll();
+
     static::rebuildHook($components);
+
     /**
      * @todo
      * Get actual result for each component rebuild and change status only for
@@ -244,7 +264,7 @@ class Configuration {
    * In order to update this configurations each one has to implement a way to
    * clear or update the objects in the database.
    */
-  static public function revertHook() {
+  static public function revertHook($components = array()) {
     // Override
   }
 
