@@ -39,7 +39,7 @@ class VocabularyConfiguration extends Configuration {
         $vocabulary = unserialize($serialized_vocabulary->data);
         $vocabulary = (object) $vocabulary;
         foreach ($existing as $existing_vocab) {
-          if ($existing_vocab->machine_name === $vocabulary->machine_name) {
+          if ($existing_vocab->machine_name === $vocabulary->getIdentifier()) {
             $vocabulary->vid = $existing_vocab->vid;
           }
         }
