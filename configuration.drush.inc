@@ -190,11 +190,8 @@ function _configuration_import_configurations() {
           drush_die('Aborting.');
         }
 
-        foreach ($to_install as $module_name) {
-          if (!module_exists($module_name)) {
-            drush_invoke_process(drush_sitealias_get_record('@self'), 'pm-enable', array($module_name));
-          }
-        }
+        module_enable($to_install);
+        drupal_flush_all_caches();
       }
       $rows = array();
       foreach ($configurations as $configuration) {
