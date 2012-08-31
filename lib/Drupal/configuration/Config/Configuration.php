@@ -115,8 +115,35 @@ class Configuration {
    * Returns a handler that manages the configurations for the given component.
    */
   public static function getConfigurationHandler($component) {
-    $handlers = static::getAllConfigurationHandlers();
+    static $handlers;
+    if (!isset($handlers)) {
+      $handlers = static::getAllConfigurationHandlers();
+    }
     return '\\' . $handlers[$component]['namespace'] . '\\' . $handlers[$component]['handler'];
+  }
+
+  /**
+   * Loads configurations into staging setting status as "needs rebuild".
+   */
+  public static function revertConfigurations($component_stack = array(), $revert_dependencies = TRUE) {
+    // If the dependencies of the configuration have also to be reverted,
+    // find all the components to revert and save they into the $component_stack.
+    if ($revert_dependencies) {
+      foreach ($component_stack as $component) {
+        list($component_name, $identifier) = explode('.', $component, 2);
+        $handler = Configuration::getConfigurationHandler($component_name);
+        $config_instance = new $handler($identifier);
+        $config_instance->loadFromStaging();
+        $config_instance->getPriorizatedDependencies($component_stack, TRUE);
+      }
+    }
+
+    foreach ($component_stack as $component) {
+      list($component_name, $identifier) = explode('.', $component, 2);
+      $handler = Configuration::getConfigurationHandler($component_name);
+      $config_instance = new $handler($identifier);
+      $config_instance->revert();
+    }
   }
 
   /**
@@ -124,12 +151,11 @@ class Configuration {
    */
   public static function importConfigurations($component_stack = array(), $save_to_staging = TRUE) {
     $to_import = array();
-    if ($save_to_staging) {
-      static::rebuildHook($component_stack);
-    }
+
     foreach ($component_stack as $component) {
       list($component_name, $identifier) = explode('.', $component, 2);
       $handler = Configuration::getConfigurationHandler($component_name);
+
       $config_instance = new $handler($identifier);
       $config_instance->storage->load();
 
@@ -139,13 +165,14 @@ class Configuration {
       $modules = $config_instance->storage->getModules();
 
       $config_instance
-          ->setData($data)
-          ->setDependencies($dependencies)
-          ->setOptionalConfigurations($optional)
-          ->setModules($modules);
+        ->setData($data)
+        ->setDependencies($dependencies)
+        ->setOptionalConfigurations($optional)
+        ->setModules($modules);
 
       if ($save_to_staging) {
         $config_instance
+          ->revert()
           ->setStatus(CONFIGURATION_NEEDS_REBUILD)
           ->saveToStaging();
       }
@@ -180,7 +207,8 @@ class Configuration {
           ->setFileName($file->name)
           ->load();
 
-        $data = $storage->getData();
+        // We don't need the data at this stage.
+        // $data = $storage->getData();
         $dependencies = $storage->getDependencies();
         $optional = $storage->getOptionalConfigurations();
         $modules = $storage->getModules();
@@ -205,7 +233,7 @@ class Configuration {
    * Returns a list of all the configurations that should be proccessed based on
    * the dependencies of the current configuration.
    */
-  public function getPriorizatedDependencies(&$component_ordered_stack = array()) {
+  public function getPriorizatedDependencies(&$component_ordered_stack = array(), $use_staging = FALSE) {
     $id = $this->getUniqueId();
     if (in_array($id, $component_ordered_stack)) {
       return;
@@ -222,10 +250,13 @@ class Configuration {
           if (!in_array($config_uniqueid, $component_ordered_stack)) {
             $handler = Configuration::getConfigurationHandler($config_component);
             $config_instance = new $handler($config_identifier);
-            $config_instance->storage->load();
-            $config_instance->setDependencies($config_instance->storage->getDependencies());
-            $config_instance->setOptionalConfigurations($config_instance->storage->getOptionalConfigurations());
-            $config_instance->getPriorizatedDependencies($component_ordered_stack);
+            if ($use_staging) {
+              $config_instance->loadFromStaging();
+            }
+            else {
+              $config_instance->loadFromStorage();
+            }
+            $config_instance->getPriorizatedDependencies($component_ordered_stack, $use_staging);
             unset($dependency_config);
           }
         }
@@ -237,12 +268,19 @@ class Configuration {
    * Gets a array of components marked for rebuild and process them.
    */
   static public function executeRebuildHook() {
-    $components = db_select('configuration_staging', 'c')
+    $from_staging = db_select('configuration_staging', 'c')
             ->fields('c', array('identifier', 'data'))
             ->condition('component', static::$component)
             ->condition('status', CONFIGURATION_NEEDS_REBUILD)
             ->execute()
             ->fetchAll();
+
+    $components = array();
+    foreach ($from_staging as $item) {
+      $config = new static($item->identifier);
+      $config->setData(unserialize($item->data));
+      $components[$config->getUniqueId()] = $config;
+    }
 
     static::rebuildHook($components);
 
@@ -255,6 +293,15 @@ class Configuration {
         ->fields(array('status' => CONFIGURATION_IN_SYNC))
         ->condition('component', static::$component)
         ->execute();
+  }
+
+  /**
+   * Automatically call to the revertHook using only the information of the
+   * current configuration.
+   */
+  public function revert() {
+    static::revertHook(array($this));
+    return $this;
   }
 
   /**
@@ -295,6 +342,29 @@ class Configuration {
     return $return;
   }
 
+  public function loadFromStorage() {
+    $this->storage->load();
+    $this->setDependencies($this->storage->getDependencies());
+    $this->setOptionalConfigurations($this->storage->getOptionalConfigurations());
+    $this->setModules($this->storage->getModules());
+    return $this;
+  }
+
+  public function loadFromStaging() {
+    $object = db_select('configuration_staging', 'cs')
+                        ->fields('cs')
+                        ->condition('component', 'field')
+                        ->condition('identifier', 'node.field_image.article')
+                        ->execute()
+                        ->fetchObject();
+
+    $this->setData(unserialize($object->data));
+    $this->setDependencies(unserialize($object->dependecies));
+    $this->setOptionalConfigurations(unserialize($object->optional));
+    $this->setModules(unserialize($object->modules));
+    return $this;
+  }
+
   /**
    * Save a configuration object into the configuration_staging table.
    */
@@ -314,16 +384,6 @@ class Configuration {
       'modules' => serialize($this->getModules()),
     );
     db_insert('configuration_staging')->fields($fields)->execute();
-  }
-
-  /**
-   * Import the configuration into the ActiveStore.
-   */
-  public function importToActiveStore() {
-    // This method must be overrided by children classes.
-    $this->data = $this->storage->load($this->data)->getData();
-    // Perform the neccesary actions here.
-    return $this;
   }
 
   /**

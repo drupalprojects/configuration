@@ -185,10 +185,8 @@ function configurarion_get_handlers() {
 }
 
 /**
- * Find non imported configurations from config:// and import they
- * into the staging area and into the Active Store.
- *
- * @todo check if the configuration was already imported.
+ * Import a list of configurations from config:// into the staging area and into
+ * the Active Store.
  */
 function configuration_import_configurations($list = array()) {
   $handlers = configurarion_get_handlers();
@@ -196,7 +194,21 @@ function configuration_import_configurations($list = array()) {
     $class = '\\' . $handler['namespace'] . '\\' . $handler['handler'];
     $components = $class::loadFromDataStore($list);
   }
-  $class::importConfigurations($components, TRUE);
+  Configuration::importConfigurations($components, TRUE);
+  drupal_flush_all_caches();
+}
+
+/**
+ * Find non imported configurations from config:// and import they
+ * into the staging area and into the Active Store.
+ */
+function configuration_revert_configurations($list = array()) {
+  $handlers = configurarion_get_handlers();
+  foreach ($handlers as $handler) {
+    $class = '\\' . $handler['namespace'] . '\\' . $handler['handler'];
+    $components = $class::loadFromDataStore($list);
+  }
+  Configuration::importConfigurations($components, TRUE);
   drupal_flush_all_caches();
 }
 

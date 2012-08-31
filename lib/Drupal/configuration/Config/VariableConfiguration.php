@@ -44,12 +44,15 @@ class VariableConfiguration extends Configuration {
 
   static public function rebuildHook($variables = array()) {
     if ($variables) {
-      foreach ($variables as $serialized_variable) {
-        $variable = unserialize($serialized_variable->data);
-        $variable = $variable;
+      foreach ($variables as $config) {
+        $variable = $config->getData();
         variable_set($variable['name'], $variable['content']);
       }
     }
+  }
+
+  static public function revertHook($variables = array()) {
+    static::rebuildHook($variables);
   }
 
   public static function alterDependencies(Configuration $config, &$stack) {

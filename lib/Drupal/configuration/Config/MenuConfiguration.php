@@ -21,10 +21,14 @@ class MenuConfiguration extends Configuration {
   static public function rebuildHook($menus = array()) {
     if ($menus) {
       foreach ($menus as $menu) {
-        $menu = unserialize($menu->data);
+        $menu_data = $menu->getData();
         menu_save($menu);
       }
     }
+  }
+
+  static public function revertHook($menus = array()) {
+    static::revertHook($menus);
   }
 
   /**

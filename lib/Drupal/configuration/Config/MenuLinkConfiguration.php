@@ -22,10 +22,14 @@ class MenuLinkConfiguration extends Configuration {
   static public function rebuildHook($menulinks = array()) {
     if ($menulinks) {
       foreach ($menulinks as $menulink) {
-        $menulink = unserialize($menulink->data);
-        menu_link_save($menulink);
+        $menulink_data = $menulink->getData();
+        menu_link_save($menulink_data);
       }
     }
+  }
+
+  static public function revertHook($menulinks = array()) {
+    static::revertHook($menulinks);
   }
 
   /**

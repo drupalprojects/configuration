@@ -67,4 +67,12 @@ class ImageStyleConfiguration extends Configuration {
       $this->addToModules($effect['module']);
     }
   }
+
+  static function revertHook($components = array()) {
+    foreach ($components as $component) {
+      if ($style = image_style_load($component->getIdentifier())) {
+        image_style_delete($style);
+      }
+    }
+  }
 }

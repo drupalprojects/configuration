@@ -59,4 +59,21 @@ class ContentTypeConfiguration extends Configuration {
       $this->addToModules($this->data['base']);
     }
   }
+
+  static public function revertHook($components) {
+    foreach ($components as $component) {
+      // Delete node types
+      // We don't use node_type_delete() because we do not actually
+      // want to delete the node type (and invoke hook_node_type()).
+      // This can lead to bad consequences like CCK deleting field
+      // storage in the DB.
+      db_delete('node_type')
+        ->condition('type', $component->getIdentifier())
+        ->execute();
+    }
+    if (!empty($components)) {
+      node_types_rebuild();
+      menu_rebuild();
+    }
+  }
 }

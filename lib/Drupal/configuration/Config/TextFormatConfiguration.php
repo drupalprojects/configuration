@@ -48,12 +48,16 @@ class TextFormatConfiguration extends Configuration {
 
   static public function rebuildHook($text_formats = array()) {
     if ($text_formats) {
-      foreach ($text_formats as $serialized_text_format) {
-        $text_format = unserialize($serialized_text_format->data);
+      foreach ($text_formats as $config) {
+        $text_format = $config->getData();
         $text_format = (object) $text_format;
         filter_format_save($text_format);
       }
     }
+  }
+
+  static public function revertHook($text_formats = array()) {
+    static::rebuildHook($text_formats);
   }
 
   public function findRequiredModules() {

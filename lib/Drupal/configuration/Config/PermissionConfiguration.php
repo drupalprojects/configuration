@@ -133,8 +133,8 @@ class PermissionConfiguration extends Configuration {
 
       $roles = static::get_roles();
       $permissions_by_role = static::get_permissions(FALSE);
-      foreach ($permissions as $serialized_permission) {
-        $permission = unserialize($serialized_permission->data);
+      foreach ($permissions as $config) {
+        $permission = $config->getData();
         $perm = $permission['permission'];
         foreach ($roles as $role) {
           if (in_array($role, $permission['roles'])) {
@@ -152,5 +152,9 @@ class PermissionConfiguration extends Configuration {
         }
       }
     }
+  }
+
+  static public function revertHook($permissions = array()) {
+    static::rebuildHook($permissions);
   }
 }

@@ -35,9 +35,8 @@ class VocabularyConfiguration extends Configuration {
   static public function rebuildHook($vocabularies = array()) {
     if ($vocabularies) {
       $existing = taxonomy_get_vocabularies();
-      foreach ($vocabularies as $serialized_vocabulary) {
-        $vocabulary = unserialize($serialized_vocabulary->data);
-        $vocabulary = (object) $vocabulary;
+      foreach ($vocabularies as $config) {
+        $vocabulary = (object) $config->getData();
         foreach ($existing as $existing_vocab) {
           if ($existing_vocab->machine_name === $vocabulary->getIdentifier()) {
             $vocabulary->vid = $existing_vocab->vid;
@@ -46,6 +45,10 @@ class VocabularyConfiguration extends Configuration {
         taxonomy_vocabulary_save($vocabulary);
       }
     }
+  }
+
+  static public function revertHook($vocabularies = array()) {
+    static::rebuildHook($vocabularies);
   }
 
   /**

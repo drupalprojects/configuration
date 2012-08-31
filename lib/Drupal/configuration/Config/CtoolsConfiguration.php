@@ -40,4 +40,17 @@ abstract class CtoolsConfiguration extends Configuration {
   static protected function getStorageSystem() {
     return '\Drupal\configuration\Storage\StorageCtools';
   }
+
+  static public function revertHook($components = array()) {
+    ctools_include('export');
+    foreach ($components as $component) {
+      // Some things (like views) do not use the machine name as key
+      // and need to be loaded explicitly in order to be deleted.
+      $object = ctools_export_crud_load($component, $component->getIdentifier());
+      if ($object && ($object->export_type & EXPORT_IN_DATABASE)) {
+        _ctools_features_export_crud_delete(static::$table, $object);
+      }
+    }
+  }
+
 }

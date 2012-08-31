@@ -121,8 +121,8 @@ class FieldConfiguration extends Configuration {
       $existing_fields = field_info_fields();
       $existing_instances = field_info_instances();
 
-      foreach ($fields as $field_object) {
-        $field = unserialize($field_object->data);
+      foreach ($fields as $config) {
+        $field = $config->getData();
         // Create or update field.
         $field_config = $field['field_config'];
         if (isset($existing_fields[$field_config['field_name']])) {
@@ -154,5 +154,9 @@ class FieldConfiguration extends Configuration {
         variable_set('menu_rebuild_needed', TRUE);
       }
     }
+  }
+
+  static function revertHook($components = array()) {
+    static::rebuildHook($components);
   }
 }
