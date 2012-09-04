@@ -151,11 +151,11 @@ function configuration_flush_caches() {
  *   For $component == 'field', $identifier 'node.article.field_image'
  *   For $component == 'variable', $identifier = 'comment_controls_article'
  */
-function configuration_export_to_datastore($component, $identifier, $export_dependencies = TRUE) {
+function configuration_export_to_datastore($component, $identifier, $export_dependencies = TRUE, $export_optionals = TRUE) {
   $handler = Configuration::getConfigurationHandler($component);
   $configuration = new $handler($identifier);
   $exported = array();
-  $configuration->exportToDataStore($export_dependencies, $exported);
+  $configuration->exportToDataStore($exported, $export_dependencies, $export_optionals);
   return $exported;
 }
 
@@ -192,7 +192,7 @@ function configuration_import_configurations($list = array()) {
   $handlers = configurarion_get_handlers();
   foreach ($handlers as $handler) {
     $class = '\\' . $handler['namespace'] . '\\' . $handler['handler'];
-    $components = $class::loadFromDataStore($list);
+    $components = $class::scanDataStore($list);
   }
   Configuration::importConfigurations($components, TRUE);
   drupal_flush_all_caches();
@@ -206,7 +206,7 @@ function configuration_revert_configurations($list = array()) {
   $handlers = configurarion_get_handlers();
   foreach ($handlers as $handler) {
     $class = '\\' . $handler['namespace'] . '\\' . $handler['handler'];
-    $components = $class::loadFromDataStore($list);
+    $components = $class::scanDataStore($list);
   }
   Configuration::importConfigurations($components, TRUE);
   drupal_flush_all_caches();

@@ -125,7 +125,7 @@ class Configuration {
   /**
    * Loads configurations into staging setting status as "needs rebuild".
    */
-  public static function revertConfigurations($component_stack = array(), $revert_dependencies = TRUE) {
+  public static function revertConfigurations($component_stack = array(), $revert_dependencies = TRUE, $revert_optionals = TRUE) {
     // If the dependencies of the configuration have also to be reverted,
     // find all the components to revert and save they into the $component_stack.
     if ($revert_dependencies) {
@@ -133,8 +133,14 @@ class Configuration {
         list($component_name, $identifier) = explode('.', $component, 2);
         $handler = Configuration::getConfigurationHandler($component_name);
         $config_instance = new $handler($identifier);
-        $config_instance->loadFromStaging();
-        $config_instance->getPriorizatedDependencies($component_stack, TRUE);
+
+        $config_instance->load("staging");
+        if ($revert_dependencies) {
+          $config_instance->completeComponents($component_stack, 'dependencies', "staging");
+        }
+        if ($revert_optionals) {
+          $config_instance->completeComponents($component_stack, 'optional_configurations', "staging");
+        }
       }
     }
 
@@ -186,7 +192,7 @@ class Configuration {
   /**
    * Build an array of components to import based on the dependencies.
    */
-  public static function loadFromDataStore($list = array()) {
+  public static function scanDataStore($list = array(), $include_dependencies = TRUE, $include_optionals = TRUE) {
     $real_dependencies = &drupal_static(__FUNCTION__);
     if (!isset($real_dependencies)) {
       $real_dependencies = array();
@@ -220,7 +226,12 @@ class Configuration {
           $config = new static($identifier);
           $config->setDependencies($dependencies);
           $config->setOptionalConfigurations($optional);
-          $config->getPriorizatedDependencies($real_dependencies);
+          if ($include_dependencies) {
+            $config->completeComponents($real_dependencies, 'dependencies', "datastore");
+          }
+          if ($include_optionals) {
+            $config->completeComponents($real_dependencies, 'optional_configurations', "datastore");
+          }
           unset($storage);
           unset($config);
         }
@@ -233,35 +244,22 @@ class Configuration {
    * Returns a list of all the configurations that should be proccessed based on
    * the dependencies of the current configuration.
    */
-  public function getPriorizatedDependencies(&$component_ordered_stack = array(), $use_staging = FALSE) {
+  public function completeComponents(&$component_ordered_stack = array(), $property, $source) {
     $id = $this->getUniqueId();
-    if (in_array($id, $component_ordered_stack)) {
-      return;
-    }
-    $component_ordered_stack[$id] = $id;
 
-    if (empty($this->dependencies) && empty($this->optional_configurations)) {
-      $component_ordered_stack[$id] = $id;
-    }
-    else {
-      foreach (array('dependencies', 'optional_configurations') as $proccess) {
-        foreach ($this->{$proccess} as $config_uniqueid) {
-          list($config_component, $config_identifier) = explode('.', $config_uniqueid, 2);
-          if (!in_array($config_uniqueid, $component_ordered_stack)) {
-            $handler = Configuration::getConfigurationHandler($config_component);
-            $config_instance = new $handler($config_identifier);
-            if ($use_staging) {
-              $config_instance->loadFromStaging();
-            }
-            else {
-              $config_instance->loadFromStorage();
-            }
-            $config_instance->getPriorizatedDependencies($component_ordered_stack, $use_staging);
-            unset($dependency_config);
-          }
+    if (!empty($this->{$property})) {
+      foreach ($this->{$property} as $config_uniqueid) {
+        list($config_component, $config_identifier) = explode('.', $config_uniqueid, 2);
+        if (!in_array($config_uniqueid, $component_ordered_stack)) {
+          $handler = Configuration::getConfigurationHandler($config_component);
+          $config_instance = new $handler($config_identifier);
+          $config_instance->load($source);
+          $config_instance->completeComponents($component_ordered_stack, $property, $source);
+          unset($config_instance);
         }
       }
     }
+    $component_ordered_stack[$id] = $id;
   }
 
   /**
@@ -342,15 +340,30 @@ class Configuration {
     return $return;
   }
 
-  public function loadFromStorage() {
+  /**
+   * Load a configuration from $source,
+   * @param $source
+   *   Available options: "staging" or "datastore".
+   */
+  public function load($source) {
+    if ($source == "staging") {
+      return $this->loadFromStaging();
+    }
+    elseif ($source == "datastore") {
+      return $this->loadFromStorage();
+    }
+  }
+
+  protected function loadFromStorage() {
     $this->storage->load();
+    $this->setData($this->storage->getData());
     $this->setDependencies($this->storage->getDependencies());
     $this->setOptionalConfigurations($this->storage->getOptionalConfigurations());
     $this->setModules($this->storage->getModules());
     return $this;
   }
 
-  public function loadFromStaging() {
+  protected function loadFromStaging() {
     $object = db_select('configuration_staging', 'cs')
                         ->fields('cs')
                         ->condition('component', 'field')
@@ -406,7 +419,7 @@ class Configuration {
   /**
    * Export the data to the DataStore.
    */
-  public function exportToDataStore($export_dependencies = TRUE, &$already_exported = array()) {
+  public function exportToDataStore(&$already_exported = array(), $export_dependencies = TRUE, $export_optionals = TRUE) {
 
     $id = $this->getComponent() . '.' . $this->getIdentifier();
     if (!empty($already_exported[$id])) {
@@ -443,12 +456,14 @@ class Configuration {
     // Also, save the configuration in the database
     $this->saveToStaging();
 
-    if (!empty($export_dependencies)) {
+    if (!empty($export_optionals)) {
       foreach ($this->optional_configurations as $config) {
-        $config->exportToDataStore($export_dependencies, $already_exported);
+        $config->exportToDataStore($already_exported, $export_dependencies, $export_optionals);
       }
+    }
+    if (!empty($export_dependencies)) {
       foreach ($this->dependencies as $config) {
-        $config->exportToDataStore($export_dependencies, $already_exported);
+        $config->exportToDataStore($already_exported, $export_dependencies, $export_optionals);
       }
     }
     return $this;

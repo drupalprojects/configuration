@@ -50,7 +50,6 @@ function configuration_drush_command() {
     'arguments' => array(),
   );
 
-
   $items['config-export'] = array(
     'callback' => '_configuration_export_to_datastore',
     'description' => 'Export a configuration to the datastore.',
@@ -163,9 +162,12 @@ function _configuration_import_configurations() {
   }
   else {
     $handlers = configurarion_get_handlers();
-    foreach ($handlers as $handler) {
-      $class = '\\' . $handler['namespace'] . '\\' . $handler['handler'];
-      $components = $class::loadFromDataStore($args);
+    $components = $args;
+    for ($x = 1; $x <= 3; $x++) {
+      foreach ($handlers as $handler) {
+        $class = '\\' . $handler['namespace'] . '\\' . $handler['handler'];
+        $components = $class::scanDataStore($args);
+      }
     }
     $configurations = Configuration::importConfigurations($components, FALSE);
 
