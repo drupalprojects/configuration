@@ -190,26 +190,34 @@ function configurarion_get_handlers() {
  */
 function configuration_import_configurations($list = array()) {
   $handlers = configurarion_get_handlers();
+  $components = array();
   foreach ($handlers as $handler) {
     $class = '\\' . $handler['namespace'] . '\\' . $handler['handler'];
-    $components = $class::scanDataStore($list);
+    $components = array_merge($components, $class::scanDataStore());
   }
-  Configuration::importConfigurations($components, TRUE);
+  Configuration::importConfigurations($components, $list);
   drupal_flush_all_caches();
 }
 
 /**
- * Find non imported configurations from config:// and import they
- * into the staging area and into the Active Store.
+ * Revert the configuration components using the values saved in the staging.
  */
 function configuration_revert_configurations($list = array()) {
-  $handlers = configurarion_get_handlers();
-  foreach ($handlers as $handler) {
-    $class = '\\' . $handler['namespace'] . '\\' . $handler['handler'];
-    $components = $class::scanDataStore($list);
+  $from_staging = db_select('configuration_staging', 'c')
+        ->fields('c', array('component', 'identifier'))
+        ->execute()
+        ->fetchAll();
+
+  $components = array();
+  foreach ($from_staging as $object) {
+    $id = $object->component . '.' . $object->identifier;
+    $components[$id] = $id;
   }
-  Configuration::importConfigurations($components, TRUE);
+
+  $handlers = configurarion_get_handlers();
+  $reverted = Configuration::revertConfigurations($components, $list);
   drupal_flush_all_caches();
+  return $reverted;
 }
 
 /**

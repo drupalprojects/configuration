@@ -125,40 +125,70 @@ class Configuration {
   /**
    * Loads configurations into staging setting status as "needs rebuild".
    */
-  public static function revertConfigurations($component_stack = array(), $revert_dependencies = TRUE, $revert_optionals = TRUE) {
-    // If the dependencies of the configuration have also to be reverted,
-    // find all the components to revert and save they into the $component_stack.
-    if ($revert_dependencies) {
-      foreach ($component_stack as $component) {
-        list($component_name, $identifier) = explode('.', $component, 2);
-        $handler = Configuration::getConfigurationHandler($component_name);
-        $config_instance = new $handler($identifier);
+  public static function revertConfigurations($component_stack = array(), $list_to_revert = array(), $revert_dependencies = TRUE, $revert_optionals = TRUE) {
+    $reverted = array();
 
-        $config_instance->load("staging");
-        if ($revert_dependencies) {
-          $config_instance->completeComponents($component_stack, 'dependencies', "staging");
-        }
-        if ($revert_optionals) {
-          $config_instance->completeComponents($component_stack, 'optional_configurations', "staging");
-        }
-      }
+    // If there are no defined components to revert, import all.
+    if (empty($list_to_revert)) {
+      $list_to_revert = $component_stack;
     }
 
-    foreach ($component_stack as $component) {
+    // While there is items to revert.
+    while (!empty($list_to_revert)) {
+      // Extract a component to import.
+      $component = array_pop($list_to_revert);
+
+      $reverted[$component] = TRUE;
+
       list($component_name, $identifier) = explode('.', $component, 2);
       $handler = Configuration::getConfigurationHandler($component_name);
+
       $config_instance = new $handler($identifier);
-      $config_instance->revert();
+      $config_instance->load("staging");
+
+      // Add the dependencies to the list of configurations to revert
+      if ($revert_dependencies) {
+        foreach ($config_instance->getDependencies() as $dependency) {
+          if (empty($reverted[$dependency])) {
+            $list_to_revert[$dependency] = $dependency;
+          }
+        }
+      }
+
+      // Add the optional configurations to the list of configurations to revert
+      if ($revert_optionals) {
+       foreach ($config_instance->getOptionalConfigurations() as $optional) {
+          if (empty($reverted[$optional])) {
+            $list_to_revert[$optional] = $optional;
+          }
+        }
+      }
+
+      $config_instance->revert()->setStatus(CONFIGURATION_NEEDS_REBUILD);
     }
+    return array_keys($reverted);
   }
 
   /**
    * Loads configurations into staging setting status as "needs rebuild".
    */
-  public static function importConfigurations($component_stack = array(), $save_to_staging = TRUE) {
+  public static function importConfigurations($component_stack = array(), $list_to_import = array(), $import_dependencies = TRUE, $import_optionals = TRUE,  $save_to_staging = TRUE) {
     $to_import = array();
 
-    foreach ($component_stack as $component) {
+    $imported = array();
+
+    // If there are no defined components to import, import all.
+    if (empty($list_to_import)) {
+      $list_to_import = $component_stack;
+    }
+
+    // While there is items to import.
+    while (!empty($list_to_import)) {
+      // Extract a component to import.
+      $component = array_pop($list_to_import);
+
+      $imported[$component] = TRUE;
+
       list($component_name, $identifier) = explode('.', $component, 2);
       $handler = Configuration::getConfigurationHandler($component_name);
 
@@ -176,6 +206,24 @@ class Configuration {
         ->setOptionalConfigurations($optional)
         ->setModules($modules);
 
+      // Add the dependencies to the list of configurations to import
+      if ($import_dependencies) {
+        foreach ($config_instance->getDependencies() as $dependency) {
+          if (empty($imported[$dependency])) {
+            $list_to_import[$dependency] = $dependency;
+          }
+        }
+      }
+
+      // Add the optional configurations to the list of configurations to import
+      if ($import_optionals) {
+       foreach ($config_instance->getOptionalConfigurations() as $optional) {
+          if (empty($imported[$optional])) {
+            $list_to_import[$optional] = $optional;
+          }
+        }
+      }
+
       if ($save_to_staging) {
         $config_instance
           ->revert()
@@ -190,14 +238,10 @@ class Configuration {
   }
 
   /**
-   * Build an array of components to import based on the dependencies.
+   * Returns the list of components available in the DataStore.
    */
-  public static function scanDataStore($list = array(), $include_dependencies = TRUE, $include_optionals = TRUE) {
-    $real_dependencies = &drupal_static(__FUNCTION__);
-    if (!isset($real_dependencies)) {
-      $real_dependencies = array();
-    }
-    $import_all = empty($list);
+  public static function scanDataStore() {
+    $list_of_components = array();
 
     $path = drupal_realpath('config://');
     $storage_system = static::getStorageSystem();
@@ -207,37 +251,18 @@ class Configuration {
     $files = file_scan_directory($path, $look_for);
 
     foreach ($files as $file) {
-      if (!in_array($file->name, $real_dependencies)) {
+      if (!in_array($file->name, $list_of_components)) {
         $storage = static::getStorageInstance();
         $storage
           ->setFileName($file->name)
           ->load();
 
-        // We don't need the data at this stage.
-        // $data = $storage->getData();
-        $dependencies = $storage->getDependencies();
-        $optional = $storage->getOptionalConfigurations();
-        $modules = $storage->getModules();
-
-        // Obtain the identifier of the configuration based on the file name.
-        $identifier = substr($file->name, strpos($file->name, '.') + 1);
-
-        if ($import_all || in_array(static::$component . '.' . $identifier, $list)) {
-          $config = new static($identifier);
-          $config->setDependencies($dependencies);
-          $config->setOptionalConfigurations($optional);
-          if ($include_dependencies) {
-            $config->completeComponents($real_dependencies, 'dependencies', "datastore");
-          }
-          if ($include_optionals) {
-            $config->completeComponents($real_dependencies, 'optional_configurations', "datastore");
-          }
-          unset($storage);
-          unset($config);
+        if ($storage->withData()) {
+          $list_of_components[$file->name] = $file->name;
         }
       }
     }
-    return $real_dependencies;
+    return $list_of_components;
   }
 
   /**
@@ -366,13 +391,13 @@ class Configuration {
   protected function loadFromStaging() {
     $object = db_select('configuration_staging', 'cs')
                         ->fields('cs')
-                        ->condition('component', 'field')
-                        ->condition('identifier', 'node.field_image.article')
+                        ->condition('component', $this->getComponent())
+                        ->condition('identifier', $this->getIdentifier())
                         ->execute()
                         ->fetchObject();
 
     $this->setData(unserialize($object->data));
-    $this->setDependencies(unserialize($object->dependecies));
+    $this->setDependencies(unserialize($object->dependencies));
     $this->setOptionalConfigurations(unserialize($object->optional));
     $this->setModules(unserialize($object->modules));
     return $this;
@@ -432,14 +457,14 @@ class Configuration {
 
     $dependencies = array();
     if ($export_dependencies) {
-      foreach ($this->dependencies as $config_dependency) {
+      foreach ($this->getDependencies() as $config_dependency) {
         $dependencies[] = $config_dependency->getComponent() . '.' . $config_dependency->getIdentifier();
       }
     }
 
     $optional_configurations = array();
     if ($export_dependencies) {
-      foreach ($this->optional_configurations as $optional_configuration) {
+      foreach ($this->getOptionalConfigurations() as $optional_configuration) {
         $optional_configurations[] = $optional_configuration->getComponent() . '.' . $optional_configuration->getIdentifier();
       }
     }
@@ -457,12 +482,12 @@ class Configuration {
     $this->saveToStaging();
 
     if (!empty($export_optionals)) {
-      foreach ($this->optional_configurations as $config) {
+      foreach ($this->getOptionalConfigurations() as $config) {
         $config->exportToDataStore($already_exported, $export_dependencies, $export_optionals);
       }
     }
     if (!empty($export_dependencies)) {
-      foreach ($this->dependencies as $config) {
+      foreach ($this->getDependencies() as $config) {
         $config->exportToDataStore($already_exported, $export_dependencies, $export_optionals);
       }
     }
@@ -638,7 +663,7 @@ class Configuration {
    * Returns the list of optional_configurations of this configuration
    */
   public function getOptionalConfigurations() {
-    return array();
+    return $this->optional_configurations;
   }
 
   /**
@@ -664,7 +689,7 @@ class Configuration {
    * Returns the list of dependencies of this configuration
    */
   public function getDependencies() {
-    return array();
+    return $this->dependencies;
   }
 
   /**
@@ -697,7 +722,7 @@ class Configuration {
    * objects (by using addToDepedencies).
    *
    * @param $config
-   *   The object that requires all the dependecies.
+   *   The object that requires all the dependencies.
    * @param $stack
    *   A list of already added dependencies, to avoid duplicates.
    */
@@ -716,7 +741,7 @@ class Configuration {
         return FALSE;
       }
     }
-    foreach ($this->dependecies as $dependency) {
+    foreach ($this->getDependencies() as $dependency) {
       // First, look for the dependency in the staging table.
       $exists = db_select('configuration_staging', 'cs')
                         ->fields('cs', array('identifier'))

@@ -162,14 +162,14 @@ function _configuration_import_configurations() {
   }
   else {
     $handlers = configurarion_get_handlers();
-    $components = $args;
+    $components = array();
     for ($x = 1; $x <= 3; $x++) {
       foreach ($handlers as $handler) {
         $class = '\\' . $handler['namespace'] . '\\' . $handler['handler'];
-        $components = $class::scanDataStore($args);
+        $components = array_merge($components, $class::scanDataStore());
       }
     }
-    $configurations = Configuration::importConfigurations($components, FALSE);
+    $configurations = Configuration::importConfigurations($components, $args, TRUE, TRUE, FALSE);
 
     $modules = array();
     foreach ($configurations as $configuration) {
@@ -227,6 +227,11 @@ function _configuration_revert_configurations() {
   }
 
   $args = func_get_args();
-  configuration_revert_configurations($args);
-  drush_log(dt('The configurations for the following items have been imported.'), 'ok');
+  $reverted = configuration_revert_configurations($args);
+  drush_log(dt('The configurations for the following items have been reverted.'), 'ok');
+  $rows = array();
+  foreach ($reverted as $config) {
+    $rows[]['identifier'] = $config;
+  }
+  drush_print_table($rows);
 }
