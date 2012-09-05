@@ -60,7 +60,7 @@ class ContentTypeConfiguration extends Configuration {
     }
   }
 
-  static public function revertHook($components) {
+  static public function revertHook($components = array()) {
     foreach ($components as $component) {
       // Delete node types
       // We don't use node_type_delete() because we do not actually

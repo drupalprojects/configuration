@@ -71,7 +71,9 @@ class ImageStyleConfiguration extends Configuration {
   static function revertHook($components = array()) {
     foreach ($components as $component) {
       if ($style = image_style_load($component->getIdentifier())) {
-        image_style_delete($style);
+        if (!empty($style['isid'])) {
+          image_style_delete($style);
+        }
       }
     }
   }

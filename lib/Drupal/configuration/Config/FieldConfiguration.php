@@ -13,16 +13,6 @@ class FieldConfiguration extends Configuration {
 
   static protected $component = 'field';
 
-  /**
-   * Set the component identifier of this configuration.
-   *
-   * Identifiers for fields are build using the entity_type,
-   * bundle and field name. For example node.page.body
-   */
-  public function setIdentifier($entity_type, $field_name, $bundle_name) {
-    $this->identifier = $entity_type . "." . $field_name  . "." . $bundle_name;
-  }
-
   protected function prepareBuild() {
     $this->data = $this->field_load($this->identifier);
     return $this;
