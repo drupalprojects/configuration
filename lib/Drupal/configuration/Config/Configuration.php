@@ -458,14 +458,16 @@ class Configuration {
     $dependencies = array();
     if ($export_dependencies) {
       foreach ($this->getDependencies() as $config_dependency) {
-        $dependencies[] = $config_dependency->getComponent() . '.' . $config_dependency->getIdentifier();
+        $id = $config_dependency->getComponent() . '.' . $config_dependency->getIdentifier();
+        $dependencies[$id] = $id;
       }
     }
 
     $optional_configurations = array();
     if ($export_dependencies) {
       foreach ($this->getOptionalConfigurations() as $optional_configuration) {
-        $optional_configurations[] = $optional_configuration->getComponent() . '.' . $optional_configuration->getIdentifier();
+        $id = $optional_configuration->getComponent() . '.' . $optional_configuration->getIdentifier();
+        $optional_configurations[$id] = $id;
       }
     }
 
