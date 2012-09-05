@@ -220,6 +220,22 @@ function configuration_import_configurations($list = array()) {
 }
 
 /**
+ * Load a list of configurations from config:// into the staging area.
+ */
+function configuration_load_configurations($list = array()) {
+  $handlers = configurarion_get_handlers();
+  $components = array();
+  foreach ($handlers as $handler) {
+    $class = '\\' . $handler['namespace'] . '\\' . $handler['handler'];
+    $components = array_merge($components, $class::scanDataStore());
+  }
+  $to_load = Configuration::importConfigurations($components, $list, TRUE, TRUE, FALSE);
+  foreach ($to_load as $config) {
+    $config->saveToStaging();
+  }
+}
+
+/**
  * Revert the configuration components using the values saved in the staging.
  */
 function configuration_revert_configurations($list = array()) {

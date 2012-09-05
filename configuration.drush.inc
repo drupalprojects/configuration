@@ -23,6 +23,8 @@ function configuration_drush_help($section) {
       return dt("Backup a configuration to Staging Area.");
     case 'drush:cimp':
       return dt("Import configurations into the ActiveStore.");
+    case 'drush:cload':
+      return dt("Load configurations into the Staging Area.");
   }
 }
 
@@ -76,6 +78,16 @@ function configuration_drush_command() {
     'examples' => array(
       'drush cimp' => 'Loads all the files that have configurations into the ActiveStore',
       'drush cimp content_type.article variable.theme_settings' => 'Loads the configurations for content type Article and the variable theme_settings into the ActiveStore',
+    ),
+    'arguments' => array(),
+  );
+  $items['config-load'] = array(
+    'callback' => '_configuration_load_configurations',
+    'description' => 'Load a configuration to the active store.',
+    'aliases' => array('cload'),
+    'examples' => array(
+      'drush cload' => 'Loads all the files that have configurations into the Staging Area',
+      'drush cload content_type.article variable.theme_settings' => 'Loads the configurations for content type Article and the variable theme_settings into the Staging Area',
     ),
     'arguments' => array(),
   );
@@ -189,15 +201,29 @@ function _configuration_backup_to_staging() {
 }
 
 function _configuration_import_configurations() {
+  $args = func_get_args();
+  _configuration_import_load_configurations('import', $args);
+}
 
-  if (!drush_confirm(dt('Are you sure you want to import this configurations? This will override the configurations of the ActiveStore'))) {
-    drush_die('Aborting.');
+function _configuration_load_configurations() {
+  $args = func_get_args();
+  _configuration_import_load_configurations('load', $args);
+}
+
+function _configuration_import_load_configurations($action, $args) {
+  if ($action == 'import') {
+    if (!drush_confirm(dt('Are you sure you want to import this configurations? This will override the configurations of the ActiveStore'))) {
+      drush_die('Aborting.');
+    }
   }
 
-  $args = func_get_args();
-  if (in_array('--skip-enable-modules', $args)) {
-    array_shift($args);
-    configuration_import_configurations($args);
+  if (drush_get_option(array('skip-enable-modules'), FALSE)) {
+    if ($action == 'import') {
+      configuration_import_configurations($args);
+    }
+    else {
+      configuration_load_configurations($args);
+    }
   }
   else {
     $handlers = configurarion_get_handlers();
@@ -228,13 +254,13 @@ function _configuration_import_configurations() {
 
     $missing = array_filter(array_unique($missing));
     if (count($missing)) {
-      drush_set_error('', dt('Missing required modules. None configuration was imported.'));
-      drush_set_error('', dt('The following modules are required to import the configurations but are not available to install: !modules', array('!modules' => implode(', ', $missing))));
+      drush_set_error('', dt('Missing required modules. None configuration was processed.'));
+      drush_set_error('', dt('The following modules are required to @action the configurations but are not available to install: !modules', array('@action' => $action, '!modules' => implode(', ', $missing))));
       drush_die('Aborting.');
     }
     else {
       if (count($to_install)) {
-        drush_print('The following modules will be installed in order to enable the configurations:');
+        drush_print('The following modules will be installed in order to @action the configurations:', array('@action' => $action));
         drush_print(implode(', ', $to_install));
         if (!drush_confirm(dt('Do you really want to continue?'))) {
           drush_die('Aborting.');
@@ -245,17 +271,26 @@ function _configuration_import_configurations() {
       }
       $rows = array();
       foreach ($configurations as $configuration) {
-        $configuration
-          ->revert()
-          ->setStatus(CONFIGURATION_NEEDS_REBUILD)
-          ->saveToStaging();
+        if ($action == 'import') {
+          $configuration
+            ->revert()
+            ->setStatus(CONFIGURATION_NEEDS_REBUILD);
+        }
+        $configuration->saveToStaging();
 
         $rows[]['identifier'] = $configuration->getUniqueId();
       }
 
-      drush_log(dt('The configurations for the following items have been imported.'), 'ok');
+      if ($action == 'import') {
+        drush_log(dt('The configurations for the following items have been imported.'), 'ok');
+      }
+      else {
+        drush_log(dt('The configurations for the following items have been loaded.'), 'ok');
+      }
       drush_print_table($rows);
-      drupal_flush_all_caches();
+      if ($action == 'import') {
+        drupal_flush_all_caches();
+      }
     }
   }
 }
