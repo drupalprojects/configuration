@@ -29,6 +29,7 @@ class VocabularyConfiguration extends Configuration {
         break;
       }
     }
+    unset($this->data->vid);
     return $this;
   }
 
@@ -37,7 +38,6 @@ class VocabularyConfiguration extends Configuration {
       $existing = taxonomy_get_vocabularies();
       foreach ($vocabularies as $config) {
         $vocabulary = (object) $config->getData();
-        $vocabulary->original = $vocabulary;
         foreach ($existing as $existing_vocab) {
           if ($existing_vocab->machine_name === $vocabulary->machine_name) {
             $vocabulary->vid = $existing_vocab->vid;
