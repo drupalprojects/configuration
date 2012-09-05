@@ -417,8 +417,8 @@ class Configuration {
       'identifier' => $this->getIdentifier(),
       'data' => serialize($this->getData()),
       'status' => $this->status,
-      'dependencies' => serialize($this->getDependencies()),
-      'optional' => serialize($this->getOptionalConfigurations()),
+      'dependencies' => serialize(array_keys($this->getDependencies())),
+      'optional' => serialize(array_keys($this->getOptionalConfigurations())),
       'modules' => serialize($this->getModules()),
     );
     db_insert('configuration_staging')->fields($fields)->execute();
