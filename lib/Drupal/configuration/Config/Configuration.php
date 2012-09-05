@@ -444,7 +444,7 @@ class Configuration {
   /**
    * Export the data to the DataStore.
    */
-  public function exportToDataStore(&$already_exported = array(), $export_dependencies = TRUE, $export_optionals = TRUE) {
+  public function exportToDataStore(&$already_exported = array(), $export_dependencies = TRUE, $export_optionals = TRUE, $save_to_storage = TRUE) {
 
     $id = $this->getComponent() . '.' . $this->getIdentifier();
     if (!empty($already_exported[$id])) {
@@ -469,29 +469,40 @@ class Configuration {
       }
     }
 
-    // Save the configuration into a file.
-    $this->storage
-            ->setData($this->data)
-            ->setKeysToExport($this->getKeysToExport())
-            ->setDependencies($dependencies)
-            ->setOptionalConfigurations($optional_configurations)
-            ->setModules($this->required_modules)
-            ->save();
+    if ($save_to_storage) {
+      // Save the configuration into a file.
+      $this->storage
+              ->setData($this->data)
+              ->setKeysToExport($this->getKeysToExport())
+              ->setDependencies($dependencies)
+              ->setOptionalConfigurations($optional_configurations)
+              ->setModules($this->required_modules)
+              ->save();
+    }
 
     // Also, save the configuration in the database
     $this->saveToStaging();
 
     if (!empty($export_optionals)) {
       foreach ($this->getOptionalConfigurations() as $config) {
-        $config->exportToDataStore($already_exported, $export_dependencies, $export_optionals);
+        $config->exportToDataStore($already_exported, $export_dependencies, $export_optionals, $save_to_storage);
       }
     }
     if (!empty($export_dependencies)) {
       foreach ($this->getDependencies() as $config) {
-        $config->exportToDataStore($already_exported, $export_dependencies, $export_optionals);
+        $config->exportToDataStore($already_exported, $export_dependencies, $export_optionals, $save_to_storage);
       }
     }
     return $this;
+  }
+
+  /**
+   * Backup the configuration into the Staging Area.
+   */
+  public function backupConfiguration(&$already_backuped = array(), $backup_dependencies = TRUE, $backup_optionals = TRUE) {
+    // Basically the same mechanism that backup to the datastore but without
+    // save the object in the storage, only save in the staging area.
+    return $this->exportToDataStore($already_backuped, $backup_dependencies, $backup_optionals, FALSE);
   }
 
   /**

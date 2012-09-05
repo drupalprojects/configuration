@@ -160,6 +160,26 @@ function configuration_export_to_datastore($component, $identifier, $export_depe
 }
 
 /**
+ * Backup a configuration into the staging area.
+ *
+ * @param $component
+ *   The name of the component to backup, i.e, 'content_type',
+ *   'field', 'variable', 'permission', etc.
+ * @param $identifier
+ *   The identifier of the configurarion. Some examples:
+ *   For $component == 'content_type', $identifier = 'article'
+ *   For $component == 'field', $identifier 'node.article.field_image'
+ *   For $component == 'variable', $identifier = 'comment_controls_article'
+ */
+function configuration_backup_to_staging($component, $identifier, $backup_dependencies = TRUE, $backup_optionals = TRUE) {
+  $handler = Configuration::getConfigurationHandler($component);
+  $configuration = new $handler($identifier);
+  $backuped = array();
+  $configuration->backupConfiguration($backuped, $backup_dependencies, $backup_optionals);
+  return $backuped;
+}
+
+/**
  * Returns a list of identifiers for a specific component.
  *
  * @param $component

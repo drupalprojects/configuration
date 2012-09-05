@@ -19,6 +19,8 @@ function configuration_drush_help($section) {
       return dt("Return the list of configurations components that can be exported.");
     case 'drush:cexp':
       return dt("Export a configuration to the DataStore.");
+    case 'drush:cback':
+      return dt("Backup a configuration to Staging Area.");
     case 'drush:cimp':
       return dt("Import configurations into the ActiveStore.");
   }
@@ -49,13 +51,21 @@ function configuration_drush_command() {
     ),
     'arguments' => array(),
   );
-
   $items['config-export'] = array(
     'callback' => '_configuration_export_to_datastore',
     'description' => 'Export a configuration to the datastore.',
     'aliases' => array('cexp'),
     'examples' => array(
       'drush cexp content_type.article' => 'Export the content type article and all its dependencies to the datastore',
+    ),
+    'arguments' => array(),
+  );
+  $items['config-backup'] = array(
+    'callback' => '_configuration_backup_to_staging',
+    'description' => 'Backup a configuration to the staging area.',
+    'aliases' => array('cback'),
+    'examples' => array(
+      'drush cback content_type.article' => 'Backups the content type article and all its dependencies into the staging area',
     ),
     'arguments' => array(),
   );
@@ -146,6 +156,35 @@ function _configuration_export_to_datastore() {
     }
   }
   drush_log(dt('The configurations for the following items have been created/updated.'), 'ok');
+  drush_print_table($rows);
+}
+
+function _configuration_backup_to_staging() {
+  $args = func_get_args();
+
+  if (empty($args)) {
+    return drush_set_error('', dt('No configurations were selected to backup'));
+  }
+
+  $handlers = configurarion_get_handlers();
+  foreach ($args as $arg) {
+
+    list($component, $identifier) = explode('.', $arg, 2);
+
+    if (empty($handlers[$component])) {
+      return drush_set_error('', dt('The component @component is not valid or the module to backup the configuration is not installed.', array('@component' => $component)));
+    }
+
+    if (empty($identifier)) {
+      return drush_set_error('', dt('No identifier supplied for @arg.', array('@arg' => $arg)));
+    }
+
+    $rows = array();
+    foreach (array_keys(configuration_backup_to_staging($component, $identifier)) as $backuped) {
+      $rows[]['backuped'] = $backuped;
+    }
+  }
+  drush_log(dt('The configurations for the following items have been backuped.'), 'ok');
   drush_print_table($rows);
 }
 
