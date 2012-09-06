@@ -123,7 +123,7 @@ class PermissionConfiguration extends Configuration {
    * There is no default hook for permission. This function set the
    * permissions to the defined roles.
    */
-  static public function rebuildHook($permissions = array()) {
+  static public function saveToActiveStore($permissions = array()) {
 
     if ($permissions) {
       // Make sure the list of available node types is up to date, especially when
@@ -155,6 +155,6 @@ class PermissionConfiguration extends Configuration {
   }
 
   static public function revertHook($permissions = array()) {
-    static::rebuildHook($permissions);
+    static::saveToActiveStore($permissions);
   }
 }

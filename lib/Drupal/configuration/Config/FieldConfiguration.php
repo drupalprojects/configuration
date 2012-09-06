@@ -102,7 +102,7 @@ class FieldConfiguration extends Configuration {
    * There is no default hook for fields. This function creates the
    * fields when configurarion_rebuild() is called.
    */
-  static function rebuildHook($fields = array()) {
+  static function saveToActiveStore($fields = array()) {
     if ($fields) {
       field_info_cache_clear();
 
@@ -147,6 +147,6 @@ class FieldConfiguration extends Configuration {
   }
 
   static function revertHook($components = array()) {
-    static::rebuildHook($components);
+    static::saveToActiveStore($components);
   }
 }

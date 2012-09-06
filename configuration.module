@@ -76,7 +76,6 @@ function configuration_configuration_handlers() {
       'name' => 'Fields',
       'handler' => 'FieldConfiguration',
       'namespace' => $namespace,
-      'without_default_hook' => TRUE,
     ),
     'image_style' => array(
       'name' => 'Image Styles',
@@ -87,37 +86,31 @@ function configuration_configuration_handlers() {
       'name' => 'Text Formats',
       'handler' => 'TextFormatConfiguration',
       'namespace' => $namespace,
-      'without_default_hook' => TRUE,
     ),
     'vocabulary' => array(
       'name' => 'Vocabulary',
       'handler' => 'VocabularyConfiguration',
       'namespace' => $namespace,
-      'without_default_hook' => TRUE,
     ),
     'variable' => array(
       'name' => 'Variable',
       'handler' => 'VariableConfiguration',
       'namespace' => $namespace,
-      'without_default_hook' => TRUE,
     ),
     'permission' => array(
       'name' => 'Permission',
       'handler' => 'PermissionConfiguration',
       'namespace' => $namespace,
-      'without_default_hook' => TRUE,
     ),
     'menu' => array(
       'name' => 'Menu',
       'handler' => 'MenuConfiguration',
       'namespace' => $namespace,
-      'without_default_hook' => TRUE,
     ),
     'menulink' => array(
       'name' => 'MenuLink',
       'handler' => 'MenuLinkConfiguration',
       'namespace' => $namespace,
-      'without_default_hook' => TRUE,
     ),
   );
 
@@ -257,62 +250,13 @@ function configuration_revert_configurations($list = array()) {
 }
 
 /**
- * @defgroup hooks Hooks for configurations from code
- * @{
- * Definition of hooks to load configurations from code.
- */
-
-/**
  * Loads the configurations that are not provided by hook_*_default_*()
  * functions.
  */
 function configuration_rebuild() {
   $handlers = configurarion_get_handlers();
   foreach ($handlers as $handler) {
-    if (!empty($handler['without_default_hook'])) {
-      $class = '\\' . $handler['namespace'] . '\\' . $handler['handler'];
-      $class::executeRebuildHook();
-    }
+    $class = '\\' . $handler['namespace'] . '\\' . $handler['handler'];
+    $class::executeRebuildHook();
   }
 }
-
-/**
- * Implements hook_node_info().
- */
-function configuration_node_info() {
-  return \Drupal\configuration\Config\ContentTypeConfiguration::defaultHook();
-}
-
-/**
- * Implements hook_image_default_styles().
- */
-function configuration_image_default_styles() {
-  return \Drupal\configuration\Config\ImageStyleConfiguration::defaultHook();
-}
-
-/**
- * Implements hook_filter_default_formats().
- */
-function configuration_filter_default_formats() {
-  return \Drupal\configuration\Config\TextFormatConfiguration::defaultHook();
-}
-
-/**
- * Implements hook_views_api().
- */
-function configuration_views_api() {
-  return array(
-    'api' => 3.0,
-  );
-}
-
-/**
- * Implements hook_filter_default_formats().
- */
-function configuration_views_default_views() {
-  return \Drupal\configuration\Config\ViewConfiguration::defaultHook();
-}
-
-/**
- * @} End of "defgroup hooks".
- */

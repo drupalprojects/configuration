@@ -19,7 +19,7 @@ class MenuLinkConfiguration extends Configuration {
     return $this;
   }
 
-  static public function rebuildHook($menulinks = array()) {
+  static public function saveToActiveStore($menulinks = array()) {
     if ($menulinks) {
       foreach ($menulinks as $menulink) {
         $menulink_data = $menulink->getData();

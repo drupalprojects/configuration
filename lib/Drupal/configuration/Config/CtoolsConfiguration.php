@@ -41,6 +41,14 @@ abstract class CtoolsConfiguration extends Configuration {
     return '\Drupal\configuration\Storage\StorageCtools';
   }
 
+  static public function saveToActiveStore($components = array()) {
+    if ($components) {
+      foreach ($components as $config) {
+        ctools_export_crud_save(static::$table, $config->getData());
+      }
+    }
+  }
+
   static public function revertHook($components = array()) {
     ctools_include('export');
     foreach ($components as $component) {

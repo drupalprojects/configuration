@@ -60,6 +60,15 @@ class ContentTypeConfiguration extends Configuration {
     }
   }
 
+  static public function saveToActiveStore($components = array()) {
+    if ($components) {
+      foreach ($components as $config) {
+        $info = $config->getData();
+        node_type_save($info);
+      }
+    }
+  }
+
   static public function revertHook($components = array()) {
     foreach ($components as $component) {
       // Delete node types

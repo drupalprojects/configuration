@@ -46,7 +46,7 @@ class TextFormatConfiguration extends Configuration {
     return FALSE;
   }
 
-  static public function rebuildHook($text_formats = array()) {
+  static public function saveToActiveStore($text_formats = array()) {
     if ($text_formats) {
       foreach ($text_formats as $config) {
         $text_format = $config->getData();
@@ -57,7 +57,7 @@ class TextFormatConfiguration extends Configuration {
   }
 
   static public function revertHook($text_formats = array()) {
-    static::rebuildHook($text_formats);
+    static::saveToActiveStore($text_formats);
   }
 
   public function findRequiredModules() {

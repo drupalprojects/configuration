@@ -18,7 +18,7 @@ class MenuConfiguration extends Configuration {
     return $this;
   }
 
-  static public function rebuildHook($menus = array()) {
+  static public function saveToActiveStore($menus = array()) {
     if ($menus) {
       foreach ($menus as $menu) {
         $menu_data = $menu->getData();

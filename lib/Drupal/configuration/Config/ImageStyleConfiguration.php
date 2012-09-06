@@ -68,6 +68,15 @@ class ImageStyleConfiguration extends Configuration {
     }
   }
 
+  static public function saveToActiveStore($components = array()) {
+    if ($components) {
+      foreach ($components as $config) {
+        $style = $config->getData();
+        image_style_save($style);
+      }
+    }
+  }
+
   static function revertHook($components = array()) {
     foreach ($components as $component) {
       if ($style = image_style_load($component->getIdentifier())) {

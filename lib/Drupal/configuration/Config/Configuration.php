@@ -305,7 +305,7 @@ class Configuration {
       $components[$config->getUniqueId()] = $config;
     }
 
-    static::rebuildHook($components);
+    static::saveToActiveStore($components);
 
     /**
      * @todo
@@ -346,23 +346,8 @@ class Configuration {
    * In order to load this configuration, children classes of this kind
    * of configs, must define the way to load this data into the ActiveStore.
    */
-  static public function rebuildHook($components = array()) {
+  static public function saveToActiveStore($components = array()) {
     // Override
-  }
-
-  /**
-   * Wrapper for all the hook_*_default_* functions.
-   */
-  static public function defaultHook() {
-    $configurations = db_select('configuration_staging', 'cs')
-                        ->fields('cs', array('identifier', 'data'))
-                        ->condition('component', static::$component)
-                        ->execute();
-    $return = array();
-    foreach ($configurations as $configuration) {
-      $return[$configuration->identifier] = unserialize($configuration->data);
-    }
-    return $return;
   }
 
   /**

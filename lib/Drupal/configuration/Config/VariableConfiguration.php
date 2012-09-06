@@ -42,7 +42,7 @@ class VariableConfiguration extends Configuration {
     return $return;
   }
 
-  static public function rebuildHook($variables = array()) {
+  static public function saveToActiveStore($variables = array()) {
     if ($variables) {
       foreach ($variables as $config) {
         $variable = $config->getData();
@@ -52,7 +52,7 @@ class VariableConfiguration extends Configuration {
   }
 
   static public function revertHook($variables = array()) {
-    static::rebuildHook($variables);
+    static::saveToActiveStore($variables);
   }
 
   public static function alterDependencies(Configuration $config, &$stack) {

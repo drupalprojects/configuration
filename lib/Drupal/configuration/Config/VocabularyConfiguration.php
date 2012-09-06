@@ -33,7 +33,7 @@ class VocabularyConfiguration extends Configuration {
     return $this;
   }
 
-  static public function rebuildHook($vocabularies = array()) {
+  static public function saveToActiveStore($vocabularies = array()) {
     if ($vocabularies) {
       $existing = taxonomy_get_vocabularies();
       foreach ($vocabularies as $config) {
@@ -50,7 +50,7 @@ class VocabularyConfiguration extends Configuration {
   }
 
   static public function revertHook($vocabularies = array()) {
-    static::rebuildHook($vocabularies);
+    static::saveToActiveStore($vocabularies);
   }
 
   /**
