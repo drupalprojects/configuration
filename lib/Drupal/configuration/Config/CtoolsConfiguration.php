@@ -54,11 +54,17 @@ abstract class CtoolsConfiguration extends Configuration {
     foreach ($components as $component) {
       // Some things (like views) do not use the machine name as key
       // and need to be loaded explicitly in order to be deleted.
-      $object = ctools_export_crud_load($component, $component->getIdentifier());
+      $object = ctools_export_crud_load($component->getTable(), $component->getIdentifier());
       if ($object && ($object->export_type & EXPORT_IN_DATABASE)) {
-        _ctools_features_export_crud_delete(static::$table, $object);
+        ctools_export_crud_delete($component->getTable(), $object);
       }
     }
   }
 
+  /**
+   * Returns the table where the configurations are storaged.
+   */
+  static public function getTable() {
+    return static::$table;
+  }
 }

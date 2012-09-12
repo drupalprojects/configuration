@@ -122,6 +122,38 @@ function configuration_configuration_handlers() {
     );
   }
 
+  if (module_exists('panels')) {
+    $handlers['panels'] = array(
+      'name' => 'Panels',
+      'handler' => 'PanelsConfiguration',
+      'namespace' => $namespace,
+    );
+    $handlers['panels_pipeline'] = array(
+      'name' => 'Panels Pipeline',
+      'handler' => 'PanelsPipelineConfiguration',
+      'namespace' => $namespace,
+    );
+    if (module_exists('panels_mini')) {
+      $handlers['panels_mini'] = array(
+        'name' => 'Panels Mini',
+        'handler' => 'PanelsMiniConfiguration',
+        'namespace' => $namespace,
+      );
+    }
+  }
+  if (module_exists('page_manager')) {
+    $handlers['page_manager'] = array(
+      'name' => 'Page Manager',
+      'handler' => 'PageManagerConfiguration',
+      'namespace' => $namespace,
+     );
+    $handlers['page_manager_handler'] = array(
+      'name' => 'Page Manager Handler',
+      'handler' => 'PageManagerHandlerConfiguration',
+      'namespace' => $namespace,
+     );
+  }
+
   return $handlers;
 }
 
