@@ -8,6 +8,7 @@
 namespace Drupal\configuration\Config;
 
 use \StdClass;
+use Drupal\configuration\Utils\ConfigIteratorSettings;
 
 class Configuration {
 
@@ -817,4 +818,49 @@ class Configuration {
     return $modules;
   }
 
+  /**
+   * This function will exectute a callback function over all the configurations
+   * objects that it process.
+   *
+   * @param  ConfigIteratorSettings $settings
+   *   A ConfigIteratorSettings instance that specifies, which is the callback
+   *   to execute. If dependencies and optional configurations should be
+   *   processed too, and storage the cache of already processed configurations.
+   * @return [type]                           [description]
+   */
+  function iterate(ConfigIteratorSettings &$settings) {
+    $callback = $settings->getCallback();
+
+    // First proccess requires the dependencies that have to be processed before
+    // load the current configuration.
+    if ($settings->processDepdendencies()) {
+      foreach ($this->getDependencies() as $dependency) {
+        $handler = $settings->getFromCache($dependency);
+        if (!$handler) {
+          list($component_name, $identifier) = explode('.', $dependency, 2);
+          $handler = Configuration::getConfigurationHandler($component_name);
+          $handler->iterate($settings);
+        }
+      }
+    }
+
+    // Now, after proccess the dependencies, proccess the current configuration.
+    if (!$settings->alreadyProcessed($this)) {
+      $this->{$callback}($settings);
+      $settings->addToCache($this);
+    }
+
+    // After proccess the dependencies and the current configuration, proccess
+    // the optionals.
+    if ($this->processOptionals()) {
+      foreach ($this->getOptionalConfigurations() as $optional) {
+        $handler = $settings->getFromCache($optional);
+        if (!$handler) {
+          list($component_name, $identifier) = explode('.', $optional, 2);
+          $handler = Configuration::getConfigurationHandler($component_name);
+          $handler->iterate($settings);
+        }
+      }
+    }
+  }
 }
