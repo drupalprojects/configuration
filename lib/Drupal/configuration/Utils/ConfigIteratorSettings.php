@@ -97,13 +97,13 @@ class ConfigIteratorSettings {
     }
   }
 
-  function addToCache(Configuration $configuration) {
+  function addToCache($configuration) {
     $id = $configuration->getUniqueId();
     $already_processed[$id] = TRUE;
     $cthis->cache[$id] = $configuration;
   }
 
-  function alreadyProcessed(Configuration $configuration) {
+  function alreadyProcessed($configuration) {
     return !empty($this->already_processed[$configuration->getUniqueId()]);
   }
 
@@ -125,6 +125,13 @@ class ConfigIteratorSettings {
 
   function setInfo($key, $value) {
     $this->info[$key] = $value;
+  }
+
+  function addInfo($key, $value) {
+    if (!isset($this->info[$key])) {
+      $this->info[$key] = array();
+    }
+    $this->info[$key][] = $value;
   }
 
   function resetAlreadyProcessed() {

@@ -165,26 +165,6 @@ function configuration_flush_caches() {
 }
 
 /**
- * Export a configuration to the datastore.
- *
- * @param $component
- *   The name of the component to export, i.e, 'content_type',
- *   'field', 'variable', 'permission', etc.
- * @param $identifier
- *   The identifier of the configurarion. Some examples:
- *   For $component == 'content_type', $identifier = 'article'
- *   For $component == 'field', $identifier 'node.article.field_image'
- *   For $component == 'variable', $identifier = 'comment_controls_article'
- */
-function configuration_export_to_datastore($component, $identifier, $export_dependencies = TRUE, $export_optionals = TRUE) {
-  $handler = Configuration::getConfigurationHandler($component);
-  $configuration = new $handler($identifier);
-  $exported = array();
-  $configuration->exportToDataStore($exported, $export_dependencies, $export_optionals);
-  return $exported;
-}
-
-/**
  * Backup a configuration into the staging area.
  *
  * @param $component

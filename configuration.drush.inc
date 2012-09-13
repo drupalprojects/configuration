@@ -59,6 +59,12 @@ function configuration_drush_command() {
     'aliases' => array('cexp'),
     'examples' => array(
       'drush cexp content_type.article' => 'Export the content type article and all its dependencies to the datastore',
+      'drush cexp content_type.article --exclude-dependencies --exclude-optionals' => 'Export the only the content type article to the datastore  without include its dependencies and optional configurations.',
+    ),
+    'options' => array(
+      'exclude-dependencies' => 'Export a configuration without export its dependencies.',
+      'exclude-optionals' => 'Export a configuration without export its optional configurations.',
+      'start-tracking' => 'Export a configuration and automaticall start to tracking it.',
     ),
     'arguments' => array(),
   );
@@ -161,12 +167,16 @@ function _configuration_export_to_datastore() {
     if (empty($identifier)) {
       return drush_set_error('', dt('No identifier supplied for @arg.', array('@arg' => $arg)));
     }
-
-    $rows = array();
-    foreach (array_keys(configuration_export_to_datastore($component, $identifier)) as $exported) {
-      $rows[]['exported'] = $exported;
-    }
   }
+  $rows = array();
+  $export_dependencies = !drush_get_option('exclude-dependencies');
+  $export_optionals = !drush_get_option('exclude-optionals');
+  $start_tracking = drush_get_option('start-tracking');
+  $result = Configuration::exportToDataStore($args, $export_dependencies, $export_optionals, $start_tracking);
+  foreach ($result->getInfo('exported') as $exported) {
+    $rows[]['exported'] = $exported;
+  }
+
   drush_log(dt('The configurations for the following items have been created/updated.'), 'ok');
   drush_print_table($rows);
 }

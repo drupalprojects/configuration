@@ -4,6 +4,8 @@
  * Tests for Configuration Management
  */
 
+use Drupal\configuration\Config\Configuration;
+
 /**
  * Base class for functional tests for configuration management.
  */
@@ -73,7 +75,7 @@ class ConfigurationApiTest extends ConfigurationWebTestCase {
   public function testExportToDatastore() {
 
     // This will build the configuration and create the files in config://
-    configuration_export_to_datastore('content_type', $this->content_type->type);
+    Configuration::exportToDataStore(array('content_type.' . $this->content_type->type));
 
     $files = array(
       'permission.delete_any_IDENTIFIER_content.inc',

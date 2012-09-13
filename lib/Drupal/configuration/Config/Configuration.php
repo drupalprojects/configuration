@@ -427,61 +427,50 @@ class Configuration {
     return $this;
   }
 
-  /**
-   * Export the data to the DataStore.
-   */
-  public function exportToDataStore(&$already_exported = array(), $export_dependencies = TRUE, $export_optionals = TRUE, $save_to_storage = TRUE) {
+  static public function exportToDataStore($list = array(), $export_dependencies = TRUE, $export_optionals = TRUE, $start_tracking = FALSE) {
+    $settings = new ConfigIteratorSettings(
+      array(
+        'callback' => 'export',
+        'process_dependencies' => $export_dependencies,
+        'process_optionals' => $export_optionals,
+        'settings' => array(
+          'start_tracking' => $start_tracking,
+        )
+      )
+    );
 
-    $id = $this->getComponent() . '.' . $this->getIdentifier();
-    if (!empty($already_exported[$id])) {
-      return $this;
+    foreach ($list as $component) {
+      list($component_name, $identifier) = explode('.', $component, 2);
+      $handler = Configuration::getConfigurationHandler($component_name);
+      $config = new $handler($identifier);
+
+      // Make sure the object is built before start to iterate on its
+      // dependencies.
+      $config->build();
+      $config->iterate($settings);
     }
-    $already_exported[$id] = TRUE;
 
-    // Make sure the configuration is built.
+    return $settings;
+  }
+
+  public function export(ConfigIteratorSettings $settings) {
     $this->build();
 
-    $dependencies = array();
-    if ($export_dependencies) {
-      foreach ($this->getDependencies() as $config_dependency) {
-        $id = $config_dependency->getComponent() . '.' . $config_dependency->getIdentifier();
-        $dependencies[$id] = $id;
-      }
+    // Save the configuration into a file.
+    $this->storage
+            ->setData($this->data)
+            ->setKeysToExport($this->getKeysToExport())
+            ->setDependencies(drupal_map_assoc(array_keys($this->getDependencies())))
+            ->setOptionalConfigurations(drupal_map_assoc(array_keys($this->getOptionalConfigurations())))
+            ->setModules(array_keys($this->getRequiredModules()))
+            ->save();
+
+    if ($settings->getSetting('start_tracking')) {
+      $this->saveToStaging();
     }
 
-    $optional_configurations = array();
-    if ($export_dependencies) {
-      foreach ($this->getOptionalConfigurations() as $optional_configuration) {
-        $id = $optional_configuration->getComponent() . '.' . $optional_configuration->getIdentifier();
-        $optional_configurations[$id] = $id;
-      }
-    }
-
-    if ($save_to_storage) {
-      // Save the configuration into a file.
-      $this->storage
-              ->setData($this->data)
-              ->setKeysToExport($this->getKeysToExport())
-              ->setDependencies($dependencies)
-              ->setOptionalConfigurations($optional_configurations)
-              ->setModules($this->required_modules)
-              ->save();
-    }
-
-    // Also, save the configuration in the database
-    $this->saveToStaging();
-
-    if (!empty($export_optionals)) {
-      foreach ($this->getOptionalConfigurations() as $config) {
-        $config->exportToDataStore($already_exported, $export_dependencies, $export_optionals, $save_to_storage);
-      }
-    }
-    if (!empty($export_dependencies)) {
-      foreach ($this->getDependencies() as $config) {
-        $config->exportToDataStore($already_exported, $export_dependencies, $export_optionals, $save_to_storage);
-      }
-    }
-    return $this;
+    // Add the current config as an exported item
+    $settings->addInfo('exported', $this->getUniqueId());
   }
 
   /**
@@ -826,21 +815,21 @@ class Configuration {
    *   A ConfigIteratorSettings instance that specifies, which is the callback
    *   to execute. If dependencies and optional configurations should be
    *   processed too, and storage the cache of already processed configurations.
-   * @return [type]                           [description]
    */
   function iterate(ConfigIteratorSettings &$settings) {
     $callback = $settings->getCallback();
 
     // First proccess requires the dependencies that have to be processed before
     // load the current configuration.
-    if ($settings->processDepdendencies()) {
-      foreach ($this->getDependencies() as $dependency) {
-        $handler = $settings->getFromCache($dependency);
-        if (!$handler) {
+    if ($settings->processDependencies()) {
+      foreach (array_keys($this->getDependencies()) as $dependency) {
+        $config = $settings->getFromCache($dependency);
+        if (!$config) {
           list($component_name, $identifier) = explode('.', $dependency, 2);
           $handler = Configuration::getConfigurationHandler($component_name);
-          $handler->iterate($settings);
+          $config = new $handler($identifier);
         }
+        $config->iterate($settings);
       }
     }
 
@@ -852,14 +841,15 @@ class Configuration {
 
     // After proccess the dependencies and the current configuration, proccess
     // the optionals.
-    if ($this->processOptionals()) {
-      foreach ($this->getOptionalConfigurations() as $optional) {
-        $handler = $settings->getFromCache($optional);
-        if (!$handler) {
+    if ($settings->processOptionals()) {
+      foreach (array_keys($this->getOptionalConfigurations()) as $optional) {
+        $config = $settings->getFromCache($optional);
+        if (!$config) {
           list($component_name, $identifier) = explode('.', $optional, 2);
           $handler = Configuration::getConfigurationHandler($component_name);
-          $handler->iterate($settings);
+          $config = new $handler($identifier);
         }
+        $config->iterate($settings);
       }
     }
   }
