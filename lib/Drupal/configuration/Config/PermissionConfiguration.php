@@ -13,37 +13,44 @@ class PermissionConfiguration extends Configuration {
 
   static protected $component = 'permission';
 
-  // Store the original permission before remove white spaces
-  protected $permission;
-
-  function __construct($identifier) {
-    $this->permission = $identifier;
-    parent::__construct(str_replace(' ', '_', $identifier));
-
-    $this->storage->setFileName('permission.' . str_replace(' ', '_', $identifier));
-  }
-
   protected function prepareBuild() {
     $permissions_roles = $this->get_permissions();
+    $permission = static::getPermissionById($this->identifier);
     $this->data = array(
-      'permission' => $this->permission,
-      'roles' => !empty($permissions_roles[$this->permission]) ? $permissions_roles[$this->permission] : array(),
+      'permission' => $permission,
+      'roles' => !empty($permissions_roles[$permission]) ? $permissions_roles[$permission] : array(),
     );
     return $this;
+  }
+
+  public static function getPermissionById($identifier) {
+    $perms = static::getPermissionList();
+    if (!empty($perms[$identifier])) {
+      return $perms[$identifier];
+    }
+  }
+
+  public static function getPermissionList() {
+    $permissions = array_keys(module_invoke_all('permission'));
+    foreach ($permissions as $permission) {
+      $return[str_replace(' ', '_', $permission)] = $permission;
+    }
+    return $return;
   }
 
   /**
    * Returns all the identifiers available for this component.
    */
   public static function getAllIdentifiers() {
-    return array_keys(module_invoke_all('permission'));
+    return array_keys(static::getPermissionList());
   }
 
   public static function alterDependencies(Configuration $config, &$stack) {
     if ($config->getComponent() == 'content_type') {
       $permissions = node_list_permissions($config->getIdentifier());
 
-      foreach ($permissions as $identifier => $permission) {
+      foreach (array_keys($permissions) as $permission) {
+        $identifier = str_replace(' ', '_', $permission);
         // Avoid include multiple times the same dependency.
         if (empty($stack['permission.' . $identifier])) {
           $perm = new PermissionConfiguration($identifier);
@@ -64,7 +71,7 @@ class PermissionConfiguration extends Configuration {
 
   public function findRequiredModules() {
     $perm_modules = user_permission_get_modules();
-    $this->addToModules($perm_modules[$this->permission]);
+    $this->addToModules($perm_modules[$this->data['permission']]);
   }
 
   /**
