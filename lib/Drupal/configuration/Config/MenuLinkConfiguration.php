@@ -19,17 +19,9 @@ class MenuLinkConfiguration extends Configuration {
     return $this;
   }
 
-  static public function saveToActiveStore($menulinks = array()) {
-    if ($menulinks) {
-      foreach ($menulinks as $menulink) {
-        $menulink_data = $menulink->getData();
-        menu_link_save($menulink_data);
-      }
-    }
-  }
-
-  static public function revertHook($menulinks = array()) {
-    static::revertHook($menulinks);
+  public function saveToActiveStore(ConfigIteratorSettings &$settings) {
+    menu_link_save($this->getData());
+    $settings->addInfo('imported', $this->getUniqueId());
   }
 
   /**

@@ -16,6 +16,7 @@ class ContentTypeConfiguration extends Configuration {
   function __construct($identifier) {
     parent::__construct($identifier);
     $keys = array(
+      'type',
       'name',
       'base',
       'description',
@@ -35,12 +36,12 @@ class ContentTypeConfiguration extends Configuration {
   }
 
   protected function prepareBuild() {
-    $this->data = (array)node_type_get_type($this->identifier);
+    $this->data = (object)node_type_get_type($this->identifier);
 
     // Force module name to be 'configuration' if set to 'node. If we leave as
     // 'node' the content type will be assumed to be database-stored by
     // the node module.
-    $this->data['base'] = ($this->data['base'] === 'node') ? 'configuration' : $this->data['base'];
+    $this->data->base = ($this->data->base === 'node') ? 'configuration' : $this->data->base;
     return $this;
   }
 
@@ -52,37 +53,17 @@ class ContentTypeConfiguration extends Configuration {
   }
 
   public function findRequiredModules() {
-    if ($this->data['base'] == 'node_content' || $this->data['base'] == 'configuration') {
+    if ($this->data->base == 'node_content' || $this->data->base == 'configuration') {
       $this->addToModules('node');
     }
     else {
-      $this->addToModules($this->data['base']);
+      $this->addToModules($this->data->base);
     }
   }
 
-  static public function saveToActiveStore($components = array()) {
-    if ($components) {
-      foreach ($components as $config) {
-        $info = $config->getData();
-        node_type_save($info);
-      }
-    }
-  }
-
-  static public function revertHook($components = array()) {
-    foreach ($components as $component) {
-      // Delete node types
-      // We don't use node_type_delete() because we do not actually
-      // want to delete the node type (and invoke hook_node_type()).
-      // This can lead to bad consequences like CCK deleting field
-      // storage in the DB.
-      db_delete('node_type')
-        ->condition('type', $component->getIdentifier())
-        ->execute();
-    }
-    if (!empty($components)) {
-      node_types_rebuild();
-      menu_rebuild();
-    }
+  public function saveToActiveStore(ConfigIteratorSettings &$settings) {
+    $info = (object)$this->getData();
+    node_type_save($info);
+    $settings->addInfo('imported', $this->getUniqueId());
   }
 }

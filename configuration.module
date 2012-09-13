@@ -158,13 +158,6 @@ function configuration_configuration_handlers() {
 }
 
 /**
- * Implements hook_flush_caches().
- */
-function configuration_flush_caches() {
-  configuration_rebuild();
-}
-
-/**
  * Backup a configuration into the staging area.
  *
  * @param $component
@@ -210,21 +203,6 @@ function configurarion_get_handlers() {
 }
 
 /**
- * Import a list of configurations from config:// into the staging area and into
- * the Active Store.
- */
-function configuration_import_configurations($list = array()) {
-  $handlers = configurarion_get_handlers();
-  $components = array();
-  foreach ($handlers as $handler) {
-    $class = '\\' . $handler['namespace'] . '\\' . $handler['handler'];
-    $components = array_merge($components, $class::scanDataStore());
-  }
-  Configuration::importConfigurations($components, $list);
-  drupal_flush_all_caches();
-}
-
-/**
  * Load a list of configurations from config:// into the staging area.
  */
 function configuration_load_configurations($list = array()) {
@@ -259,16 +237,4 @@ function configuration_revert_configurations($list = array()) {
   $reverted = Configuration::revertConfigurations($components, $list);
   drupal_flush_all_caches();
   return $reverted;
-}
-
-/**
- * Loads the configurations that are not provided by hook_*_default_*()
- * functions.
- */
-function configuration_rebuild() {
-  $handlers = configurarion_get_handlers();
-  foreach ($handlers as $handler) {
-    $class = '\\' . $handler['namespace'] . '\\' . $handler['handler'];
-    $class::executeRebuildHook();
-  }
 }

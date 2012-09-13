@@ -18,17 +18,9 @@ class MenuConfiguration extends Configuration {
     return $this;
   }
 
-  static public function saveToActiveStore($menus = array()) {
-    if ($menus) {
-      foreach ($menus as $menu) {
-        $menu_data = $menu->getData();
-        menu_save($menu);
-      }
-    }
-  }
-
-  static public function revertHook($menus = array()) {
-    static::revertHook($menus);
+  public function saveToActiveStore(ConfigIteratorSettings &$settings) {
+    menu_save($this->getData());
+    $settings->addInfo('imported', $this->getUniqueId());
   }
 
   /**

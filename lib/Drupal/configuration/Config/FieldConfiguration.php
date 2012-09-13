@@ -98,55 +98,42 @@ class FieldConfiguration extends Configuration {
     $this->addToModules($this->data['field_instance']['widget']['module']);
   }
 
-  /**
-   * There is no default hook for fields. This function creates the
-   * fields when configurarion_rebuild() is called.
-   */
-  static function saveToActiveStore($fields = array()) {
-    if ($fields) {
-      field_info_cache_clear();
+  public function saveToActiveStore(ConfigIteratorSettings &$settings) {
+    field_info_cache_clear();
 
-      // Load all the existing fields and instance up-front so that we don't
-      // have to rebuild the cache all the time.
-      $existing_fields = field_info_fields();
-      $existing_instances = field_info_instances();
+    // Load all the existing fields and instance up-front so that we don't
+    // have to rebuild the cache all the time.
+    $existing_fields = field_info_fields();
+    $existing_instances = field_info_instances();
 
-      foreach ($fields as $config) {
-        $field = $config->getData();
-        // Create or update field.
-        $field_config = $field['field_config'];
-        if (isset($existing_fields[$field_config['field_name']])) {
-          $existing_field = $existing_fields[$field_config['field_name']];
-          if ($field_config + $existing_field != $existing_field) {
-            field_update_field($field_config);
-          }
-        }
-        else {
-          field_create_field($field_config);
-          $existing_fields[$field_config['field_name']] = $field_config;
-        }
-
-        // Create or update field instance.
-        $field_instance = $field['field_instance'];
-        if (isset($existing_instances[$field_instance['entity_type']][$field_instance['bundle']][$field_instance['field_name']])) {
-          $existing_instance = $existing_instances[$field_instance['entity_type']][$field_instance['bundle']][$field_instance['field_name']];
-          if ($field_instance + $existing_instance != $existing_instance) {
-            field_update_instance($field_instance);
-          }
-        }
-        else {
-          field_create_instance($field_instance);
-          $existing_instances[$field_instance['entity_type']][$field_instance['bundle']][$field_instance['field_name']] = $field_instance;
-        }
-      }
-
-      if ($fields) {
-        variable_set('menu_rebuild_needed', TRUE);
+    $field = $this->getData();
+    // Create or update field.
+    $field_config = $field['field_config'];
+    if (isset($existing_fields[$field_config['field_name']])) {
+      $existing_field = $existing_fields[$field_config['field_name']];
+      if ($field_config + $existing_field != $existing_field) {
+        field_update_field($field_config);
       }
     }
-  }
+    else {
+      field_create_field($field_config);
+      $existing_fields[$field_config['field_name']] = $field_config;
+    }
 
-  static function revertHook($components = array()) {
-    static::saveToActiveStore($components);
+    // Create or update field instance.
+    $field_instance = $field['field_instance'];
+    if (isset($existing_instances[$field_instance['entity_type']][$field_instance['bundle']][$field_instance['field_name']])) {
+      $existing_instance = $existing_instances[$field_instance['entity_type']][$field_instance['bundle']][$field_instance['field_name']];
+      if ($field_instance + $existing_instance != $existing_instance) {
+        field_update_instance($field_instance);
+      }
+    }
+    else {
+      field_create_instance($field_instance);
+      $existing_instances[$field_instance['entity_type']][$field_instance['bundle']][$field_instance['field_name']] = $field_instance;
+    }
+
+    variable_set('menu_rebuild_needed', TRUE);
+    $settings->addInfo('imported', $this->getUniqueId());
   }
 }

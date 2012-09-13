@@ -41,24 +41,9 @@ abstract class CtoolsConfiguration extends Configuration {
     return '\Drupal\configuration\Storage\StorageCtools';
   }
 
-  static public function saveToActiveStore($components = array()) {
-    if ($components) {
-      foreach ($components as $config) {
-        ctools_export_crud_save(static::$table, $config->getData());
-      }
-    }
-  }
-
-  static public function revertHook($components = array()) {
-    ctools_include('export');
-    foreach ($components as $component) {
-      // Some things (like views) do not use the machine name as key
-      // and need to be loaded explicitly in order to be deleted.
-      $object = ctools_export_crud_load($component->getTable(), $component->getIdentifier());
-      if ($object && ($object->export_type & EXPORT_IN_DATABASE)) {
-        ctools_export_crud_delete($component->getTable(), $object);
-      }
-    }
+  public function saveToActiveStore(ConfigIteratorSettings &$settings) {
+    ctools_export_crud_save(static::$table, $config->getData());
+    $settings->addInfo('imported', $this->getUniqueId());
   }
 
   /**

@@ -126,42 +126,32 @@ class PermissionConfiguration extends Configuration {
     return $permissions;
   }
 
-  /**
-   * There is no default hook for permission. This function set the
-   * permissions to the defined roles.
-   */
-  static public function saveToActiveStore($permissions = array()) {
+  public function saveToActiveStore(ConfigIteratorSettings &$settings) {
 
-    if ($permissions) {
-      // Make sure the list of available node types is up to date, especially when
-      // installing multiple features at once, for example from an install profile
-      // or via drush.
-      node_types_rebuild();
+    node_types_rebuild();
 
-      $roles = static::get_roles();
-      $permissions_by_role = static::get_permissions(FALSE);
-      foreach ($permissions as $config) {
-        $permission = $config->getData();
-        $perm = $permission['permission'];
-        foreach ($roles as $role) {
-          if (in_array($role, $permission['roles'])) {
-            $permissions_by_role[$role][$perm] = TRUE;
-          }
-          else {
-            $permissions_by_role[$role][$perm] = FALSE;
-          }
-        }
+    $roles = static::get_roles();
+    $permissions_by_role = static::get_permissions(FALSE);
+
+    $permission = $this->getData();
+    $perm = $permission['permission'];
+    foreach ($roles as $role) {
+      if (in_array($role, $permission['roles'])) {
+        $permissions_by_role[$role][$perm] = TRUE;
       }
-      // Write the updated permissions.
-      foreach ($roles as $rid => $role) {
-        if (isset($permissions_by_role[$role])) {
-          user_role_change_permissions($rid, $permissions_by_role[$role]);
-        }
+      else {
+        $permissions_by_role[$role][$perm] = FALSE;
       }
     }
+
+    // Write the updated permissions.
+    foreach ($roles as $rid => $role) {
+      if (isset($permissions_by_role[$role])) {
+        user_role_change_permissions($rid, $permissions_by_role[$role]);
+      }
+    }
+
+    $settings->addInfo('imported', $this->getUniqueId());
   }
 
-  static public function revertHook($permissions = array()) {
-    static::saveToActiveStore($permissions);
-  }
 }

@@ -229,40 +229,21 @@ function _configuration_import_load_configurations($action, $args) {
 
   if (drush_get_option(array('skip-enable-modules'), FALSE)) {
     if ($action == 'import') {
-      configuration_import_configurations($args);
+      Configuration::importToActiveStore($args);
     }
     else {
       configuration_load_configurations($args);
     }
   }
   else {
-    $handlers = configurarion_get_handlers();
-    $components = array();
-    for ($x = 1; $x <= 3; $x++) {
-      foreach ($handlers as $handler) {
-        $class = '\\' . $handler['namespace'] . '\\' . $handler['handler'];
-        $components = array_merge($components, $class::scanDataStore());
-      }
-    }
-    $configurations = Configuration::importConfigurations($components, $args, TRUE, TRUE, FALSE);
+    $import_dependencies = !drush_get_option('exclude-dependencies');
+    $import_optionals = !drush_get_option('exclude-optionals');
+    $start_tracking = drush_get_option('start-tracking');
+    $settings = Configuration::discoverRequiredModules($args, $import_dependencies, $import_optionals);
 
-    $modules = array();
-    foreach ($configurations as $configuration) {
-      $modules = array_merge($modules, $configuration->getRequiredModules());
-    }
+    $missing = $settings->getInfo('modules_missing');
+    $to_install = $settings->getInfo('modules_to_install');
 
-    $missing = array();
-    $to_install = array();
-    foreach ($modules as $module_name => $status) {
-      if ($status == CONFIGURATION_MODULE_MISSING) {
-        $missing[] = $module_name;
-      }
-      elseif ($status == CONFIGURATION_MODULE_TO_INSTALL) {
-        $to_install[] = $module_name;
-      }
-    }
-
-    $missing = array_filter(array_unique($missing));
     if (count($missing)) {
       drush_set_error('', dt('Missing required modules. None configuration was processed.'));
       drush_set_error('', dt('The following modules are required to @action the configurations but are not available to install: !modules', array('@action' => $action, '!modules' => implode(', ', $missing))));
@@ -270,25 +251,23 @@ function _configuration_import_load_configurations($action, $args) {
     }
     else {
       if (count($to_install)) {
-        drush_print('The following modules will be installed in order to @action the configurations:', array('@action' => $action));
+        drush_print(dt('The following modules will be installed in order to @action the configurations:', array('@action' => $action)));
         drush_print(implode(', ', $to_install));
         if (!drush_confirm(dt('Do you really want to continue?'))) {
           drush_die('Aborting.');
         }
 
         module_enable($to_install);
+        foreach ($to_install as $module) {
+          drush_log(dt('Installed @module.', array('@module' => $module)), 'ok');
+        }
         drupal_flush_all_caches();
       }
-      $rows = array();
-      foreach ($configurations as $configuration) {
-        if ($action == 'import') {
-          $configuration
-            ->revert()
-            ->setStatus(CONFIGURATION_NEEDS_REBUILD);
-        }
-        $configuration->saveToStaging();
 
-        $rows[]['identifier'] = $configuration->getUniqueId();
+      $import_results = Configuration::importToActiveStore($args, $import_dependencies, $import_optionals, $start_tracking);
+      $rows = array();
+      foreach ($import_results->getInfo('imported') as $imported) {
+        $rows[]['identifier'] = $imported;
       }
 
       if ($action == 'import') {

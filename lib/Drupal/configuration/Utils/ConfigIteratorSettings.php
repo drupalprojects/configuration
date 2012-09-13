@@ -5,6 +5,12 @@ namespace Drupal\configuration\Utils;
 class ConfigIteratorSettings {
 
   /**
+   * This function will be called in each iteration. This is the resposible
+   * to load the configuration object to find dependencies and optional configurations.
+   */
+  protected $build_callback;
+
+  /**
    * The Configuration::callback to call on every iteration.
    */
   protected $callback;
@@ -68,9 +74,11 @@ class ConfigIteratorSettings {
       'process_dependencies',
       'process_optionals',
       'callback',
+      'build_callback',
       'cache',
       'already_processed',
-      'settings'
+      'settings',
+      'info',
     );
     foreach ($keys as $key) {
       if (isset($settings[$key])) {
@@ -91,6 +99,10 @@ class ConfigIteratorSettings {
     return $this->callback;
   }
 
+  function getBuildCallback() {
+    return $this->build_callback;
+  }
+
   function getFromCache($id) {
     if (!empty($this->cache[$id])) {
       return $this->cache[$id];
@@ -99,7 +111,7 @@ class ConfigIteratorSettings {
 
   function addToCache($configuration) {
     $id = $configuration->getUniqueId();
-    $already_processed[$id] = TRUE;
+    $this->already_processed[$id] = TRUE;
     $cthis->cache[$id] = $configuration;
   }
 

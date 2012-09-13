@@ -42,17 +42,10 @@ class VariableConfiguration extends Configuration {
     return $return;
   }
 
-  static public function saveToActiveStore($variables = array()) {
-    if ($variables) {
-      foreach ($variables as $config) {
-        $variable = $config->getData();
-        variable_set($variable['name'], $variable['content']);
-      }
-    }
-  }
-
-  static public function revertHook($variables = array()) {
-    static::saveToActiveStore($variables);
+  public function saveToActiveStore(ConfigIteratorSettings &$settings) {
+    $variable = $this->getData();
+    variable_set($variable['name'], $variable['content']);
+    $settings->addInfo('imported', $this->getUniqueId());
   }
 
   public static function alterDependencies(Configuration $config, &$stack) {

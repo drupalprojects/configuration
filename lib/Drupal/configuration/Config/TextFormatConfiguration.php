@@ -46,18 +46,9 @@ class TextFormatConfiguration extends Configuration {
     return FALSE;
   }
 
-  static public function saveToActiveStore($text_formats = array()) {
-    if ($text_formats) {
-      foreach ($text_formats as $config) {
-        $text_format = $config->getData();
-        $text_format = (object) $text_format;
-        filter_format_save($text_format);
-      }
-    }
-  }
-
-  static public function revertHook($text_formats = array()) {
-    static::saveToActiveStore($text_formats);
+  public function saveToActiveStore(ConfigIteratorSettings &$settings) {
+    filter_format_save($this->getData());
+    $settings->addInfo('imported', $this->getUniqueId());
   }
 
   public function findRequiredModules() {

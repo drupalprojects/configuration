@@ -68,22 +68,13 @@ class ImageStyleConfiguration extends Configuration {
     }
   }
 
-  static public function saveToActiveStore($components = array()) {
-    if ($components) {
-      foreach ($components as $config) {
-        $style = $config->getData();
-        image_style_save($style);
+  public function saveToActiveStore(ConfigIteratorSettings &$settings) {
+    if ($style = image_style_load($this->getIdentifier())) {
+      if (!empty($style['isid'])) {
+        image_style_delete($style);
       }
     }
-  }
-
-  static function revertHook($components = array()) {
-    foreach ($components as $component) {
-      if ($style = image_style_load($component->getIdentifier())) {
-        if (!empty($style['isid'])) {
-          image_style_delete($style);
-        }
-      }
-    }
+    image_style_save($this->getData());
+    $settings->addInfo('imported', $this->getUniqueId());
   }
 }

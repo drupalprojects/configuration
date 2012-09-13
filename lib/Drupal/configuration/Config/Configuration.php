@@ -171,74 +171,6 @@ class Configuration {
   }
 
   /**
-   * Loads configurations into staging setting status as "needs rebuild".
-   */
-  public static function importConfigurations($component_stack = array(), $list_to_import = array(), $import_dependencies = TRUE, $import_optionals = TRUE,  $save_to_staging = TRUE) {
-    $to_import = array();
-
-    $imported = array();
-
-    // If there are no defined components to import, import all.
-    if (empty($list_to_import)) {
-      $list_to_import = $component_stack;
-    }
-
-    // While there is items to import.
-    while (!empty($list_to_import)) {
-      // Extract a component to import.
-      $component = array_pop($list_to_import);
-
-      $imported[$component] = TRUE;
-
-      list($component_name, $identifier) = explode('.', $component, 2);
-      $handler = Configuration::getConfigurationHandler($component_name);
-
-      $config_instance = new $handler($identifier);
-      $config_instance->storage->load();
-
-      $data = $config_instance->storage->getData();
-      $dependencies = $config_instance->storage->getDependencies();
-      $optional = $config_instance->storage->getOptionalConfigurations();
-      $modules = $config_instance->storage->getModules();
-
-      $config_instance
-        ->setData($data)
-        ->setDependencies($dependencies)
-        ->setOptionalConfigurations($optional)
-        ->setModules($modules);
-
-      // Add the dependencies to the list of configurations to import
-      if ($import_dependencies) {
-        foreach ($config_instance->getDependencies() as $dependency) {
-          if (empty($imported[$dependency])) {
-            $list_to_import[$dependency] = $dependency;
-          }
-        }
-      }
-
-      // Add the optional configurations to the list of configurations to import
-      if ($import_optionals) {
-       foreach ($config_instance->getOptionalConfigurations() as $optional) {
-          if (empty($imported[$optional])) {
-            $list_to_import[$optional] = $optional;
-          }
-        }
-      }
-
-      if ($save_to_staging) {
-        $config_instance
-          ->revert()
-          ->setStatus(CONFIGURATION_NEEDS_REBUILD)
-          ->saveToStaging();
-      }
-      else {
-        $to_import[$config_instance->getUniqueId()] = $config_instance;
-      }
-    }
-    return $to_import;
-  }
-
-  /**
    * Returns the list of components available in the DataStore.
    */
   public static function scanDataStore() {
@@ -339,18 +271,6 @@ class Configuration {
     // Override
   }
 
-    /**
-   * Loads the configuration into the active store.
-   *
-   * Some configurations like fields, permissions, roles, etc doesn't
-   * provide hooks to load configurations from code.
-   * In order to load this configuration, children classes of this kind
-   * of configs, must define the way to load this data into the ActiveStore.
-   */
-  static public function saveToActiveStore($components = array()) {
-    // Override
-  }
-
   /**
    * Load a configuration from $source,
    * @param $source
@@ -427,9 +347,99 @@ class Configuration {
     return $this;
   }
 
+  static public function discoverRequiredModules($list = array(), $include_dependencies = TRUE, $include_optionals = TRUE) {
+    $settings = new ConfigIteratorSettings(
+      array(
+        'build_callback' => 'loadFromStorage',
+        'callback' => 'discoverModules',
+        'process_dependencies' => $import_dependencies,
+        'process_optionals' => $import_optionals,
+        'info' => array(
+          'modules' => array(),
+          'modules_missing' => array(),
+          'modules_to_install' => array(),
+        )
+      )
+    );
+    foreach ($list as $component) {
+      list($component_name, $identifier) = explode('.', $component, 2);
+      $handler = Configuration::getConfigurationHandler($component_name);
+      $config = new $handler($identifier);
+
+      // Make sure the object is built before start to iterate on its
+      // dependencies.
+      $config->loadFromStorage();
+      $config->iterate($settings);
+    }
+
+    $missing = array();
+    $to_install = array();
+    foreach ($settings->getInfo('modules') as $module_name => $status) {
+      if ($status == CONFIGURATION_MODULE_MISSING) {
+        $missing[] = $module_name;
+      }
+      elseif ($status == CONFIGURATION_MODULE_TO_INSTALL) {
+        $to_install[] = $module_name;
+      }
+    }
+    $settings->setInfo('modules_to_install', array_unique($to_install));
+    $settings->setInfo('modules_missing', array_unique($missing));
+
+    return $settings;
+  }
+
+  public function discoverModules(ConfigIteratorSettings &$settings) {
+    $this->loadFromStorage();
+    $modules = $settings->getInfo('modules');
+    $modules = array_merge($modules, $this->getRequiredModules());
+    $settings->setInfo('modules', $modules);
+  }
+
+  static public function importToActiveStore($list = array(), $import_dependencies = TRUE, $import_optionals = TRUE, $start_tracking = FALSE) {
+    $settings = new ConfigIteratorSettings(
+      array(
+        'build_callback' => 'loadFromStorage',
+        'callback' => 'import',
+        'process_dependencies' => $import_dependencies,
+        'process_optionals' => $import_optionals,
+        'settings' => array(
+          'start_tracking' => $start_tracking,
+          'imported' => array(),
+        )
+      )
+    );
+
+    foreach ($list as $component) {
+      list($component_name, $identifier) = explode('.', $component, 2);
+      $handler = Configuration::getConfigurationHandler($component_name);
+      $config = new $handler($identifier);
+
+      // Make sure the object is built before start to iterate on its
+      // dependencies.
+      $config->loadFromStorage();
+      $config->iterate($settings);
+    }
+
+    return $settings;
+  }
+
+  public function import(ConfigIteratorSettings &$settings) {
+    $this->loadFromStorage();
+    $this->saveToActiveStore($settings);
+
+    if ($settings->getSetting('start_tracking')) {
+      $this->saveToStaging();
+    }
+  }
+
+  public function saveToActiveStore(ConfigIteratorSettings &$settings) {
+    // Override
+  }
+
   static public function exportToDataStore($list = array(), $export_dependencies = TRUE, $export_optionals = TRUE, $start_tracking = FALSE) {
     $settings = new ConfigIteratorSettings(
       array(
+        'build_callback' => 'build',
         'callback' => 'export',
         'process_dependencies' => $export_dependencies,
         'process_optionals' => $export_optionals,
@@ -453,7 +463,7 @@ class Configuration {
     return $settings;
   }
 
-  public function export(ConfigIteratorSettings $settings) {
+  public function export(ConfigIteratorSettings &$settings) {
     $this->build();
 
     // Save the configuration into a file.
@@ -818,6 +828,11 @@ class Configuration {
    */
   function iterate(ConfigIteratorSettings &$settings) {
     $callback = $settings->getCallback();
+    $build_callback = $settings->getBuildCallback();
+
+    if ($settings->alreadyProcessed($this)) {
+      return;
+    }
 
     // First proccess requires the dependencies that have to be processed before
     // load the current configuration.
@@ -829,15 +844,14 @@ class Configuration {
           $handler = Configuration::getConfigurationHandler($component_name);
           $config = new $handler($identifier);
         }
+        $config->{$build_callback}();
         $config->iterate($settings);
       }
     }
 
     // Now, after proccess the dependencies, proccess the current configuration.
-    if (!$settings->alreadyProcessed($this)) {
-      $this->{$callback}($settings);
-      $settings->addToCache($this);
-    }
+    $this->{$callback}($settings);
+    $settings->addToCache($this);
 
     // After proccess the dependencies and the current configuration, proccess
     // the optionals.
@@ -849,6 +863,7 @@ class Configuration {
           $handler = Configuration::getConfigurationHandler($component_name);
           $config = new $handler($identifier);
         }
+        $config->{$build_callback}();
         $config->iterate($settings);
       }
     }

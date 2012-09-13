@@ -33,24 +33,17 @@ class VocabularyConfiguration extends Configuration {
     return $this;
   }
 
-  static public function saveToActiveStore($vocabularies = array()) {
-    if ($vocabularies) {
-      $existing = taxonomy_get_vocabularies();
-      foreach ($vocabularies as $config) {
-        $vocabulary = (object) $config->getData();
-        foreach ($existing as $existing_vocab) {
-          if ($existing_vocab->machine_name === $vocabulary->machine_name) {
-            $vocabulary->vid = $existing_vocab->vid;
-            break;
-          }
-        }
-        taxonomy_vocabulary_save($vocabulary);
+  public function saveToActiveStore(ConfigIteratorSettings &$settings) {
+    $vocabulary = (object) $this->getData();
+    $existing = taxonomy_get_vocabularies();
+    foreach ($existing as $existing_vocab) {
+      if ($existing_vocab->machine_name === $vocabulary->machine_name) {
+        $vocabulary->vid = $existing_vocab->vid;
+        break;
       }
     }
-  }
-
-  static public function revertHook($vocabularies = array()) {
-    static::saveToActiveStore($vocabularies);
+    taxonomy_vocabulary_save($vocabulary);
+    $settings->addInfo('imported', $this->getUniqueId());
   }
 
   /**
