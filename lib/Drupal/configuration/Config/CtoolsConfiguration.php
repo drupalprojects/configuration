@@ -42,7 +42,12 @@ abstract class CtoolsConfiguration extends Configuration {
   }
 
   public function saveToActiveStore(ConfigIteratorSettings &$settings) {
-    ctools_export_crud_save(static::$table, $config->getData());
+    ctools_include('export');
+    $object = ctools_export_crud_load($this->getTable(), $this->getIdentifier());
+    if ($object && ($object->export_type & EXPORT_IN_DATABASE)) {
+      ctools_export_crud_delete($this->getTable(), $object);
+    }
+    ctools_export_crud_save($this->getTable(), $this->getData());
     $settings->addInfo('imported', $this->getUniqueId());
   }
 
