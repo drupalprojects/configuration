@@ -395,6 +395,46 @@ class Configuration {
     $settings->setInfo('modules', $modules);
   }
 
+  static public function startTracking($list = array(), $track_dependencies = TRUE, $track_optionals = TRUE) {
+    return static::exportToDataStore($list, $track_dependencies, $track_optionals, TRUE);
+  }
+
+  static public function stopTracking($list = array(), $stop_track_dependencies = TRUE, $stop_track_optionals = TRUE) {
+    $settings = new ConfigIteratorSettings(
+      array(
+        'build_callback' => 'build',
+        'callback' => 'removeFromStaging',
+        'process_dependencies' => $stop_track_dependencies,
+        'process_optionals' => $stop_track_optionals,
+        'info' => array(
+          'untracked' => array(),
+        )
+      )
+    );
+
+    foreach ($list as $component) {
+      list($component_name, $identifier) = explode('.', $component, 2);
+      $handler = Configuration::getConfigurationHandler($component_name);
+      $config = new $handler($identifier);
+
+      // Make sure the object is built before start to iterate on its
+      // dependencies.
+      $config->build();
+      $config->iterate($settings);
+    }
+
+    return $settings;
+  }
+
+  public function removeFromStaging(ConfigIteratorSettings &$settings) {
+    db_delete('configuration_staging')
+      ->condition('component', static::$component)
+      ->condition('identifier', $this->getIdentifier())
+      ->execute();
+
+    $settings->addInfo('untracked', $this->getUniqueId());
+  }
+
   static public function importToActiveStore($list = array(), $import_dependencies = TRUE, $import_optionals = TRUE, $start_tracking = FALSE) {
     $settings = new ConfigIteratorSettings(
       array(
@@ -404,6 +444,8 @@ class Configuration {
         'process_optionals' => $import_optionals,
         'settings' => array(
           'start_tracking' => $start_tracking,
+        ),
+        'info' => array(
           'imported' => array(),
         )
       )
@@ -445,6 +487,9 @@ class Configuration {
         'process_optionals' => $export_optionals,
         'settings' => array(
           'start_tracking' => $start_tracking,
+        ),
+        'info' => array(
+          'exported' => array(),
         )
       )
     );
@@ -458,6 +503,10 @@ class Configuration {
       // dependencies.
       $config->build();
       $config->iterate($settings);
+    }
+
+    if ($start_tracking) {
+      static::updateTrackingFile();
     }
 
     return $settings;
@@ -481,6 +530,27 @@ class Configuration {
 
     // Add the current config as an exported item
     $settings->addInfo('exported', $this->getUniqueId());
+  }
+
+  /**
+   * This function save into config://tracked.inc file the configurations that
+   * are currently tracked.
+   */
+  static function updateTrackingFile() {
+    $tracked = db_select('configuration_staging', 'cs')
+                  ->fields('cs', array('component', 'identifier'))
+                  ->execute()
+                  ->fetchAll();
+
+    $file = array();
+    foreach ($tracked as $config) {
+      // TODO, replace = TRUE with the hash of the configuration
+      $file[$config->component . '.' . $config->identifier] = TRUE;
+    }
+    $file_content = "<?php\n\n";
+    $file_content .= "// This file contains the current being tracked configurations.\n\n";
+    $file_content .= var_export($file, TRUE) . ";\n";
+    file_put_contents('config://tracked.inc', $file_content);
   }
 
   /**

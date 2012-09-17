@@ -17,14 +17,14 @@ function configuration_drush_help($section) {
       return dt("Return the list of identifiers for a given component.");
     case 'drush:cgc':
       return dt("Return the list of configurations components that can be exported.");
-    case 'drush:cexp':
-      return dt("Export a configuration to the DataStore.");
-    case 'drush:cback':
-      return dt("Backup a configuration to Staging Area.");
     case 'drush:cimp':
       return dt("Import configurations into the ActiveStore.");
-    case 'drush:cload':
-      return dt("Load configurations into the Staging Area.");
+    case 'drush:cexp':
+      return dt("Export a configuration to the DataStore.");
+    case 'drush:csta':
+      return dt("Start tracking a configuration changes.");
+    case 'drush:csto':
+      return dt("Stop tracking a configuration changes.");
   }
 }
 
@@ -53,6 +53,21 @@ function configuration_drush_command() {
     ),
     'arguments' => array(),
   );
+  $items['config-import'] = array(
+    'callback' => '_configuration_import_configurations',
+    'description' => 'Import a configuration to the active store.',
+    'aliases' => array('cimp'),
+    'examples' => array(
+      'drush cimp' => 'Loads all the files that have configurations into the ActiveStore',
+      'drush cimp content_type.article variable.theme_settings' => 'Loads the configurations for content type Article and the variable theme_settings into the ActiveStore',
+    ),
+    'options' => array(
+      'exclude-dependencies' => 'Export a configuration without export its dependencies.',
+      'exclude-optionals' => 'Export a configuration without export its optional configurations.',
+      'start-tracking' => 'Export a configuration and automaticall start to tracking it.',
+    ),
+    'arguments' => array(),
+  );
   $items['config-export'] = array(
     'callback' => '_configuration_export_to_datastore',
     'description' => 'Export a configuration to the datastore.',
@@ -68,32 +83,29 @@ function configuration_drush_command() {
     ),
     'arguments' => array(),
   );
-  $items['config-backup'] = array(
-    'callback' => '_configuration_backup_to_staging',
-    'description' => 'Backup a configuration to the staging area.',
-    'aliases' => array('cback'),
+  $items['config-start-tracking'] = array(
+    'callback' => '_configuration_start_tracking',
+    'description' => 'Start tracking configuration changes.',
+    'aliases' => array('csta'),
     'examples' => array(
-      'drush cback content_type.article' => 'Backups the content type article and all its dependencies into the staging area',
+      'drush csta content_type.article' => 'Start tracking changes in the content type article and in all its dependencies',
+    ),
+    'options' => array(
+      'exclude-dependencies' => 'Export a configuration without export its dependencies.',
+      'exclude-optionals' => 'Export a configuration without export its optional configurations.',
     ),
     'arguments' => array(),
   );
-  $items['config-import'] = array(
-    'callback' => '_configuration_import_configurations',
-    'description' => 'Import a configuration to the active store.',
-    'aliases' => array('cimp'),
+  $items['config-stop-tracking'] = array(
+    'callback' => '_configuration_stop_tracking',
+    'description' => 'Stop tracking configuration changes.',
+    'aliases' => array('csto'),
     'examples' => array(
-      'drush cimp' => 'Loads all the files that have configurations into the ActiveStore',
-      'drush cimp content_type.article variable.theme_settings' => 'Loads the configurations for content type Article and the variable theme_settings into the ActiveStore',
+      'drush csto content_type.article' => 'Stop tracking changes in the content type article and in all its dependencies',
     ),
-    'arguments' => array(),
-  );
-  $items['config-load'] = array(
-    'callback' => '_configuration_load_configurations',
-    'description' => 'Load a configuration to the active store.',
-    'aliases' => array('cload'),
-    'examples' => array(
-      'drush cload' => 'Loads all the files that have configurations into the Staging Area',
-      'drush cload content_type.article variable.theme_settings' => 'Loads the configurations for content type Article and the variable theme_settings into the Staging Area',
+    'options' => array(
+      'exclude-dependencies' => 'Export a configuration without export its dependencies.',
+      'exclude-optionals' => 'Export a configuration without export its optional configurations.',
     ),
     'arguments' => array(),
   );
@@ -181,11 +193,11 @@ function _configuration_export_to_datastore() {
   drush_print_table($rows);
 }
 
-function _configuration_backup_to_staging() {
+function _configuration_start_tracking() {
   $args = func_get_args();
 
   if (empty($args)) {
-    return drush_set_error('', dt('No configurations were selected to backup'));
+    return drush_set_error('', dt('No configurations were selected to track'));
   }
 
   $handlers = configurarion_get_handlers();
@@ -194,30 +206,60 @@ function _configuration_backup_to_staging() {
     list($component, $identifier) = explode('.', $arg, 2);
 
     if (empty($handlers[$component])) {
-      return drush_set_error('', dt('The component @component is not valid or the module to backup the configuration is not installed.', array('@component' => $component)));
+      return drush_set_error('', dt('The component @component is not valid or the module to track the configuration is not installed.', array('@component' => $component)));
     }
 
     if (empty($identifier)) {
       return drush_set_error('', dt('No identifier supplied for @arg.', array('@arg' => $arg)));
     }
+  }
+  $rows = array();
+  $start_tracking_dependencies = !drush_get_option('exclude-dependencies');
+  $start_tracking_optionals = !drush_get_option('exclude-optionals');
+  $result = Configuration::startTracking($args, $start_tracking_dependencies, $start_tracking_optionals);
+  foreach ($result->getInfo('exported') as $tracking) {
+    $rows[]['exported'] = $tracking;
+  }
 
-    $rows = array();
-    foreach (array_keys(configuration_backup_to_staging($component, $identifier)) as $backuped) {
-      $rows[]['backuped'] = $backuped;
+  drush_log(dt('The configurations changes for for the following items are now being tracked.'), 'ok');
+  drush_print_table($rows);
+}
+
+function _configuration_stop_tracking() {
+  $args = func_get_args();
+
+  if (empty($args)) {
+    return drush_set_error('', dt('No configurations were selected to export'));
+  }
+
+  $handlers = configurarion_get_handlers();
+  foreach ($args as $arg) {
+
+    list($component, $identifier) = explode('.', $arg, 2);
+
+    if (empty($handlers[$component])) {
+      return drush_set_error('', dt('The component @component is not valid or the module to export the configuration is not installed.', array('@component' => $component)));
+    }
+
+    if (empty($identifier)) {
+      return drush_set_error('', dt('No identifier supplied for @arg.', array('@arg' => $arg)));
     }
   }
-  drush_log(dt('The configurations for the following items have been backuped.'), 'ok');
+  $rows = array();
+  $stop_tracking_dependencies = !drush_get_option('exclude-dependencies');
+  $stop_tracking_optionals = !drush_get_option('exclude-optionals');
+  $result = Configuration::stopTracking($args, $stop_tracking_dependencies, $stop_tracking_optionals);
+  foreach ($result->getInfo('untracked') as $untracked) {
+    $rows[]['untracked'] = $untracked;
+  }
+
+  drush_log(dt('The configurations changes for for the following items are not being tracked anymore.'), 'ok');
   drush_print_table($rows);
 }
 
 function _configuration_import_configurations() {
   $args = func_get_args();
   _configuration_import_load_configurations('import', $args);
-}
-
-function _configuration_load_configurations() {
-  $args = func_get_args();
-  _configuration_import_load_configurations('load', $args);
 }
 
 function _configuration_import_load_configurations($action, $args) {
