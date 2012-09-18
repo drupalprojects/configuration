@@ -169,8 +169,8 @@ class Configuration {
                         ->fetchObject();
 
     $this->setData(unserialize($object->data));
-    $this->setDependencies(unserialize($object->dependencies));
-    $this->setOptionalConfigurations(unserialize($object->optional));
+    $this->setDependencies(drupal_map_assoc(unserialize($object->dependencies)));
+    $this->setOptionalConfigurations(drupal_map_assoc(unserialize($object->optional)));
     $this->setModules(unserialize($object->modules));
     return $this;
   }
@@ -338,6 +338,38 @@ class Configuration {
     if ($settings->getSetting('start_tracking')) {
       $this->saveToStaging();
     }
+  }
+
+  static public function revertActiveStore($list = array(), $revert_dependencies = TRUE, $revert_optionals = TRUE) {
+    $settings = new ConfigIteratorSettings(
+      array(
+        'build_callback' => 'loadFromStaging',
+        'callback' => 'revert',
+        'process_dependencies' => $revert_dependencies,
+        'process_optionals' => $revert_optionals,
+        'info' => array(
+          'imported' => array(),
+        )
+      )
+    );
+
+    foreach ($list as $component) {
+      list($component_name, $identifier) = explode('.', $component, 2);
+      $handler = Configuration::getConfigurationHandler($component_name);
+      $config = new $handler($identifier);
+
+      // Make sure the object is built before start to iterate on its
+      // dependencies.
+      $config->loadFromStaging();
+      $config->iterate($settings);
+    }
+
+    return $settings;
+  }
+
+  public function revert(ConfigIteratorSettings &$settings) {
+    $this->loadFromStaging();
+    $this->saveToActiveStore($settings);
   }
 
   public function saveToActiveStore(ConfigIteratorSettings &$settings) {
