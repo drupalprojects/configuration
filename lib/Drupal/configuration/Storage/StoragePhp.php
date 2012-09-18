@@ -63,9 +63,7 @@ class StoragePhp extends Storage {
   /**
    * Saves the configuration object into the DataStore.
    */
-  public function save() {
-    $filename = $this->filename;
-
+  public function getDataToSave() {
     $data_is_array = FALSE;
     $data_to_export = NULL;
     if (is_array($this->data)) {
@@ -95,8 +93,16 @@ class StoragePhp extends Storage {
     $export .= '$optional = ' . $this->export($this->optional_configurations) . ";\n\n";
     $export .= '$modules = ' . $this->export($this->required_modules) . ";";
 
+    $filename = $this->filename;
     $file_contents = "<?php\n/**\n * @file\n * {$filename}\n */\n\n" . $export;
-    file_put_contents('config://' . $filename, $file_contents);
+
+    $this->hash = sha1($file_contents);
+
+    return $file_contents;
+  }
+
+  public function save() {
+    file_put_contents('config://' . $this->filename, $this->getDataToSave());
     return $this;
   }
 

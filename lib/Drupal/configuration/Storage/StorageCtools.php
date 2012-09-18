@@ -22,7 +22,7 @@ class StorageCtools extends StoragePHP {
   /**
    * Saves the configuration object into the DataStore.
    */
-  public function save() {
+  public function getDataToSave() {
     $filename = $this->filename;
     ctools_include('export');
     $export = '$data = ' . ctools_export_crud_export($this->table, $this->data) . "\n\n";
@@ -31,8 +31,10 @@ class StorageCtools extends StoragePHP {
     $export .= '$modules = ' . $this->export($this->required_modules) . ";";
 
     $file_contents = "<?php\n/**\n * @file\n * {$filename}\n */\n\n" . $export;
-    file_put_contents('config://' . $filename, $file_contents);
-    return $this;
+
+    $this->hash = sha1($file_contents);
+
+    return $file_contents;
   }
 
 }

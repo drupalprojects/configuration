@@ -21,6 +21,8 @@ class Storage {
 
   protected $loaded;
 
+  protected $hash;
+
   static public $file_extension = '';
 
   protected $keys_to_export = array();
@@ -38,6 +40,7 @@ class Storage {
   }
 
   public function reset() {
+    $this->hash = '';
     $this->loaded = FALSE;
     $this->dependencies = array();
     $this->optional_configurations = array();
@@ -130,5 +133,9 @@ class Storage {
     $new = $this->export($object);
     $original = $this->export($this->load()->data);
     return ($new != $original);
+  }
+
+  public function getHash() {
+    return $this->hash;
   }
 }

@@ -21,11 +21,12 @@ function configuration_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
-      'status' => array(
-        'description' => 'The status for this configuration: IN SYNC, ACTIVESTORE OVERRIDEN, DATASTORE OVERRIDE, ONLY ACTIVESTORE',
-        'type' => 'int',
+     'hash' => array(
+        'description' => 'A sha1 hash that respresent the configuration. Used to track differences between the ActiveStore, DataStore and Staging area.',
+        'type' => 'varchar',
+        'length' => 255,
         'not null' => TRUE,
-        'default' => 1,
+        'default' => '',
       ),
       'data' => array(
         'description' => 'The raw data for this configuration entry.',

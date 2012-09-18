@@ -65,6 +65,18 @@ class Configuration {
    */
   protected $storage;
 
+  /**
+   * A hash that represent that sumarizes the configuration and can
+   * be used to copare configurations.
+   */
+  protected $hash;
+
+  /**
+   * A boolean flag to indicate if the configuration object was already populated
+   * from the ActiveStore, or from the DataStore.
+   */
+  protected $built;
+
   public function __construct($identifier) {
     $this->identifier = $identifier;
     $this->status = CONFIGURATION_IN_SYNC;
@@ -157,6 +169,11 @@ class Configuration {
     $this->setDependencies($this->storage->getDependencies());
     $this->setOptionalConfigurations($this->storage->getOptionalConfigurations());
     $this->setModules($this->storage->getModules());
+    // This build the Hash;
+    $this->storage->getDataToSave();
+    $this->setHash($this->storage->getHash());
+
+    $this->built = TRUE;
     return $this;
   }
 
@@ -168,10 +185,12 @@ class Configuration {
                         ->execute()
                         ->fetchObject();
 
+    $this->setHash($object->hash);
     $this->setData(unserialize($object->data));
     $this->setDependencies(drupal_map_assoc(unserialize($object->dependencies)));
     $this->setOptionalConfigurations(drupal_map_assoc(unserialize($object->optional)));
     $this->setModules(unserialize($object->modules));
+    $this->built = TRUE;
     return $this;
   }
 
@@ -187,8 +206,8 @@ class Configuration {
     $fields = array(
       'component' => static::$component,
       'identifier' => $this->getIdentifier(),
+      'hash' => $this->getHash(),
       'data' => serialize($this->getData()),
-      'status' => $this->status,
       'dependencies' => serialize(array_keys($this->getDependencies())),
       'optional' => serialize(array_keys($this->getOptionalConfigurations())),
       'modules' => serialize($this->getModules()),
@@ -388,6 +407,7 @@ class Configuration {
         ),
         'info' => array(
           'exported' => array(),
+          'hash' => array(),
         )
       )
     );
@@ -423,11 +443,14 @@ class Configuration {
             ->save();
 
     if ($settings->getSetting('start_tracking')) {
+      $this->setHash($this->storage->getHash());
+      $settings->addInfo('hash', $this->getHash());
       $this->saveToStaging();
     }
 
     // Add the current config as an exported item
     $settings->addInfo('exported', $this->getUniqueId());
+
   }
 
   /**
@@ -436,14 +459,13 @@ class Configuration {
    */
   static function updateTrackingFile() {
     $tracked = db_select('configuration_staging', 'cs')
-                  ->fields('cs', array('component', 'identifier'))
+                  ->fields('cs', array('component', 'identifier', 'hash'))
                   ->execute()
                   ->fetchAll();
 
     $file = array();
     foreach ($tracked as $config) {
-      // TODO, replace = TRUE with the hash of the configuration
-      $file[$config->component . '.' . $config->identifier] = TRUE;
+      $file[$config->component . '.' . $config->identifier] = $config->hash;
     }
     $file_content = "<?php\n\n";
     $file_content .= "// This file contains the current being tracked configurations.\n\n";
@@ -482,6 +504,7 @@ class Configuration {
       $this->findDependencies();
     }
     $this->findRequiredModules();
+    $this->built = TRUE;
     return $this;
   }
 
@@ -558,6 +581,22 @@ class Configuration {
     $this->identifier = $value;
     return $this;
   }
+
+  /**
+   * Returns the hash of the configuration object.
+   */
+  public function getHash() {
+    return $this->hash;
+  }
+
+  /**
+   * Set the hash for this configuration.
+   */
+  public function setHash($value) {
+    $this->hash = $value;
+    return $this;
+  }
+
 
   /**
    * Return the data for this configuration.

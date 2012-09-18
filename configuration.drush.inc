@@ -191,8 +191,12 @@ function _configuration_export_to_datastore() {
   $export_optionals = !drush_get_option('exclude-optionals');
   $start_tracking = drush_get_option('start-tracking');
   $result = Configuration::exportToDataStore($args, $export_dependencies, $export_optionals, $start_tracking);
-  foreach ($result->getInfo('exported') as $exported) {
-    $rows[]['exported'] = $exported;
+  $hashes = $result->getInfo('hash');
+  foreach ($result->getInfo('exported') as $id => $exported) {
+    $rows[] = array(
+      'exported' => $exported,
+      'hash' => $hashes[$id],
+    );
   }
 
   drush_log(dt('The configurations for the following items have been created/updated.'), 'ok');
