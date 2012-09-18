@@ -217,24 +217,3 @@ function configuration_load_configurations($list = array()) {
     $config->saveToStaging();
   }
 }
-
-/**
- * Revert the configuration components using the values saved in the staging.
- */
-function configuration_revert_configurations($list = array()) {
-  $from_staging = db_select('configuration_staging', 'c')
-        ->fields('c', array('component', 'identifier'))
-        ->execute()
-        ->fetchAll();
-
-  $components = array();
-  foreach ($from_staging as $object) {
-    $id = $object->component . '.' . $object->identifier;
-    $components[$id] = $id;
-  }
-
-  $handlers = configurarion_get_handlers();
-  $reverted = Configuration::revertConfigurations($components, $list);
-  drupal_flush_all_caches();
-  return $reverted;
-}

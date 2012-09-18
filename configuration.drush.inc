@@ -109,16 +109,6 @@ function configuration_drush_command() {
     ),
     'arguments' => array(),
   );
-  $items['config-revert'] = array(
-    'callback' => '_configuration_revert_configurations',
-    'description' => 'Revert a configuration using using the Staging Data.',
-    'aliases' => array('crev'),
-    'examples' => array(
-      'drush crev' => 'Loads all the files that have configurations into the ActiveStore',
-      'drush crev content_type.article variable.theme_settings' => 'Revert the configurations for content type Article and the variable theme_settings into the ActiveStore',
-    ),
-    'arguments' => array(),
-  );
 
   return $items;
 }
@@ -324,19 +314,4 @@ function _configuration_import_load_configurations($action, $args) {
       }
     }
   }
-}
-
-function _configuration_revert_configurations() {
-  if (!drush_confirm(dt('Are you sure you want to revert this configurations? This will override the configurations of the ActiveStore'))) {
-    drush_die('Aborting.');
-  }
-
-  $args = func_get_args();
-  $reverted = configuration_revert_configurations($args);
-  drush_log(dt('The configurations for the following items have been reverted.'), 'ok');
-  $rows = array();
-  foreach ($reverted as $config) {
-    $rows[]['identifier'] = $config;
-  }
-  drush_print_table($rows);
 }
