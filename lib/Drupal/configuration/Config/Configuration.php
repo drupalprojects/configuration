@@ -155,10 +155,16 @@ class Configuration {
     return $list_of_components;
   }
 
+  public function loadFromActiveStore() {
+    $this->build();
+    $this->buildHash();
+    return $this;
+  }
+
   /**
    * Load the Configuration data from the disk.
    */
-  protected function loadFromStorage() {
+  public function loadFromStorage() {
     $this->storage->load();
     $this->setData($this->storage->getData());
     $this->setDependencies($this->storage->getDependencies());
@@ -176,7 +182,7 @@ class Configuration {
    * Load the configuration data using the information saved in the
    * configuration_staging table.
    */
-  protected function loadFromStaging() {
+  public function loadFromStaging() {
     $object = db_select('configuration_staging', 'cs')
                         ->fields('cs')
                         ->condition('component', $this->getComponent())
@@ -451,7 +457,7 @@ class Configuration {
   }
 
   public function saveToActiveStore(ConfigIteratorSettings &$settings) {
-    // Override
+
   }
 
   static public function exportToDataStore($list = array(), $export_dependencies = TRUE, $export_optionals = TRUE, $start_tracking = FALSE) {
@@ -502,7 +508,7 @@ class Configuration {
             ->save();
 
     if ($settings->getSetting('start_tracking')) {
-      $this->setHash($this->storage->getHash());
+      $this->buildHash();
       $settings->addInfo('hash', $this->getHash());
       $this->saveToStaging();
     }
@@ -564,6 +570,18 @@ class Configuration {
     $this->findRequiredModules();
     $this->built = TRUE;
     return $this;
+  }
+
+  public function buildHash() {
+    $this->storage
+        ->setData($this->data)
+        ->setKeysToExport($this->getKeysToExport())
+        ->setDependencies(drupal_map_assoc(array_keys($this->getDependencies())))
+        ->setOptionalConfigurations(drupal_map_assoc(array_keys($this->getOptionalConfigurations())))
+        ->setModules(array_keys($this->getRequiredModules()))
+        ->save();
+    $this->storage->getDataToSave();
+    $this->setHash($this->storage->getHash());
   }
 
   /**
