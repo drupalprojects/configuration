@@ -8,6 +8,7 @@
 namespace Drupal\configuration\Config;
 
 use Drupal\configuration\Config\Configuration;
+use Drupal\configuration\Utils\ConfigIteratorSettings;
 
 class VocabularyConfiguration extends Configuration {
 
