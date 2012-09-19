@@ -1,0 +1,120 @@
+<?php
+
+use Drupal\configuration\Config\Configuration;
+use Drupal\configuration\Utils\ConfigIteratorSettings;
+
+/**
+ * Implements hook_permission().
+ */
+function configuration_ui_permission() {
+  return array(
+    'administer configuration management' =>  array(
+      'title' => t('Administer Configuration Management'),
+      'description' => t('Allow to export, import, start and stop tracking configurations.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function configuration_ui_menu() {
+  $items['admin/config/configuration'] = array(
+    'title' => 'Configuration Management',
+    'description' => 'Allow to export, import, start and stop tracking configurations.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('configuration_ui_tracking_form'),
+    'access arguments' => array('administer configuration management'),
+  );
+
+  $items['admin/config/configuration/stop_tracking/%'] = array(
+    'title' => 'Configuration Management',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('configuration_ui_config_info'),
+    'access arguments' => array('administer configuration management'),
+  );
+
+  $items['admin/config/configuration/view/%'] = array(
+    'title' => 'Configuration Management',
+    'page callback' => 'configuration_ui_config_info',
+    'page arguments' => array(4),
+    'access arguments' => array('administer configuration management'),
+  );
+
+  return $items;
+}
+
+
+function configuration_ui_tracking_form($form, &$form_state) {
+  $handlers = configuration_configuration_handlers();
+
+  $form['packages'] = array('#type' => 'vertical_tabs');
+  $form['#attached']['css'] = array(
+    drupal_get_path('module', 'configuration_ui') . '/theme/configuration.css'
+  );
+
+  foreach ($handlers as $component => $handler) {
+    $form[$component] = array(
+      '#type' => 'fieldset',
+      '#group' => 'packages',
+      '#title' => check_plain($handler['name']),
+      '#description' => t('Currenly tracked configurations for: @component', array('@component' => $handler['name'])),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#tree' => TRUE,
+      '#attached' => array(
+        'js' => array(
+          'vertical-tabs' => drupal_get_path('module', 'configuration_ui') . '/theme/vertical-tabs.js',
+        ),
+      ),
+    );
+
+    $tracked = db_query("SELECT identifier FROM {configuration_staging} WHERE component = :component", array(':component' => $component))->fetchAll();
+    $options = array();
+    foreach ($tracked as $identifier) {
+      $id = $component . '.' . $identifier->identifier;
+      $options[] = array(
+        $identifier->identifier,
+        l('Stop Tracking', 'admin/config/configuration/stop_tracking/' . $id) . ' | ' . l('View info', 'admin/config/configuration/view/' . $id)
+      );
+    }
+
+    if (!empty($options)) {
+      $form[$component]['tracked'] = array(
+        '#type' => 'tableselect',
+        '#header' => array('Configuration', 'Operations'),
+        '#options' => $options,
+      );
+    }
+    else {
+      $form[$component]['tracked'] = array(
+        '#markup' => t('You are not tracking configurations for this component.')
+      );
+    }
+  }
+  return $form;
+}
+
+function configuration_ui_config_info($config_id) {
+  list($component_name, $identifier) = explode('.', $config_id, 2);
+  $handler = Configuration::getConfigurationHandler($component_name);
+  $config = new $handler($identifier);
+
+  $config->loadFromActiveStore();
+
+  $page = '';
+
+  $page .= '<h2>' . t('Configuration for: @config', array('@config' => $config->getUniqueID())) . '</h2>';
+  $page .= '<p>' . t('Hash: @hash', array('@hash' => $config->getHash())) . '</p>';
+  $page .= '<p>' . t('Status: <strong>@status</strong>', array('@status' => $config->getStatus())) . '</p>';
+
+  $page .= '<p>' . t('Dependencies:') . '</p>';
+  $dependencies = array('items' => array_keys($config->getDependencies()));
+  $page .= theme('item_list', $dependencies);
+
+  $page .= '<p>' . t('Optional Configurations:') . '</p>';
+  $optionals = array('items' => array_keys($config->getOptionalConfigurations()));
+  $page .= theme('item_list', $optionals);
+
+  return $page;
+}

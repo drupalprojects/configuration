@@ -578,10 +578,30 @@ class Configuration {
         ->setKeysToExport($this->getKeysToExport())
         ->setDependencies(drupal_map_assoc(array_keys($this->getDependencies())))
         ->setOptionalConfigurations(drupal_map_assoc(array_keys($this->getOptionalConfigurations())))
-        ->setModules(array_keys($this->getRequiredModules()))
-        ->save();
+        ->setModules(array_keys($this->getRequiredModules()));
     $this->storage->getDataToSave();
     $this->setHash($this->storage->getHash());
+  }
+
+  public function getStatus($human_name = TRUE) {
+    $staging_hash = db_select('configuration_staging', 'cs')
+                      ->fields('cs', array('hash'))
+                      ->condition('component', static::$component)
+                      ->condition('identifier', $this->getIdentifier())
+                      ->execute()
+                      ->fetchField();
+    if (empty($staging_hash)) {
+      return $human_name ? t('ActiveStore only') : CONFIGURATION_ACTIVESTORE_ONLY;
+    }
+    else {
+      if ($this->getHash() == $staging_hash) {
+        return $human_name ? t('In Sync') : CONFIGURATION_IN_SYNC;
+      }
+      else {
+        return $human_name ? t('Overriden') : CONFIGURATION_ACTIVESTORE_OVERRIDEN;
+      }
+    }
+
   }
 
   /**
