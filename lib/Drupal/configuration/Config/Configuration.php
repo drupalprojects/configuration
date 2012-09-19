@@ -23,9 +23,15 @@ class Configuration {
   protected $identifier;
 
   /**
-   * The required modules to load this configuration.
+   * A hash that represent that sumarizes the configuration and can
+   * be used to copare configurations.
    */
-  protected $required_modules = array();
+  protected $hash;
+
+  /**
+   * The data of this configuration.
+   */
+  protected $data;
 
   /**
    * An array of configuration objects required to use this configuration.
@@ -39,20 +45,9 @@ class Configuration {
   protected $optional_configurations = array();
 
   /**
-   * The status of this configuration.
-   *
-   * Possible values:
-   * CONFIGURATION_ACTIVESTORE_ONLY
-   * CONFIGURATION_DATESTORE_ONLY
-   * CONFIGURATION_ACTIVESTORE_OVERRIDDEN
-   * CONFIGURATION_IN_SYNC
+   * The required modules to load this configuration.
    */
-  protected $status;
-
-  /**
-   * The data of this configuration.
-   */
-  protected $data;
+  protected $required_modules = array();
 
   /**
    * An array of keys names to export. If the array is empty,
@@ -66,20 +61,13 @@ class Configuration {
   protected $storage;
 
   /**
-   * A hash that represent that sumarizes the configuration and can
-   * be used to copare configurations.
-   */
-  protected $hash;
-
-  /**
-   * A boolean flag to indicate if the configuration object was already populated
-   * from the ActiveStore, or from the DataStore.
+   * A boolean flag to indicate if the configuration object was already
+   * populated from the ActiveStore, or from the DataStore.
    */
   protected $built;
 
   public function __construct($identifier) {
     $this->identifier = $identifier;
-    $this->status = CONFIGURATION_IN_SYNC;
     $this->storage = static::getStorageInstance();
     $this->storage->setFileName($this->getUniqueId());
   }
@@ -96,6 +84,10 @@ class Configuration {
     return $return;
   }
 
+  /**
+   * Returns a Storage Object ready to load or write configurations from the
+   * disk.
+   */
   static protected function getStorageInstance() {
     $storage = static::getStorageSystem();
     return new $storage();
@@ -163,6 +155,9 @@ class Configuration {
     return $list_of_components;
   }
 
+  /**
+   * Load the Configuration data from the disk.
+   */
   protected function loadFromStorage() {
     $this->storage->load();
     $this->setData($this->storage->getData());
@@ -177,6 +172,10 @@ class Configuration {
     return $this;
   }
 
+  /**
+   * Load the configuration data using the information saved in the
+   * configuration_staging table.
+   */
   protected function loadFromStaging() {
     $object = db_select('configuration_staging', 'cs')
                         ->fields('cs')
@@ -232,6 +231,22 @@ class Configuration {
     return $this;
   }
 
+  /**
+   * Returns a list of modules required to import the configurations indicated
+   * in $list.
+   *
+   * @param  array   $list
+   *   The list of components that have to will be imported.
+   * @param  boolean $include_dependencies
+   *   If TRUE, modules required to load the dependencies of each configuration
+   *   dependency will be returned too.
+   * @param  boolean $include_optionals
+   *   If TRUE, modules required to load the optionals configurations of each
+   *   configuration will be returned too.
+   * @return ConfigIteratorSettings
+   *   A ConfigIteratorSettings object that contains the required modules to
+   *   install and the modules missing.
+   */
   static public function discoverRequiredModules($list = array(), $include_dependencies = TRUE, $include_optionals = TRUE) {
     $settings = new ConfigIteratorSettings(
       array(
@@ -273,17 +288,55 @@ class Configuration {
     return $settings;
   }
 
-  public function discoverModules(ConfigIteratorSettings &$settings) {
+  /**
+   * Internal function to discover what modules are required for the current
+   * being proccessed configurations.
+   *
+   * @see iterator
+   */
+  protected function discoverModules(ConfigIteratorSettings &$settings) {
     $this->loadFromStorage();
     $modules = $settings->getInfo('modules');
     $modules = array_merge($modules, $this->getRequiredModules());
     $settings->setInfo('modules', $modules);
   }
 
+  /**
+   * Includes a record of each configuration tracked in the
+   * configuration_staging table and export the configurations to the DataStore.
+   *
+   * @param  array   $list
+   *   The list of components that have to will be tracked.
+   * @param  boolean $track_dependencies
+   *   If TRUE, dependencies of each proccessed configuration will be tracked
+   *   too.
+   * @param  boolean $track_optionals
+   *   If TRUE, optionals configurations of each proccessed configuration will
+   *   be tracked too.
+   * @return ConfigIteratorSettings
+   *   An ConfigIteratorSettings object that contains the tracked
+   *   configurations.
+   */
   static public function startTracking($list = array(), $track_dependencies = TRUE, $track_optionals = TRUE) {
     return static::exportToDataStore($list, $track_dependencies, $track_optionals, TRUE);
   }
 
+  /**
+   * Removes a record of each configuration that is not tracked anymore and
+   * deletes the configuration file in the DataStore.
+   *
+   * @param  array   $list
+   *   The list of components that have to will be tracked.
+   * @param  boolean $track_dependencies
+   *   If TRUE, dependencies of each proccessed configuration will not be
+   *   tracked anymore.
+   * @param  boolean $track_optionals
+   *   If TRUE, optionals configurations of each proccessed configuration will
+   *   not be tracked anymore.
+   * @return ConfigIteratorSettings
+   *   An ConfigIteratorSettings object that contains configurations that are
+   *   not tracked anymore.
+   */
   static public function stopTracking($list = array(), $stop_track_dependencies = TRUE, $stop_track_optionals = TRUE) {
     $settings = new ConfigIteratorSettings(
       array(
@@ -308,9 +361,15 @@ class Configuration {
       $config->iterate($settings);
     }
 
+    //@TODO: Delete the file from the DataStore.
+
     return $settings;
   }
 
+  /**
+   * Removes the configuration record from the configuration_staging table for
+   * the current configuration.
+   */
   public function removeFromStaging(ConfigIteratorSettings &$settings) {
     db_delete('configuration_staging')
       ->condition('component', static::$component)
@@ -450,7 +509,6 @@ class Configuration {
 
     // Add the current config as an exported item
     $settings->addInfo('exported', $this->getUniqueId());
-
   }
 
   /**
@@ -515,32 +573,6 @@ class Configuration {
 
   }
 
-  /**
-   * Compares the configuration storaged in the ActiveStore with the
-   * storaged into the DataStore. The status of the object is
-   * updated according to the differences.
-   */
-  public function checkForChanges() {
-    $this->build();
-    $this->storage->load();
-
-    if (!$this->storage->withData()) {
-      $this->status = CONFIGURATION_ACTIVESTORE_ONLY;
-    }
-    elseif (empty($this->data)) {
-      $this->status = CONFIGURATION_DATESTORE_ONLY;
-    }
-    else {
-      if ($this->storage->checkForChanges($this->data)) {
-        $this->status = CONFIGURATION_ACTIVESTORE_OVERRIDDEN;
-      }
-      else {
-        $this->status = CONFIGURATION_IN_SYNC;
-      }
-    }
-    return $this;
-  }
-
   public function getUniqueId() {
     return static::$component . '.' . $this->getIdentifier();
   }
@@ -550,21 +582,6 @@ class Configuration {
    */
   static public function getComponent() {
     return static::$component;
-  }
-
-  /**
-   * Returns the component that this configuration represent.
-   */
-  public function getStatus() {
-    return $this->status;
-  }
-
-  /**
-   * Update the object status.
-   */
-  public function setStatus($value) {
-    $this->status = $value;
-    return $this;
   }
 
   /**
