@@ -23,16 +23,18 @@ class Storage {
 
   protected $hash;
 
+  protected $keys_to_export = array();
+
   static public $file_extension = '';
 
-  protected $keys_to_export = array();
+  static protected $stream = 'config://';
 
   /**
    * Returns TRUE if the file for a configuration exists
    * in the config:// directory.
    */
   static public function configFileExists($component, $identifier) {
-    return file_exists('config://' . $component . '.' . $identifier . '.' . static::$file_extension);
+    return file_exists(static::$stream . $component . '.' . $identifier . '.' . static::$file_extension);
   }
 
   public function __construct() {
@@ -137,5 +139,13 @@ class Storage {
 
   public function getHash() {
     return $this->hash;
+  }
+
+  public static function setStream($stream) {
+    static::$stream = $stream;
+  }
+
+  public static function getStream() {
+    return static::$stream;
   }
 }

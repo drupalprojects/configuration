@@ -102,7 +102,7 @@ class StoragePhp extends Storage {
   }
 
   public function save() {
-    file_put_contents('config://' . $this->filename, $this->getDataToSave());
+    file_put_contents(static::$stream . $this->filename, $this->getDataToSave());
     return $this;
   }
 
@@ -116,11 +116,11 @@ class StoragePhp extends Storage {
     if (empty($this->loaded)) {
       $this->loaded = TRUE;
       if (empty($file_content)) {
-        if (!file_exists('config://' . $this->filename)) {
+        if (!file_exists(static::$stream . $this->filename)) {
           $this->data = NULL;
         }
         else {
-          $file_content = substr(file_get_contents('config://' . $this->filename), 6);
+          $file_content = substr(file_get_contents(static::$stream . $this->filename), 6);
         }
       }
       if (!empty($file_content)) {

@@ -66,6 +66,13 @@ class Configuration {
    */
   protected $built;
 
+  /**
+   * The stream to use while importing and exporting configurations.
+   *
+   * @var string
+   */
+  static protected $stream = 'config://';
+
   public function __construct($identifier) {
     $this->identifier = $identifier;
     $this->storage = static::getStorageInstance();
@@ -90,7 +97,28 @@ class Configuration {
    */
   static protected function getStorageInstance() {
     $storage = static::getStorageSystem();
-    return new $storage();
+    $return = new $storage();
+    $return::setStream(static::$stream);
+    return $return;
+  }
+
+  /**
+   * Returns the current stream used to import and export configurations.
+   * Default value is config://
+   *
+   * @return string
+   */
+  public static function getStream() {
+    return static::$stream;
+  }
+
+  /**
+   * Set the stream to use while importing and exporting configurations.
+   *
+   * @param string $stream
+   */
+  public static function setStream($stream) {
+    static::$stream = $stream;
   }
 
   /**
@@ -603,7 +631,7 @@ class Configuration {
     $file_content = "<?php\n\n";
     $file_content .= "// This file contains the current being tracked configurations.\n\n";
     $file_content .= var_export($file, TRUE) . ";\n";
-    file_put_contents('config://tracked.inc', $file_content);
+    file_put_contents(static::$stream . 'tracked.inc', $file_content);
   }
 
   /**
