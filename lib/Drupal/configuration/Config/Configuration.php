@@ -298,7 +298,7 @@ class Configuration {
    * Internal function to discover what modules are required for the current
    * being proccessed configurations.
    *
-   * @see iterator
+   * @see iterate
    */
   protected function discoverModules(ConfigIteratorSettings &$settings) {
     $this->loadFromStorage();
@@ -385,6 +385,23 @@ class Configuration {
     $settings->addInfo('untracked', $this->getUniqueId());
   }
 
+  /**
+   * Loads the configuration from the DataStore into the ActiveStore.
+   *
+   * @param  array   $list
+   *   The list of components that have to will be imported.
+   * @param  boolean $import_dependencies
+   *   If TRUE, dependencies of each proccessed configuration will be imported
+   *   too.
+   * @param  boolean $import_optionals
+   *   If TRUE, optionals configurations of each proccessed configuration will
+   *   be imported too.
+   * @param  boolean $start_tracking
+   *   If TRUE, after import the configuration, it will be also tracked.
+   * @return ConfigIteratorSettings
+   *   An ConfigIteratorSettings object that contains the imported
+   *   configurations.
+   */
   static public function importToActiveStore($list = array(), $import_dependencies = TRUE, $import_optionals = TRUE, $start_tracking = FALSE) {
     $settings = new ConfigIteratorSettings(
       array(
@@ -415,6 +432,12 @@ class Configuration {
     return $settings;
   }
 
+  /**
+   * Load a configuration from the DataStore and save it into the ActiveStore.
+   * This function is called from iterator().
+   *
+   * @see iterate
+   */
   public function import(ConfigIteratorSettings &$settings) {
     $this->loadFromStorage();
     $this->saveToActiveStore($settings);
@@ -424,6 +447,22 @@ class Configuration {
     }
   }
 
+  /**
+   * Revert configurations configurations of the ActiveStore using the data
+   * of the staging area.
+   *
+   * @param  array   $list
+   *   The list of components that have to will be restored.
+   * @param  boolean $import_dependencies
+   *   If TRUE, dependencies of each proccessed configuration will be restored
+   *   too.
+   * @param  boolean $import_optionals
+   *   If TRUE, optionals configurations of each proccessed configuration will
+   *   be restored too.
+   * @return ConfigIteratorSettings
+   *   An ConfigIteratorSettings object that contains the restored
+   *   configurations.
+   */
   static public function revertActiveStore($list = array(), $revert_dependencies = TRUE, $revert_optionals = TRUE) {
     $settings = new ConfigIteratorSettings(
       array(
@@ -451,15 +490,45 @@ class Configuration {
     return $settings;
   }
 
+  /**
+   * Revert a configuration from the staging area and save it into the
+   * ActiveStore. This function is called from iterator().
+   *
+   * @see iterate
+   */
   public function revert(ConfigIteratorSettings &$settings) {
     $this->loadFromStaging();
     $this->saveToActiveStore($settings);
   }
 
+  /**
+   * Save a configuration into the ActiveStore.
+   *
+   * Each configuration should implement their own version of saveToActiveStore.
+   * I.e, content types should call to node_save_type(), variables should call
+   * to variable_set(), etc.
+   */
   public function saveToActiveStore(ConfigIteratorSettings &$settings) {
-
+    // Override
   }
 
+  /**
+   * Export the configuration from the ActiveStore to the DataStore.
+   *
+   * @param  array   $list
+   *   The list of components that have to will be exported.
+   * @param  boolean $import_dependencies
+   *   If TRUE, dependencies of each proccessed configuration will be exported
+   *   too.
+   * @param  boolean $import_optionals
+   *   If TRUE, optionals configurations of each proccessed configuration will
+   *   be exported too.
+   * @param  boolean $star_tracking
+   *   If TRUE, after export the configuration, it will be also tracked.
+   * @return ConfigIteratorSettings
+   *   An ConfigIteratorSettings object that contains the exported
+   *   configurations.
+   */
   static public function exportToDataStore($list = array(), $export_dependencies = TRUE, $export_optionals = TRUE, $start_tracking = FALSE) {
     $settings = new ConfigIteratorSettings(
       array(
@@ -572,6 +641,13 @@ class Configuration {
     return $this;
   }
 
+  /**
+   * Create a unique hash for this configuration based on the data,
+   * dependencies, optional configurations and modules required to use this
+   * configuration. Use getHash() after call this function.
+   *
+   * @return NULL
+   */
   public function buildHash() {
     $this->storage
         ->setData($this->data)
@@ -611,6 +687,14 @@ class Configuration {
 
   }
 
+  /**
+   * Returns an unique identifier for this configuration. Usually something like
+   * 'content_type.article' where content_type is the component of the
+   * configuration and 'article' is the identifier of the configuration for the
+   * given component.
+   *
+   * @return string
+   */
   public function getUniqueId() {
     return static::$component . '.' . $this->getIdentifier();
   }
@@ -651,7 +735,6 @@ class Configuration {
     $this->hash = $value;
     return $this;
   }
-
 
   /**
    * Return the data for this configuration.
@@ -887,6 +970,11 @@ class Configuration {
    *   A ConfigIteratorSettings instance that specifies, which is the callback
    *   to execute. If dependencies and optional configurations should be
    *   processed too, and storage the cache of already processed configurations.
+   *
+   * @see importToActiveStore
+   * @see exportToDataStore
+   * @see revertActiveStore
+   * @see discoverRequiredModules
    */
   function iterate(ConfigIteratorSettings &$settings) {
     $callback = $settings->getCallback();
