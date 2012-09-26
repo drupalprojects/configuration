@@ -53,7 +53,7 @@ class ConfigurationApiTest extends ConfigurationWebTestCase {
   public static function getInfo() {
     return array(
       'name' => t('Test Configuration API'),
-      'description' => t('Test the import/export API'),
+      'description' => t('Test the export, revert and start/stop tracking API'),
       'group' => t('Configuration'),
     );
   }
@@ -62,13 +62,18 @@ class ConfigurationApiTest extends ConfigurationWebTestCase {
    * Set up test.
    */
   public function setUp($modules = array()) {
-    parent::setUp(array(
-      'configuration',
-      'field',
-      'filter',
-      'image',
-      'taxonomy',
-    ));
+    if (empty($modules)) {
+      parent::setUp(array(
+        'configuration',
+        'field',
+        'filter',
+        'image',
+        'taxonomy',
+      ));
+    }
+    else {
+      parent::setUp($modules);
+    }
 
     $this->configurations = array(
       'variable.field_bundle_settings_node__article',
@@ -142,5 +147,83 @@ class ConfigurationApiTest extends ConfigurationWebTestCase {
     $modified_config->loadFromActiveStore();
 
     $this->assertTrue($original_config->getHash() == $modified_config->getHash(), "Configuration for content type Article has been reverted.");
+  }
+}
+
+/**
+ * Base class for functional tests for configuration management.
+ */
+class ConfigurationImportTestCase extends ConfigurationWebTestCase {
+
+  // Use the minimal profile, to avoid create the content type that will be
+  // imported
+  protected $profile = 'minimal';
+
+  protected $configurations;
+
+  /**
+   * Test info.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => t('Test Configuration Import API'),
+      'description' => t('Test the import API'),
+      'group' => t('Configuration'),
+    );
+  }
+
+
+  /**
+   * Implementation of DrupalWebTestCase::setUp().
+   */
+  public function setUp($modules = array()) {
+    global $base_url;
+
+    if (empty($modules)) {
+      parent::setUp(array(
+        'configuration',
+        'image',
+        'taxonomy',
+      ));
+    }
+    else {
+      parent::setUp($modules);
+    }
+
+    // Change the path from where the configurations are loaded.
+    Configuration::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+
+    $this->configurations = array(
+      'variable.field_bundle_settings_node__article',
+      'variable.language_content_type_article',
+      'variable.node_options_article',
+      'variable.node_preview_article',
+      'variable.node_submitted_article',
+      'variable.comment_default_per_page_article',
+      'variable.comment_form_location_article',
+      'variable.comment_preview_article',
+      'variable.comment_subject_field_article',
+      'content_type.article',
+      'field.node.body.article',
+      'vocabulary.tags',
+      'field.node.field_tags.article',
+      'image_style.large',
+      'image_style.medium',
+      'field.node.field_image.article',
+      'permission.create_article_content',
+      'permission.edit_own_article_content',
+      'permission.edit_any_article_content',
+      'permission.delete_own_article_content',
+      'permission.delete_any_article_content',
+    );
+  }
+
+  public function testImportToActiveStore() {
+    $results = Configuration::importToActiveStore(array('content_type.article'));
+    $imported = $results->getInfo('imported');
+
+    foreach ($this->configurations as $config) {
+      $this->assertTrue(in_array($config, $imported), "Configuration for $config was imported.");
+    }
   }
 }
