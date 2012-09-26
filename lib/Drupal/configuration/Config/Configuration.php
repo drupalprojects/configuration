@@ -617,8 +617,13 @@ class Configuration {
   /**
    * This function save into config://tracked.inc file the configurations that
    * are currently tracked.
+   *
+   * @param  boolean $write_to_file
+   *   If TRUE, the content of the file will be saved into config://tracked.inc
+   *   if FALSE, the content of the file will be returned by the function and
+   *   won't be saved into config://tracked.inc.
    */
-  static function updateTrackingFile() {
+  static function updateTrackingFile($write_to_file = TRUE) {
     $tracked = db_select('configuration_staging', 'cs')
                   ->fields('cs', array('component', 'identifier', 'hash'))
                   ->execute()
@@ -631,7 +636,12 @@ class Configuration {
     $file_content = "<?php\n\n";
     $file_content .= "// This file contains the current being tracked configurations.\n\n";
     $file_content .= var_export($file, TRUE) . ";\n";
-    file_put_contents(static::$stream . 'tracked.inc', $file_content);
+    if ($write_to_file) {
+      file_put_contents(static::$stream . 'tracked.inc', $file_content);
+    }
+    else {
+      return $file_content;
+    }
   }
 
   /**
@@ -988,6 +998,124 @@ class Configuration {
     }
 
     return $modules;
+  }
+
+  /**
+   * Download the entire configuration packaged up into tar file
+   */
+  public static function exportAsTar($list = array(), $export_dependencies = TRUE, $export_optionals = TRUE) {
+    $settings = new ConfigIteratorSettings(
+      array(
+        'build_callback' => 'build',
+        'callback' => 'printRaw',
+        'process_dependencies' => $export_dependencies,
+        'process_optionals' => $export_optionals,
+        'info' => array(
+          'exported' => array(),
+          'hash' => array(),
+        )
+      )
+    );
+
+    $filename = 'configuration.' . time() . '.tar';
+
+    // Clear out output buffer to remove any garbage from tar output.
+    if (ob_get_level()) {
+      ob_end_clean();
+    }
+
+    drupal_add_http_header('Content-type', 'application/x-tar');
+    drupal_add_http_header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+    drupal_send_headers();
+
+    foreach ($list as $component) {
+      list($component_name, $identifier) = explode('.', $component, 2);
+      $handler = Configuration::getConfigurationHandler($component_name);
+      $config = new $handler($identifier);
+
+      // Make sure the object is built before start to iterate on its
+      // dependencies.
+      $config->build();
+      $config->iterate($settings);
+    }
+
+    print static::createTarContent("configuration/tracked.inc", static::updateTrackingFile(FALSE));
+
+    print pack("a1024", "");
+    exit;
+  }
+
+  /**
+   * Print the configuration as plain text formatted to use in a tar file.
+   *
+   * @param  ConfigIteratorSettings $settings
+   * @see iterate
+   */
+  protected function printRaw(ConfigIteratorSettings &$settings) {
+    $this->build();
+
+    // Save the configuration into a file.
+    $file_content = $this->storage
+                      ->setData($this->data)
+                      ->setKeysToExport($this->getKeysToExport())
+                      ->setDependencies(drupal_map_assoc(array_keys($this->getDependencies())))
+                      ->setOptionalConfigurations(drupal_map_assoc(array_keys($this->getOptionalConfigurations())))
+                      ->setModules(array_keys($this->getRequiredModules()))
+                      ->getDataToSave();
+
+
+    $this->buildHash();
+    $settings->addInfo('hash', $this->getHash());
+
+    $file_name = $this->storage->getFileName() ;
+    $settings->addInfo('exported_files', $file_name);
+
+    print static::createTarContent("configuration/{$file_name}", $file_content);
+  }
+
+  /**
+   * Tar creation function. Written by dmitrig01.
+   *
+   * @param $name
+   *   Filename of the file to be tarred.
+   * @param $contents
+   *   String contents of the file.
+   *
+   * @return
+   *   A string of the tar file contents.
+   */
+  protected static function createTarContent($name, $contents) {
+    $tar = '';
+    $binary_data_first = pack("a100a8a8a8a12A12",
+      $name,
+      '100644 ', // File permissions
+      '   765 ', // UID,
+      '   765 ', // GID,
+      sprintf("%11s ", decoct(strlen($contents))), // Filesize,
+      sprintf("%11s", decoct(REQUEST_TIME)) // Creation time
+    );
+    $binary_data_last = pack("a1a100a6a2a32a32a8a8a155a12", '', '', '', '', '', '', '', '', '', '');
+
+    $checksum = 0;
+    for ($i = 0; $i < 148; $i++) {
+      $checksum += ord(substr($binary_data_first, $i, 1));
+    }
+    for ($i = 148; $i < 156; $i++) {
+      $checksum += ord(' ');
+    }
+    for ($i = 156, $j = 0; $i < 512; $i++, $j++) {
+      $checksum += ord(substr($binary_data_last, $j, 1));
+    }
+
+    $tar .= $binary_data_first;
+    $tar .= pack("a8", sprintf("%6s ", decoct($checksum)));
+    $tar .= $binary_data_last;
+
+    $buffer = str_split($contents, 512);
+    foreach ($buffer as $item) {
+      $tar .= pack("a512", $item);
+    }
+    return $tar;
   }
 
   /**
