@@ -617,11 +617,6 @@ class Configuration {
   /**
    * This function save into config://tracked.inc file the configurations that
    * are currently tracked.
-   *
-   * @param  boolean $write_to_file
-   *   If TRUE, the content of the file will be saved into config://tracked.inc
-   *   if FALSE, the content of the file will be returned by the function and
-   *   won't be saved into config://tracked.inc.
    */
   static function updateTrackingFile($write_to_file = TRUE) {
     $tracked = db_select('configuration_staging', 'cs')
@@ -635,13 +630,20 @@ class Configuration {
     }
     $file_content = "<?php\n\n";
     $file_content .= "// This file contains the current being tracked configurations.\n\n";
-    $file_content .= var_export($file, TRUE) . ";\n";
-    if ($write_to_file) {
-      file_put_contents(static::$stream . 'tracked.inc', $file_content);
+    $file_content .= '$tracked = ' . var_export($file, TRUE) . ";\n";
+    file_put_contents(static::$stream . 'tracked.inc', $file_content);
+  }
+
+  /**
+   * Returns a list of files that are listed in the config://tracked.inc file.
+   */
+  static public function readTrackingFile() {
+    if (file_exists(static::$stream . 'tracked.inc')) {
+      $file_content = substr(file_get_contents(static::$stream . 'tracked.inc'), 6);
+      eval($file_content);
+      return $tracked;
     }
-    else {
-      return $file_content;
-    }
+    return array();
   }
 
   /**
@@ -1012,6 +1014,7 @@ class Configuration {
         'process_optionals' => $export_optionals,
         'info' => array(
           'exported' => array(),
+          'exported_files' => array(),
           'hash' => array(),
         )
       )
@@ -1039,7 +1042,12 @@ class Configuration {
       $config->iterate($settings);
     }
 
-    print static::createTarContent("configuration/tracked.inc", static::updateTrackingFile(FALSE));
+    $exported = $settings->getInfo('exported');
+    $file_content = "<?php\n\n";
+    $file_content .= "// This file contains the list of configurations contained in this package.\n\n";
+    $file_content .= '$configurations = ' . var_export($exported, TRUE) . ";\n";
+
+    print static::createTarContent("configuration/configurations.inc", $file_content);
 
     print pack("a1024", "");
     exit;
@@ -1063,14 +1071,84 @@ class Configuration {
                       ->setModules(array_keys($this->getRequiredModules()))
                       ->getDataToSave();
 
-
     $this->buildHash();
     $settings->addInfo('hash', $this->getHash());
 
     $file_name = $this->storage->getFileName() ;
+    $settings->addInfo('exported', $this->getUniqueId());
     $settings->addInfo('exported_files', $file_name);
 
     print static::createTarContent("configuration/{$file_name}", $file_content);
+  }
+
+  /**
+   * Import configurations from a Tar file.
+   *
+   * @param  StdClass $file
+   *   A file object.
+   * @param  boolean $start_tracking
+   *   If TRUE, all the configurations provided in the Tar file will be imported
+   *   and automatically tracked.
+   *
+   * @return ConfigIteratorSettings
+   *   An ConfigIteratorSettings object that contains the imported
+   *   configurations.
+   */
+  function importToActiveStoreFromTar($uri, $start_tracking = FALSE) {
+    $path = 'temporary://';
+
+    $archive = archiver_get_archiver($uri);
+    $files = $archive->listContents();
+    foreach ($files as $filename) {
+      if (is_file($path . $filename)) {
+        file_unmanaged_delete($path . $filename);
+      }
+    }
+
+    $time = 'config-tmp-' . time();
+    $config_temp_path = 'temporary://' . $time . '/configuration/';
+    $archive->extract(drupal_realpath($path . $time));
+
+    $file_content = substr(file_get_contents($config_temp_path . 'configurations.inc'), 6);
+    eval($file_content);
+
+    static::$stream = $config_temp_path;
+
+    $settings = static::importToActiveStore($configurations, FALSE, FALSE, $start_tracking);
+
+    static::deteleTempConfigDir('temporary://' . $time);
+
+    return $settings;
+  }
+
+  static protected function deteleTempConfigDir($dir, $force = FALSE) {
+    // Allow to delete symlinks even if the target doesn't exist.
+    if (!is_link($dir) && !file_exists($dir)) {
+      return TRUE;
+    }
+    if (!is_dir($dir)) {
+      if ($force) {
+        // Force deletion of items with readonly flag.
+        @chmod($dir, 0777);
+      }
+      return unlink($dir);
+    }
+    foreach (scandir($dir) as $item) {
+      if ($item == '.' || $item == '..') {
+        continue;
+      }
+      if ($force) {
+        @chmod($dir, 0777);
+      }
+      if (!static::deteleTempConfigDir($dir . '/' . $item, $force)) {
+        return FALSE;
+      }
+    }
+    if ($force) {
+      // Force deletion of items with readonly flag.
+      @chmod($dir, 0777);
+    }
+    return rmdir($dir);
   }
 
   /**
