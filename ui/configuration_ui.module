@@ -25,7 +25,7 @@ function configuration_ui_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('configuration_ui_tracking_form'),
     'access arguments' => array('administer configuration management'),
-    'description' => 'Configuration Management for Drupal 7',
+    'description' => 'Configuration Management',
     'type' => MENU_NORMAL_ITEM,
   );
 
@@ -64,6 +64,15 @@ function configuration_ui_menu() {
     'page callback' => 'configuration_ui_config_info',
     'page arguments' => array(4),
     'access arguments' => array('administer configuration management'),
+  );
+
+  $items['admin/config/system/configuration/import'] = array(
+    'title' => 'Import',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('configuration_ui_import_form'),
+    'access arguments' => array('administer configuration management'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 9,
   );
 
   return $items;
@@ -399,4 +408,46 @@ function configuration_ui_theme($existing, $type, $theme, $path) {
       ) + $base;
 
   return $items;
+}
+
+
+/**
+ * Menu Callback Form.
+ */
+function configuration_ui_import_form($form, &$form_state) {
+  $form['header'] = array(
+    '#markup' => t('Importing configurations will write your configurations directly to the activestore. DO NOT USE THIS ON A PRODUCTION SITE!'),
+    '#prefix' => '<div>',
+    '#suffix' => '</div>',
+  );
+
+  $form['import_configurations'] = array(
+    '#type' => 'file',
+    '#title' => t('Import configurations'),
+    '#description' => t('Select the file you exported from another site.'),
+    '#size' => 40,
+  );
+
+  $form['import'] = array(
+    '#type' => 'submit',
+    '#value' => t('Import'),
+  );
+
+  return $form;
+}
+
+/**
+ * Submit handler for importing configs.
+ */
+function configuration_ui_import_form_submit($form, &$form_state) {
+
+  $validators = array('file_validate_extensions' => array('tar'));
+  if ($file = file_save_upload('import_configurations', $validators)) {
+    $settings = Configuration::importToActiveStoreFromTar($file->uri);
+
+    file_delete($file);
+    drupal_set_message(t('The following configurations have been migrated into the ActiveStore:'));
+    $imported = $optionals = array('items' => $settings->getInfo('imported'));
+    drupal_set_message(theme('item_list', $imported));
+  }
 }

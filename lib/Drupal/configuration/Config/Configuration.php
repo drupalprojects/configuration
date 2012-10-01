@@ -1094,7 +1094,7 @@ class Configuration {
    *   An ConfigIteratorSettings object that contains the imported
    *   configurations.
    */
-  function importToActiveStoreFromTar($uri, $start_tracking = FALSE) {
+  static public function importToActiveStoreFromTar($uri, $start_tracking = FALSE) {
     $path = 'temporary://';
 
     $archive = archiver_get_archiver($uri);
@@ -1105,18 +1105,17 @@ class Configuration {
       }
     }
 
-    $time = 'config-tmp-' . time();
-    $config_temp_path = 'temporary://' . $time . '/configuration/';
-    $archive->extract(drupal_realpath($path . $time));
+    $config_temp_path = 'temporary://' . 'config-tmp-' . time();
+    $archive->extract(drupal_realpath($config_temp_path));
 
-    $file_content = substr(file_get_contents($config_temp_path . 'configurations.inc'), 6);
+    $file_content = substr(file_get_contents($config_temp_path . '/configuration/configurations.inc'), 6);
     eval($file_content);
 
-    static::$stream = $config_temp_path;
+    static::$stream = $config_temp_path .  '/configuration/';
 
     $settings = static::importToActiveStore($configurations, FALSE, FALSE, $start_tracking);
 
-    static::deteleTempConfigDir('temporary://' . $time);
+    static::deteleTempConfigDir($config_temp_path);
 
     return $settings;
   }
