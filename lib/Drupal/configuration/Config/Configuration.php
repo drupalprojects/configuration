@@ -664,6 +664,35 @@ class Configuration {
   }
 
   /**
+   * Returns a list of configurations available in the site without distinction
+   * of tracked and not tracked.
+   *
+   * @return array
+   */
+  static public function allConfigurations() {
+    $handlers = configuration_configuration_handlers();
+
+    $tracked = static::trackedConfigurations();
+    $all = array();
+
+    foreach ($handlers as $component => $handler) {
+      $identifiers = configurarion_get_identifiers($component);
+      foreach ($identifiers as $identifier) {
+        $id = $component . '.' . $identifier;
+        if (!empty($tracked[$component][$identifier])) {
+          // Set the hash for the tracked configurations
+          $all[$component][$identifier] = $tracked[$component][$identifier];
+        }
+        else {
+          // Set FALSE for the non tracked configurations
+          $all[$component][$identifier] = FALSE;
+        }
+      }
+    }
+    return $all;
+  }
+
+  /**
    * This function save into config://tracked.inc file the configurations that
    * are currently tracked.
    */

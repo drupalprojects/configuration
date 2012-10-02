@@ -66,7 +66,20 @@ function configuration_ui_menu() {
     'access arguments' => array('administer configuration management'),
   );
 
-  $items['admin/config/system/configuration/import'] = array(
+ $items['admin/config/system/configuration/migrate'] = array(
+    'title' => 'Migrate',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('configuration_ui_export_form'),
+    'access arguments' => array('access configuration management'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 7,
+  );
+  $items['admin/config/system/configuration/migrate/export'] = array(
+    'title' => 'Export',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => 8,
+  );
+  $items['admin/config/system/configuration/migrate/import'] = array(
     'title' => 'Import',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('configuration_ui_import_form'),
@@ -147,7 +160,7 @@ function configuration_ui_tracking_form($form, &$form_state) {
   $form['buttons']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Write Activestore to Datastore'),
-    '#submit' => array('configuration_ui_export_form_submit'),
+    '#submit' => array('configuration_ui_export_to_datastore_form_submit'),
   );
   $form['buttons']['stop_tracking'] = array(
     '#type' => 'submit',
@@ -372,7 +385,7 @@ function configuration_ui_start_tracking_single_confirm_submit($form, &$form_sta
 /**
  * Submit handler for export to datastore.
  */
-function configuration_ui_export_form_submit($form, &$form_state) {
+function configuration_ui_export_to_datastore_form_submit($form, &$form_state) {
   $args = configuration_ui_get_form_components($form, $form_state);
   $export_dependencies = $form_state['values']['include_dependencies'];
   $export_optionals = $form_state['values']['include_optionals'];
@@ -433,6 +446,100 @@ function configuration_ui_import_form($form, &$form_state) {
   );
 
   return $form;
+}
+
+/**
+ * Menu Callback Form.
+ */
+function configuration_ui_export_form($form, &$form_state) {
+  $component_exists = FALSE;
+  $handlers = configuration_configuration_handlers();
+
+  $form['packages'] = array('#type' => 'vertical_tabs');
+  $form['#attached']['css'] = array(
+    drupal_get_path('module', 'configuration_ui') . '/theme/configuration.css'
+  );
+
+  $tracked = Configuration::allConfigurations();
+
+  foreach ($tracked as $component => $list) {
+    $options = array();
+    foreach ($list as $identifier => $tracked) {
+      $id = $component . '.' . $identifier;
+      $options[$id] = array(
+        $identifier,
+        ($tracked) ? t('Tracked') : t('Not tracked'),
+        l('View info', 'admin/config/configuration/view/' . $id)
+      );
+    }
+
+    if (!empty($options)) {
+      $component_exists = TRUE;
+      $component_name = check_plain($handlers[$component]['name']);
+      $form[$component] = array(
+        '#type' => 'fieldset',
+        '#group' => 'packages',
+        '#title' => $component_name,
+        '#description' => t('Currenly tracked configurations for: @component', array('@component' => $component_name)),
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+        '#tree' => TRUE,
+        '#attached' => array(
+          'js' => array(
+            'vertical-tabs' => drupal_get_path('module', 'configuration_ui') . '/theme/vertical-tabs.js',
+          ),
+        ),
+      );
+      $form[$component]['tracked'] = array(
+        '#type' => 'tableselect',
+        '#header' => array(t('Configuration'), t('Tracking') , t('Operations')),
+        '#options' => $options,
+      );
+      $form['dependencies_option'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Dependencies and Optionals'),
+        '#description' => t('Choose if you want to process dependent and optional components.'),
+        '#collapsible' => TRUE,
+        '#collapsed' => FALSE,
+      );
+      $form['dependencies_option']['include_dependencies'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Process component dependencies.'),
+        '#default_value' => TRUE,
+      );
+      $form['dependencies_option']['include_optionals'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Process component optionals.'),
+        '#default_value' => TRUE,
+      );
+    }
+  }
+  $form['buttons'] = array('#theme' => 'configuration_ui_form_buttons', '#tree' => FALSE);
+  $form['buttons']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Export to Tar File'),
+    '#submit' => array('configuration_ui_export_to_tar_file_form_submit'),
+  );
+  if (!$component_exists) {
+    $form['no_configs'] = array(
+      '#markup' => t('No Configurations were found. Please use the
+      !export_link page to begin tracking new Configurations.',
+          array('!export_link' => l(t('Not Tracking'), 'admin/config/system/configuration/notracking'))),
+    );
+    unset($form['buttons']);
+  }
+  $form['#validate'][] = 'configuration_ui_tracking_form_validate';
+  return $form;
+}
+
+/**
+ * Submit handler for export to datastore.
+ */
+function configuration_ui_export_to_tar_file_form_submit($form, &$form_state) {
+  $args = configuration_ui_get_form_components($form, $form_state);
+  $export_dependencies = $form_state['values']['include_dependencies'];
+  $export_optionals = $form_state['values']['include_optionals'];
+  Configuration::exportAsTar($args, $export_dependencies, $export_optionals);
 }
 
 /**
