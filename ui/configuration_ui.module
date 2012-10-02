@@ -90,24 +90,26 @@ function configuration_ui_tracking_form($form, &$form_state) {
     drupal_get_path('module', 'configuration_ui') . '/theme/configuration.css'
   );
 
-  foreach ($handlers as $component => $handler) {
-    $tracked = db_query("SELECT identifier FROM {configuration_staging} WHERE component = :component", array(':component' => $component))->fetchAll();
+  $tracked = Configuration::trackedConfigurations();
+
+  foreach ($tracked as $component => $list) {
     $options = array();
-    foreach ($tracked as $identifier) {
-      $id = $component . '.' . $identifier->identifier;
+    foreach ($list as $identifier => $hash) {
+      $id = $component . '.' . $identifier;
       $options[$id] = array(
-        $identifier->identifier,
+        $identifier,
         l('Stop Tracking', 'admin/config/system/configuration/stop_tracking/' . $id) . ' | ' . l('View info', 'admin/config/configuration/view/' . $id)
       );
     }
 
     if (!empty($options)) {
       $component_exists = TRUE;
+      $component_name = check_plain($handlers[$component]['name']);
       $form[$component] = array(
         '#type' => 'fieldset',
         '#group' => 'packages',
-        '#title' => check_plain($handler['name']),
-        '#description' => t('Currenly tracked configurations for: @component', array('@component' => $handler['name'])),
+        '#title' => $component_name,
+        '#description' => t('Currenly tracked configurations for: @component', array('@component' => $component_name)),
         '#collapsible' => TRUE,
         '#collapsed' => TRUE,
         '#tree' => TRUE,
@@ -180,18 +182,15 @@ function configuration_ui_notracking_form($form, &$form_state) {
   $form['#attached']['css'] = array(
     drupal_get_path('module', 'configuration_ui') . '/theme/configuration.css'
   );
-  $tracked = db_query("SELECT component,identifier FROM {configuration_staging}")->fetchAllKeyed();
-  foreach ($handlers as $component => $handler) {
-    $identifiers = configurarion_get_identifiers($component);
+  $non_tracked = Configuration::nonTrackedConfigurations();
+
+  foreach ($non_tracked as $component => $list) {
     $options = array();
-    foreach ($identifiers as $identifier) {
-      if (!array_key_exists($component, $tracked) || !in_array($identifier, $tracked)) {
-        $id = $component . '.' . $identifier;
-        $options[$id] = array(
-          $identifier,
-          l('Start Tracking', 'admin/config/system/configuration/start_tracking/' . $id) . ' | ' . l('View info', 'admin/config/configuration/view/' . $id)
-        );
-      }
+    foreach ($list as $identifier => $id) {
+      $options[$id] = array(
+        $identifier,
+        l('Start Tracking', 'admin/config/system/configuration/start_tracking/' . $id) . ' | ' . l('View info', 'admin/config/configuration/view/' . $id)
+      );
     }
 
     if (!empty($options)) {
@@ -199,8 +198,8 @@ function configuration_ui_notracking_form($form, &$form_state) {
       $form[$component] = array(
         '#type' => 'fieldset',
         '#group' => 'packages',
-        '#title' => check_plain($handler['name']),
-        '#description' => t('Available configurations for: @component', array('@component' => $handler['name'])),
+        '#title' => check_plain($handlers[$component]['name']),
+        '#description' => t('Available configurations for: @component', array('@component' => $handlers[$component]['name'])),
         '#collapsible' => TRUE,
         '#collapsed' => TRUE,
         '#tree' => TRUE,

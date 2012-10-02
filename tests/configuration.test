@@ -76,8 +76,6 @@ class ConfigurationApiTest extends ConfigurationWebTestCase {
     }
 
     $this->configurations = array(
-      'variable.field_bundle_settings_node__article',
-      'variable.language_content_type_article',
       'variable.node_options_article',
       'variable.node_preview_article',
       'variable.node_submitted_article',
@@ -99,6 +97,20 @@ class ConfigurationApiTest extends ConfigurationWebTestCase {
       'permission.delete_any_article_content',
     );
 
+    // Creates all the variables for the content type Article.
+    $web_user = $this->drupalCreateUser(
+      array(
+        'administer content types',
+        'administer comments',
+        'administer menu',
+        'post comments'
+      )
+    );
+    $this->drupalLogin($web_user);
+
+    // Save the content type to force to save the variables in the database.
+    $edit = array();
+    $this->drupalPost('admin/structure/types/manage/article', $edit, t('Save content type'));
   }
 
   public function testExportToDatastore() {
@@ -117,12 +129,27 @@ class ConfigurationApiTest extends ConfigurationWebTestCase {
     $results = Configuration::startTracking(array('content_type.article'));
     $exported = $results->getInfo('exported');
 
+    $tracked = Configuration::trackedConfigurations();
+    $non_tracked = Configuration::nonTrackedConfigurations();
+    foreach ($this->configurations as $id) {
+      list($component, $identifier) = explode('.', $id, 2);
+      $this->assertTrue(!empty($tracked[$component][$identifier]), t('@id is being tracked', array('@id' => $id)));
+      $this->assertTrue(empty($non_tracked[$component][$identifier]), t('@id is not in the list of untracked configurations', array('@id' => $id)));
+    }
+
     $count_tracked = db_query("SELECT COUNT(component) FROM {configuration_staging}")->fetchField();
     $this->assertTrue($count_tracked == count($exported), t("@num of @total configurations have been tracked.", array('@num' => $count_tracked, '@total' => count($exported))));
 
     $results = Configuration::stopTracking(array('content_type.article'));
     $count_tracked = db_query("SELECT COUNT(component) FROM {configuration_staging}")->fetchField();
     $this->assertTrue(empty($count_tracked), "No configurations have been tracked.");
+
+    $tracked = Configuration::trackedConfigurations();
+    $non_tracked = Configuration::nonTrackedConfigurations();
+    foreach ($this->configurations as $id) {
+      list($component, $identifier) = explode('.', $id, 2);
+      $this->assertTrue(empty($tracked[$component][$identifier]), t('@id is not being tracked', array('@id' => $id)));
+    }
   }
 
   public function testRevertActiveStore() {
@@ -184,6 +211,8 @@ class ConfigurationImportTestCase extends ConfigurationWebTestCase {
         'configuration',
         'image',
         'taxonomy',
+        'menu',
+        'comment',
       ));
     }
     else {
@@ -194,8 +223,6 @@ class ConfigurationImportTestCase extends ConfigurationWebTestCase {
     Configuration::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
 
     $this->configurations = array(
-      'variable.field_bundle_settings_node__article',
-      'variable.language_content_type_article',
       'variable.node_options_article',
       'variable.node_preview_article',
       'variable.node_submitted_article',

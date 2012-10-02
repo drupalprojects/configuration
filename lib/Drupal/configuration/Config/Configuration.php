@@ -615,18 +615,66 @@ class Configuration {
   }
 
   /**
-   * This function save into config://tracked.inc file the configurations that
-   * are currently tracked.
+   * Returns a list of configurations that are currently being tracked.
+   *
+   * @return array
    */
-  static function updateTrackingFile($write_to_file = TRUE) {
+  static public function trackedConfigurations() {
     $tracked = db_select('configuration_staging', 'cs')
                   ->fields('cs', array('component', 'identifier', 'hash'))
                   ->execute()
                   ->fetchAll();
+    // Prepare the array to return
+    $handlers = configuration_configuration_handlers();
+    $return = array();
+    foreach ($handlers as $component => $handler) {
+      $return[$component] = array();
+    }
+
+    foreach ($tracked as $object) {
+      // Only return tracked Configurations for supported components.
+      if (isset($return[$object->component])) {
+        $return[$object->component][$object->identifier] = $object->hash;
+      }
+    }
+    return $return;
+  }
+
+  /**
+   * Returns a list of configurations that are not currently being tracked.
+   *
+   * @return array
+   */
+  static public function nonTrackedConfigurations() {
+    $handlers = configuration_configuration_handlers();
+
+    $tracked = static::trackedConfigurations();
+    $non_tracked = array();
+
+    foreach ($handlers as $component => $handler) {
+      $identifiers = configurarion_get_identifiers($component);
+      foreach ($identifiers as $identifier) {
+        if (empty($tracked[$component]) || empty($tracked[$component][$identifier])) {
+          $id = $component . '.' . $identifier;
+          $non_tracked[$component][$identifier] = $id;
+        }
+      }
+    }
+    return $non_tracked;
+  }
+
+  /**
+   * This function save into config://tracked.inc file the configurations that
+   * are currently tracked.
+   */
+  static public function updateTrackingFile() {
+    $tracked = static::trackedConfigurations();
 
     $file = array();
-    foreach ($tracked as $config) {
-      $file[$config->component . '.' . $config->identifier] = $config->hash;
+    foreach ($tracked as $component => $list) {
+      foreach ($list as $identifier => $hash) {
+        $file[$component . '.' . $identifier] = $hash;
+      }
     }
     $file_content = "<?php\n\n";
     $file_content .= "// This file contains the current being tracked configurations.\n\n";
