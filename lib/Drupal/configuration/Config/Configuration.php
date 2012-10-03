@@ -652,7 +652,7 @@ class Configuration {
     $non_tracked = array();
 
     foreach ($handlers as $component => $handler) {
-      $identifiers = configurarion_get_identifiers($component);
+      $identifiers = configuration_get_identifiers($component);
       foreach ($identifiers as $identifier) {
         if (empty($tracked[$component]) || empty($tracked[$component][$identifier])) {
           $id = $component . '.' . $identifier;
@@ -676,7 +676,7 @@ class Configuration {
     $all = array();
 
     foreach ($handlers as $component => $handler) {
-      $identifiers = configurarion_get_identifiers($component);
+      $identifiers = configuration_get_identifiers($component);
       foreach ($identifiers as $identifier) {
         $id = $component . '.' . $identifier;
         if (!empty($tracked[$component][$identifier])) {

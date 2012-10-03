@@ -137,12 +137,12 @@ function _configuration_get_identifiers() {
   }
 
   $component = array_shift($args);
-  $handlers = configurarion_get_handlers();
+  $handlers = configuration_get_handlers();
   if (empty($handlers[$component])) {
     return drush_set_error('', dt('The component @component is not valid or the module to export the configuration is not installed.', array('@component' => $component)));
   }
 
-  $identifiers = configurarion_get_identifiers($component);
+  $identifiers = configuration_get_identifiers($component);
   $rows = array();
   foreach ($identifiers as $identifier) {
     $rows[]['identifier'] = $identifier;
@@ -151,7 +151,7 @@ function _configuration_get_identifiers() {
 }
 
 function _configuration_get_components() {
-  $handlers = configurarion_get_handlers();
+  $handlers = configuration_get_handlers();
   $rows = array();
   $rows[] = array(
     'Name',
@@ -173,7 +173,7 @@ function _configuration_export_to_datastore() {
     return drush_set_error('', dt('No configurations were selected to export'));
   }
 
-  $handlers = configurarion_get_handlers();
+  $handlers = configuration_get_handlers();
   foreach ($args as $arg) {
 
     list($component, $identifier) = explode('.', $arg, 2);
@@ -210,7 +210,7 @@ function _configuration_revert_activestore() {
     return drush_set_error('', dt('No configurations were selected to revert'));
   }
 
-  $handlers = configurarion_get_handlers();
+  $handlers = configuration_get_handlers();
   foreach ($args as $arg) {
 
     list($component, $identifier) = explode('.', $arg, 2);
@@ -242,7 +242,7 @@ function _configuration_start_tracking() {
     return drush_set_error('', dt('No configurations were selected to track'));
   }
 
-  $handlers = configurarion_get_handlers();
+  $handlers = configuration_get_handlers();
   foreach ($args as $arg) {
 
     list($component, $identifier) = explode('.', $arg, 2);
@@ -274,7 +274,7 @@ function _configuration_stop_tracking() {
     return drush_set_error('', dt('No configurations were selected to export'));
   }
 
-  $handlers = configurarion_get_handlers();
+  $handlers = configuration_get_handlers();
   foreach ($args as $arg) {
 
     list($component, $identifier) = explode('.', $arg, 2);

@@ -164,7 +164,7 @@ function configuration_configuration_handlers() {
  *   The name of the component to backup, i.e, 'content_type',
  *   'field', 'variable', 'permission', etc.
  * @param $identifier
- *   The identifier of the configurarion. Some examples:
+ *   The identifier of the configuration. Some examples:
  *   For $component == 'content_type', $identifier = 'article'
  *   For $component == 'field', $identifier 'node.article.field_image'
  *   For $component == 'variable', $identifier = 'comment_controls_article'
@@ -184,7 +184,7 @@ function configuration_backup_to_staging($component, $identifier, $backup_depend
  *   The name of the component to export, i.e, 'content_type',
  *   'field', 'variable', 'permission', etc.
  */
-function configurarion_get_identifiers($component) {
+function configuration_get_identifiers($component) {
   $handler = Configuration::getConfigurationHandler($component);
   if ($handler::multiComponent()) {
     $identifiers = $handler::getAllIdentifiers($component);
@@ -198,7 +198,7 @@ function configurarion_get_identifiers($component) {
 /**
  * Returns a list of components that can be exported.
  */
-function configurarion_get_handlers() {
+function configuration_get_handlers() {
   return Configuration::getAllConfigurationHandlers();
 }
 
@@ -206,7 +206,7 @@ function configurarion_get_handlers() {
  * Load a list of configurations from config:// into the staging area.
  */
 function configuration_load_configurations($list = array()) {
-  $handlers = configurarion_get_handlers();
+  $handlers = configuration_get_handlers();
   $components = array();
   foreach ($handlers as $handler) {
     $class = '\\' . $handler['namespace'] . '\\' . $handler['handler'];
