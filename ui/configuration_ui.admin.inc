@@ -19,15 +19,22 @@ function configuration_ui_tracking_form($form, &$form_state) {
   $form['#attached']['css'] = array(
     drupal_get_path('module', 'configuration_ui') . '/theme/configuration.css'
   );
+  $form['#attached']['js'] = array(
+    drupal_get_path('module', 'configuration_ui') . '/js/configuration_ui.js'
+  );
 
   $tracked = Configuration::trackedConfigurations();
 
   foreach ($tracked as $component => $list) {
     $options = array();
     foreach ($list as $identifier => $hash) {
+
       $id = $component . '.' . $identifier;
+      $status = '<span class ="config-status" rel="' . $id . '">' . t('Processing...') . '</span>';
+
       $options[$id] = array(
         $identifier,
+        $status,
         l(t('Stop Tracking'), 'admin/config/system/configuration/stop_tracking/' . $id) . ' | ' . l(t('View info'), 'admin/config/configuration/view/' . $id)
       );
     }
@@ -51,8 +58,9 @@ function configuration_ui_tracking_form($form, &$form_state) {
       );
       $form[$component]['tracked'] = array(
         '#type' => 'tableselect',
-        '#header' => array('Configuration', 'Operations'),
+        '#header' => array('Configuration', 'Status', 'Operations'),
         '#options' => $options,
+        '#attributes' => array('class' => array('configuration'))
       );
       $form['dependencies_option'] = array(
         '#type' => 'fieldset',
@@ -190,6 +198,11 @@ function configuration_ui_config_info($config_id) {
   $config = new $handler($identifier);
 
   $config->loadFromActiveStore();
+
+  if (arg(5) == 'status') {
+    print $config->getStatus();
+    exit();
+  }
 
   $page = '';
 

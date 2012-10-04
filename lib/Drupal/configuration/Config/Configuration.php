@@ -774,6 +774,7 @@ class Configuration {
         ->setModules(array_keys($this->getRequiredModules()));
     $this->storage->getDataToSave();
     $this->setHash($this->storage->getHash());
+    return $this;
   }
 
   public function getStatus($human_name = TRUE) {
