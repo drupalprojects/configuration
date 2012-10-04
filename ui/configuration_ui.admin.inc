@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * @file
+ * User interface functions for Configuration Management.
+ */
 
 use Drupal\configuration\Config\Configuration;
 use Drupal\configuration\Utils\ConfigIteratorSettings;
@@ -24,7 +28,7 @@ function configuration_ui_tracking_form($form, &$form_state) {
       $id = $component . '.' . $identifier;
       $options[$id] = array(
         $identifier,
-        l('Stop Tracking', 'admin/config/system/configuration/stop_tracking/' . $id) . ' | ' . l('View info', 'admin/config/configuration/view/' . $id)
+        l(t('Stop Tracking'), 'admin/config/system/configuration/stop_tracking/' . $id) . ' | ' . l(t('View info'), 'admin/config/configuration/view/' . $id)
       );
     }
 
@@ -34,7 +38,7 @@ function configuration_ui_tracking_form($form, &$form_state) {
       $form[$component] = array(
         '#type' => 'fieldset',
         '#group' => 'packages',
-        '#title' => $component_name,
+        '#title' => check_plain($component_name),
         '#description' => t('Currenly tracked configurations for: @component', array('@component' => $component_name)),
         '#collapsible' => TRUE,
         '#collapsed' => TRUE,
@@ -115,7 +119,7 @@ function configuration_ui_notracking_form($form, &$form_state) {
     foreach ($list as $identifier => $id) {
       $options[$id] = array(
         $identifier,
-        l('Start Tracking', 'admin/config/system/configuration/start_tracking/' . $id) . ' | ' . l('View info', 'admin/config/configuration/view/' . $id)
+        l(t('Start Tracking'), 'admin/config/system/configuration/start_tracking/' . $id) . ' | ' . l(t('View info'), 'admin/config/configuration/view/' . $id)
       );
     }
 
@@ -332,7 +336,7 @@ function configuration_ui_import_form($form, &$form_state) {
   $form['import_configurations'] = array(
     '#type' => 'file',
     '#title' => t('Import configurations'),
-    '#description' => t('Select the file you exported from another site.'),
+    '#description' => t('Upload the file you exported from another site.'),
     '#size' => 40,
   );
 
@@ -365,7 +369,7 @@ function configuration_ui_export_form($form, &$form_state) {
       $options[$id] = array(
         $identifier,
         ($tracked) ? t('Tracked') : t('Not tracked'),
-        l('View info', 'admin/config/configuration/view/' . $id)
+        l(t('View info'), 'admin/config/configuration/view/' . $id)
       );
     }
 
@@ -375,7 +379,7 @@ function configuration_ui_export_form($form, &$form_state) {
       $form[$component] = array(
         '#type' => 'fieldset',
         '#group' => 'packages',
-        '#title' => $component_name,
+        '#title' => check_plain($component_name),
         '#description' => t('Available configurations for: @component', array('@component' => $component_name)),
         '#collapsible' => TRUE,
         '#collapsed' => TRUE,
@@ -450,6 +454,6 @@ function configuration_ui_import_form_submit($form, &$form_state) {
     file_delete($file);
     drupal_set_message(t('The following configurations have been migrated into the ActiveStore:'));
     $imported = $optionals = array('items' => $settings->getInfo('imported'));
-    drupal_set_message(theme('item_list', $imported));
+    drupal_set_message(filter_xss(theme('item_list', $imported), array('ul', 'li')));
   }
 }

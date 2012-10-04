@@ -60,7 +60,7 @@ class FieldConfiguration extends Configuration {
       $entity_type = $config->getEntityType();
       $fields = field_info_instances($entity_type, $config->getIdentifier());
       foreach ($fields as $name => $field) {
-        $identifier = $entity_type . "." . $field['field_name']  . "." . $field['bundle'];
+        $identifier = $entity_type . "." . $field['field_name'] . "." . $field['bundle'];
 
         // Avoid include multiple times the same dependency.
         if (empty($stack['field.' . $identifier])) {

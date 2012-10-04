@@ -146,12 +146,12 @@ function configuration_configuration_handlers() {
       'name' => 'Page Manager',
       'handler' => 'PageManagerConfiguration',
       'namespace' => $namespace,
-     );
+    );
     $handlers['page_manager_handler'] = array(
       'name' => 'Page Manager Handler',
       'handler' => 'PageManagerHandlerConfiguration',
       'namespace' => $namespace,
-     );
+    );
   }
 
   return $handlers;

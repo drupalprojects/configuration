@@ -68,7 +68,7 @@ function configuration_ui_menu() {
     'access arguments' => array('administer configuration management'),
   );
 
- $items['admin/config/system/configuration/migrate'] = array(
+  $items['admin/config/system/configuration/migrate'] = array(
     'title' => 'Migrate',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('configuration_ui_export_form'),

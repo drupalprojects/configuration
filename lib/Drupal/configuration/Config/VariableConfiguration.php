@@ -35,7 +35,7 @@ class VariableConfiguration extends Configuration {
    * Returns all the identifiers available for this component.
    */
   public static function getAllIdentifiers() {
-    $variables = db_query("SELECT name FROM variable")->fetchAll();
+    $variables = db_query("SELECT name FROM {variable}")->fetchAll();
     $return = array();
     foreach ($variables as $variable) {
       $return[] = $variable->name;

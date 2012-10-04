@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * @file
+ * Definition of Drupal\configuration\Utils\ConfigIteratorSettings.
+ */
+
 namespace Drupal\configuration\Utils;
 
 class ConfigIteratorSettings {

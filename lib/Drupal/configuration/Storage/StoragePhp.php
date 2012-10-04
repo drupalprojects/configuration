@@ -34,14 +34,14 @@ class StoragePhp extends Storage {
         $output .= $prefix . ')';
       }
     }
-    else if (is_object($var) && get_class($var) === 'stdClass') {
+    elseif (is_object($var) && get_class($var) === 'stdClass') {
       // var_export() will export stdClass objects using an undefined
       // magic method __set_state() leaving the export broken. This
       // workaround avoids this by casting the object as an array for
       // export and casting it back to an object when evaluated.
       $output = '(object) ' . $this->export((array) $var, $prefix);
     }
-    else if (is_bool($var)) {
+    elseif (is_bool($var)) {
       $output = $var ? 'TRUE' : 'FALSE';
     }
     else {
@@ -120,7 +120,7 @@ class StoragePhp extends Storage {
           $this->data = NULL;
         }
         else {
-          $file_content = substr(file_get_contents(static::$stream . $this->filename), 6);
+          $file_content = drupal_substr(file_get_contents(static::$stream . $this->filename), 6);
         }
       }
       if (!empty($file_content)) {

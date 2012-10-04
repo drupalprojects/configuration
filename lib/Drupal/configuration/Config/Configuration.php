@@ -326,7 +326,7 @@ class Configuration {
    * Internal function to discover what modules are required for the current
    * being proccessed configurations.
    *
-   * @see iterate
+   * @see iterate()
    */
   protected function discoverModules(ConfigIteratorSettings &$settings) {
     $this->loadFromStorage();
@@ -464,7 +464,7 @@ class Configuration {
    * Load a configuration from the DataStore and save it into the ActiveStore.
    * This function is called from iterator().
    *
-   * @see iterate
+   * @see iterate()
    */
   public function import(ConfigIteratorSettings &$settings) {
     $this->loadFromStorage();
@@ -522,7 +522,7 @@ class Configuration {
    * Revert a configuration from the staging area and save it into the
    * ActiveStore. This function is called from iterator().
    *
-   * @see iterate
+   * @see iterate()
    */
   public function revert(ConfigIteratorSettings &$settings) {
     $this->loadFromStaging();
@@ -716,7 +716,7 @@ class Configuration {
    */
   static public function readTrackingFile() {
     if (file_exists(static::$stream . 'tracked.inc')) {
-      $file_content = substr(file_get_contents(static::$stream . 'tracked.inc'), 6);
+      $file_content = drupal_substr(file_get_contents(static::$stream . 'tracked.inc'), 6);
       eval($file_content);
       return $tracked;
     }
@@ -1069,7 +1069,7 @@ class Configuration {
 
       $files = system_rebuild_module_data();
       $modules = array();
-      foreach($files as $id => $file) {
+      foreach ($files as $id => $file) {
         if ($file->type == 'module' && empty($file->info['hidden'])) {
           $modules[$id] = $file;
         }
@@ -1134,7 +1134,7 @@ class Configuration {
    * Print the configuration as plain text formatted to use in a tar file.
    *
    * @param  ConfigIteratorSettings $settings
-   * @see iterate
+   * @see iterate()
    */
   protected function printRaw(ConfigIteratorSettings &$settings) {
     $this->build();
@@ -1185,10 +1185,10 @@ class Configuration {
     $config_temp_path = 'temporary://' . 'config-tmp-' . time();
     $archive->extract(drupal_realpath($config_temp_path));
 
-    $file_content = substr(file_get_contents($config_temp_path . '/configuration/configurations.inc'), 6);
+    $file_content = drupal_substr(file_get_contents($config_temp_path . '/configuration/configurations.inc'), 6);
     eval($file_content);
 
-    static::$stream = $config_temp_path .  '/configuration/';
+    static::$stream = $config_temp_path . '/configuration/';
 
     $settings = static::importToActiveStore($configurations, FALSE, FALSE, $start_tracking);
 
@@ -1245,20 +1245,20 @@ class Configuration {
       '100644 ', // File permissions
       '   765 ', // UID,
       '   765 ', // GID,
-      sprintf("%11s ", decoct(strlen($contents))), // Filesize,
+      sprintf("%11s ", decoct(drupal_strlen($contents))), // Filesize,
       sprintf("%11s", decoct(REQUEST_TIME)) // Creation time
     );
     $binary_data_last = pack("a1a100a6a2a32a32a8a8a155a12", '', '', '', '', '', '', '', '', '', '');
 
     $checksum = 0;
     for ($i = 0; $i < 148; $i++) {
-      $checksum += ord(substr($binary_data_first, $i, 1));
+      $checksum += ord(drupal_substr($binary_data_first, $i, 1));
     }
     for ($i = 148; $i < 156; $i++) {
       $checksum += ord(' ');
     }
     for ($i = 156, $j = 0; $i < 512; $i++, $j++) {
-      $checksum += ord(substr($binary_data_last, $j, 1));
+      $checksum += ord(drupal_substr($binary_data_last, $j, 1));
     }
 
     $tar .= $binary_data_first;
@@ -1281,10 +1281,10 @@ class Configuration {
    *   to execute. If dependencies and optional configurations should be
    *   processed too, and storage the cache of already processed configurations.
    *
-   * @see importToActiveStore
-   * @see exportToDataStore
-   * @see revertActiveStore
-   * @see discoverRequiredModules
+   * @see importToActiveStore()
+   * @see exportToDataStore()
+   * @see revertActiveStore()
+   * @see discoverRequiredModules()
    */
   function iterate(ConfigIteratorSettings &$settings) {
     $callback = $settings->getCallback();
