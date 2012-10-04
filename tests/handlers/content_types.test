@@ -1,0 +1,113 @@
+<?php
+
+/**
+ * @file
+ * Tests for Configuration Management: Content Types.
+ */
+
+use Drupal\configuration\Config\Configuration;
+
+/**
+ * Base class for functional tests for configuration management.
+ */
+class ConfigurationHandlerContentTypeTestCase extends ConfigurationWebTestCase {
+
+  // Use the minimal profile, to avoid create the content type that will be
+  // imported
+  protected $profile = 'minimal';
+
+  /**
+   * Test info.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => t('Handler: Content Types'),
+      'description' => t('Test the configuration API for content types configurations'),
+      'group' => t('Configuration'),
+    );
+  }
+
+  /**
+   * Implementation of DrupalWebTestCase::setUp().
+   */
+  public function setUp($modules = array()) {
+    global $base_url;
+
+    if (empty($modules)) {
+      parent::setUp(array(
+        'configuration',
+      ));
+    }
+    else {
+      parent::setUp($modules);
+    }
+  }
+
+  public function testImportToActiveStore() {
+    // Change the path from where the configurations are loaded.
+    Configuration::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+
+    $config = 'content_type.article';
+    $results = Configuration::importToActiveStore(array($config), FALSE, FALSE);
+    $imported = $results->getInfo('imported');
+    $this->assertTrue(in_array($config, $imported), "Configuration for $config was imported.");
+
+    $article = node_type_load('article');
+
+    $type_exists = db_query('SELECT 1 FROM {node_type} WHERE type = :type', array(':type' => 'article'))->fetchField();
+    $this->assertTrue($type_exists, "The content type was saved in the ActiveStore.");
+  }
+
+  public function testExportToDataStore() {
+    variable_set('configuration_config_path', $this->datastore_path);
+    $config_path = variable_get('configuration_config_path', $this->datastore_path);
+    file_prepare_directory($config_path);
+
+    Configuration::setStream($config_path);
+
+    $type = $this->drupalCreateContentType();
+
+    $type_exists = db_query('SELECT 1 FROM {node_type} WHERE type = :type', array(':type' => $type->type))->fetchField();
+    $this->assertTrue($type_exists, 'The new content type has been created in the database.');
+
+    $config = 'content_type.' . $type->type;
+    $results = Configuration::exportToDataStore(array($config), FALSE, FALSE);
+    $exported = $results->getInfo('exported');
+    $this->assertTrue(in_array($config, $exported), "Configuration for $config was exported.");
+
+    $file_for_config = $config_path . $config . '.inc';
+
+    $this->assertTrue(file_exists($file_for_config), "The file that storages the content type was created.");
+  }
+
+  public function testCheckModifications() {
+    // Change the path from where the configurations are loaded.
+    Configuration::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+    $results = Configuration::importToActiveStore(array('content_type.article'), FALSE, FALSE, TRUE);
+
+    drupal_flush_all_caches();
+    $non_modified_article = node_type_load('article');
+    $original_description = $non_modified_article->description;
+    $this->assertTrue(!empty($non_modified_article), 'The content type was suscessfully loaded from the ActiveStore.');
+
+    $object = db_select('configuration_staging', 'cs')
+                        ->fields('cs')
+                        ->condition('component', 'content_type')
+                        ->condition('identifier', 'article')
+                        ->execute()
+                        ->fetchObject();
+    $this->assertTrue(!empty($object), 'The content type was suscessfully tracked.');
+
+    $modified_article = node_type_load('article');
+    $modified_article->description = 'modified';
+    node_type_save($modified_article);
+
+    $results = Configuration::revertActiveStore(array('content_type.article'), FALSE, FALSE);
+
+    drupal_flush_all_caches();
+    $modified_article = node_type_load('article');
+
+    $this->assertEqual($modified_article->description, $original_description, 'The content type was suscessfully reverted.');
+  }
+
+}

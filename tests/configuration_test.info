@@ -4,6 +4,8 @@ package = Testing
 core = 7.x
 hidden = TRUE
 
+files[] = handlers/content_types.test
+
 dependencies[] = ctools
 dependencies[] = views
 dependencies[] = context
