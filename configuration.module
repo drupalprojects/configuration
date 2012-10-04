@@ -107,18 +107,19 @@ function configuration_configuration_handlers() {
       'handler' => 'PermissionConfiguration',
       'namespace' => $namespace,
     ),
-    'menu' => array(
+  );
+  if (module_exists('menu')) {
+    $handlers['menu'] = array(
       'name' => 'Menu',
       'handler' => 'MenuConfiguration',
       'namespace' => $namespace,
-    ),
-    'menulink' => array(
+    );
+    $handlers['menulink'] = array(
       'name' => 'MenuLink',
       'handler' => 'MenuLinkConfiguration',
       'namespace' => $namespace,
-    ),
-  );
-
+    );
+  }
   if (module_exists('views')) {
     $handlers['view'] = array(
       'name' => 'View',
@@ -126,7 +127,6 @@ function configuration_configuration_handlers() {
       'namespace' => $namespace,
     );
   }
-
   if (module_exists('panels')) {
     $handlers['panels'] = array(
       'name' => 'Panels',
