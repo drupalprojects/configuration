@@ -29,10 +29,6 @@ class MenuLinkConfiguration extends Configuration {
    * Returns all the identifiers available for this component.
    */
   public static function getAllIdentifiers() {
-    global $menu_admin;
-    // Need to set this to TRUE in order to get menu links that the
-    // current user may not have access to (i.e. user/login)
-    $menu_admin = TRUE;
     $menu_links = menu_parent_options(menu_get_menus(), array('mlid' => 0));
     $return = array();
     foreach ($menu_links as $key => $name) {
