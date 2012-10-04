@@ -52,7 +52,7 @@ class StoragePhp extends Storage {
   }
 
   public function import($file_content) {
-    eval($file_content);
+    @eval($file_content);
     $this->data = $data;
     $this->dependencies = $dependencies;
     $this->optional_configurations = $optional;

@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * User Interface for Configuration Management module.
+ */
+
+/**
  * Implements hook_permission().
  */
 function configuration_ui_permission() {

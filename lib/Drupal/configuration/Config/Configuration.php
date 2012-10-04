@@ -717,7 +717,7 @@ class Configuration {
   static public function readTrackingFile() {
     if (file_exists(static::$stream . 'tracked.inc')) {
       $file_content = drupal_substr(file_get_contents(static::$stream . 'tracked.inc'), 6);
-      eval($file_content);
+      @eval($file_content);
       return $tracked;
     }
     return array();
@@ -1186,7 +1186,7 @@ class Configuration {
     $archive->extract(drupal_realpath($config_temp_path));
 
     $file_content = drupal_substr(file_get_contents($config_temp_path . '/configuration/configurations.inc'), 6);
-    eval($file_content);
+    @eval($file_content);
 
     static::$stream = $config_temp_path . '/configuration/';
 

@@ -51,7 +51,9 @@ class ViewConfiguration extends CtoolsConfiguration {
       $config_data = $config->getData();
 
       // This alternative works more consistent althoug it's no so pretty.
-      eval(ctools_export_crud_export($config->getTable(), $config_data));
+
+      @eval(ctools_export_crud_export($config->getTable(), $config_data));
+
       $config_data = $handler;
 
       foreach ($config_data->conf['display']->content as $object) {

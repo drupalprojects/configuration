@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * API for Configuration Management module.
+ */
+
+/**
  * A bit flag used to let us know if a configuration is the same in both the
  * activestore and the datastore.
  */
