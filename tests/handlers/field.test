@@ -1,0 +1,147 @@
+<?php
+
+/**
+ * @file
+ * Tests for Configuration Management: Fields.
+ */
+
+use Drupal\configuration\Config\Configuration;
+
+/**
+ * Base class for functional tests for configuration management.
+ */
+class ConfigurationHandlerFieldTestCase extends ConfigurationWebTestCase {
+
+  // Use the minimal profile, to avoid create the content type that will be
+  // imported
+  protected $profile = 'minimal';
+
+  /**
+   * Test info.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => t('Handler: Fields'),
+      'description' => t('Test the configuration API for fields configurations'),
+      'group' => t('Configuration'),
+    );
+  }
+
+  /**
+   * Implementation of DrupalWebTestCase::setUp().
+   */
+  public function setUp($modules = array()) {
+    global $base_url;
+
+    if (empty($modules)) {
+      parent::setUp(array(
+        'configuration',
+        'field_ui',
+      ));
+    }
+    else {
+      parent::setUp($modules);
+    }
+  }
+
+  public function testImportToActiveStore() {
+    // Change the path from where the configurations are loaded.
+    Configuration::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+
+    $config = 'content_type.article';
+    $results = Configuration::importToActiveStore(array($config), FALSE, FALSE);
+
+    $config = 'field.node.body.article';
+    $results = Configuration::importToActiveStore(array($config), FALSE, FALSE);
+    $imported = $results->getInfo('imported');
+    $this->assertTrue(in_array($config, $imported), "Configuration for $config was imported.");
+
+    $article = node_type_load('article');
+
+    list($component, $entity_type, $field_name, $bundle) = explode('.', $config);
+
+    $field_exists = db_query('SELECT 1
+      FROM {field_config_instance}
+      WHERE
+        entity_type = :entity_type AND
+        field_name = :field_name AND
+        bundle = :bundle',
+        array(
+          'entity_type' => $entity_type,
+          'field_name' => $field_name,
+          'bundle' => $bundle,
+        ))->fetchField();
+
+    $this->assertTrue($field_exists, "The Field was saved in the ActiveStore.");
+  }
+
+  public function testExportToDataStore() {
+    variable_set('configuration_config_path', $this->datastore_path);
+    $config_path = variable_get('configuration_config_path', $this->datastore_path);
+    file_prepare_directory($config_path);
+    Configuration::setStream($config_path);
+
+    $web_user = $this->drupalCreateUser(
+      array(
+        'administer content types',
+      )
+    );
+
+    $this->drupalLogin($web_user);
+
+    $type = $this->drupalCreateContentType();
+
+    $edit = array();
+    $edit['fields[_add_new_field][label]'] = 'my_field';
+    $edit['fields[_add_new_field][type]'] = 'text';
+    $edit['fields[_add_new_field][widget_type]'] = 'text_textfield';
+    $this->drupalPost('admin/structure/types/manage/' . $type->type . '/fields', $edit, t('Save'));
+    $this->drupalPost(NULL, array(), t('Save'));
+
+    $config = 'field.node.my_field.' . $type->type;
+    $results = Configuration::exportToDataStore(array($config), FALSE, FALSE);
+    $exported = $results->getInfo('exported');
+    $this->assertTrue(in_array($config, $exported), "Configuration for $config was exported.");
+
+    $file_for_config = $config_path . $config . '.inc';
+
+    $this->assertTrue(file_exists($file_for_config), "The file that storages the field was created.");
+  }
+
+  public function testCheckModifications() {
+
+    $web_user = $this->drupalCreateUser(
+      array(
+        'administer content types',
+      )
+    );
+
+    $this->drupalLogin($web_user);
+    // Change the path from where the configurations are loaded.
+    Configuration::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+    $results = Configuration::importToActiveStore(array('content_type.article'), FALSE, FALSE, TRUE);
+
+    $config = 'field.node.body.article';
+    $results = Configuration::importToActiveStore(array($config), FALSE, FALSE, TRUE);
+
+    $object = db_select('configuration_staging', 'cs')
+                        ->fields('cs')
+                        ->condition('component', 'field')
+                        ->condition('identifier', 'node.body.article')
+                        ->execute()
+                        ->fetchObject();
+
+    $this->assertTrue(!empty($object), 'The Field was suscessfully tracked.');
+
+    $edit['instance[label]'] = 'Modified';
+    $this->drupalPost('admin/structure/types/manage/article/fields/body', $edit, t('Save settings'));
+
+    $results = Configuration::revertActiveStore(array('field.node.body.article'), FALSE, FALSE);
+
+    list($component, $entity_type, $field_name, $bundle) = explode('.', $config);
+    $field = field_info_instance($entity_type, $field_name, $bundle);
+    $this->verbose('<pre>' . print_r($field, TRUE) . '</pre>');
+    $this->assertEqual($field['label'], 'Body', 'The Field was suscessfully reverted.');
+  }
+
+}

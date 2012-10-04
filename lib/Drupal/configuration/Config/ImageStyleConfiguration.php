@@ -49,18 +49,20 @@ class ImageStyleConfiguration extends Configuration {
     if ($config->getComponent() == 'field') {
       // Check if the field is using a image style
       $field = $config->data['field_instance'];
-      foreach ($field['display'] as $display) {
-        if (!empty($display['settings']) && !empty($display['settings']['image_style'])) {
-          $identifier = $display['settings']['image_style'];
-          if (empty($stack['image_style.' . $identifier])) {
-            $image_style = new ImageStyleConfiguration($identifier);
-            $image_style->build();
-            $config->addToDependencies($image_style);
-            $stack['image_style.' . $identifier] = TRUE;
+      if (!empty($field['display'])) {
+        foreach ($field['display'] as $display) {
+          if (!empty($display['settings']) && !empty($display['settings']['image_style'])) {
+            $identifier = $display['settings']['image_style'];
+            if (empty($stack['image_style.' . $identifier])) {
+              $image_style = new ImageStyleConfiguration($identifier);
+              $image_style->build();
+              $config->addToDependencies($image_style);
+              $stack['image_style.' . $identifier] = TRUE;
+            }
           }
         }
       }
-    }
+      }
   }
 
   public function findRequiredModules() {

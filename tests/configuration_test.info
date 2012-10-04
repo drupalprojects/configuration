@@ -5,6 +5,7 @@ core = 7.x
 hidden = TRUE
 
 files[] = handlers/content_types.test
+files[] = handlers/field.test
 
 dependencies[] = ctools
 dependencies[] = views
