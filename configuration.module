@@ -92,11 +92,6 @@ function configuration_configuration_handlers() {
       'handler' => 'TextFormatConfiguration',
       'namespace' => $namespace,
     ),
-    'vocabulary' => array(
-      'name' => 'Vocabulary',
-      'handler' => 'VocabularyConfiguration',
-      'namespace' => $namespace,
-    ),
     'variable' => array(
       'name' => 'Variable',
       'handler' => 'VariableConfiguration',
@@ -108,6 +103,13 @@ function configuration_configuration_handlers() {
       'namespace' => $namespace,
     ),
   );
+  if (module_exists('taxonomy')) {
+    $handlers['vocabulary'] = array(
+      'name' => 'Vocabulary',
+      'handler' => 'VocabularyConfiguration',
+      'namespace' => $namespace,
+    );
+  }
   if (module_exists('menu')) {
     $handlers['menu'] = array(
       'name' => 'Menu',
