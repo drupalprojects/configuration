@@ -68,6 +68,27 @@ class PermissionConfiguration extends Configuration {
         }
       }
     }
+    elseif ($config->getComponent() == 'text_format') {
+      $format = $config->getData();
+      $permission = filter_permission_name($format);
+      if (!empty($permission)) {
+        $identifier = str_replace(' ', '_', $permission);
+        // Avoid include multiple times the same dependency.
+        if (empty($stack['permission.' . $identifier])) {
+          $perm = new PermissionConfiguration($identifier);
+          $perm->build();
+
+          // Add the text format as a dependency of the permission.
+          $perm->addToDependencies($config);
+
+          // Add the permission as a child configuration of the filter
+          // The permission is not required to load the filter format but is
+          // a nice to have.
+          $config->addToOptionalConfigurations($perm);
+          $stack['permission.' . $identifier] = TRUE;
+        }
+      }
+    }
   }
 
   public function findRequiredModules() {
