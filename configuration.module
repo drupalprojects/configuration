@@ -224,3 +224,44 @@ function configuration_load_configurations($list = array()) {
     $config->saveToStaging();
   }
 }
+
+/**
+ * Import all configuration files within a directory.
+ *
+ * @param $path
+ *   The path to the directory to import.
+ * @param $enable_modules
+ *   Enable all the required modules before the import process.
+ *
+ */
+function configuration_import_directory($path, $enable_modules = TRUE) {
+  Configuration::setStream($path);
+
+  $file_content = drupal_substr(file_get_contents($path . 'configurations.inc'), 6);
+  // this line creates a $configurations array with a list of components.
+  @eval($file_content);
+
+  if ($enable_modules) {
+    $settings = Configuration::discoverRequiredModules($configurations);
+    $missing = $settings->getInfo('modules_missing');
+    if (count($missing)) {
+      drupal_set_message(t('The following modules are required to import the specified configurations but are not available to install: !modules', array('!modules' => implode(', ', $missing))), 'error');
+      return FALSE;
+    }
+    else {
+      $to_install = $settings->getInfo('modules_to_install');
+      module_enable($to_install);
+    }
+  }
+
+  $result = Configuration::importToActiveStore($configurations);
+  $imported = $result->getInfo('imported');
+  if (is_array($imported) && count($imported) > 0) {
+    drupal_set_message(t('The following components were imported: !components', array('!components' => implode(', ', $imported))), 'status');
+    return TRUE;
+  }
+  else {
+    drupal_set_message(t('No components were imported.'), 'error');
+    return FALSE;
+  }
+}
