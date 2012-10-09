@@ -1298,12 +1298,21 @@ class Configuration {
     // First proccess requires the dependencies that have to be processed before
     // load the current configuration.
     if ($settings->processDependencies()) {
-      foreach (array_keys($this->getDependencies()) as $dependency) {
-        $config = $settings->getFromCache($dependency);
-        if (!$config) {
-          list($component_name, $identifier) = explode('.', $dependency, 2);
-          $handler = Configuration::getConfigurationHandler($component_name);
-          $config = new $handler($identifier);
+      foreach ($this->getDependencies() as $dependency => $config_dependency) {
+
+        // In some callbacks, the dependencies storages the full config object
+        // other simply use a plain string. If the object is available, use
+        // that version.
+        if (is_object($config_dependency)) {
+          $config = $config_dependency;
+        }
+        else {
+          $config = $settings->getFromCache($dependency);
+          if (!$config) {
+            list($component_name, $identifier) = explode('.', $dependency, 2);
+            $handler = Configuration::getConfigurationHandler($component_name);
+            $config = new $handler($identifier);
+          }
         }
         $config->{$build_callback}();
         $config->iterate($settings);
@@ -1317,12 +1326,21 @@ class Configuration {
     // After proccess the dependencies and the current configuration, proccess
     // the optionals.
     if ($settings->processOptionals()) {
-      foreach (array_keys($this->getOptionalConfigurations()) as $optional) {
+      foreach ($this->getOptionalConfigurations() as $optional => $optional_config) {
         $config = $settings->getFromCache($optional);
-        if (!$config) {
-          list($component_name, $identifier) = explode('.', $optional, 2);
-          $handler = Configuration::getConfigurationHandler($component_name);
-          $config = new $handler($identifier);
+
+        // In some callbacks, the optionals storages the full config object
+        // other simply use a plain string. If the object is available, use
+        // that version.
+        if (is_object($optional_config)) {
+          $config = $optional_config;
+        }
+        else {
+          if (!$config) {
+            list($component_name, $identifier) = explode('.', $optional, 2);
+            $handler = Configuration::getConfigurationHandler($component_name);
+            $config = new $handler($identifier);
+          }
         }
         $config->{$build_callback}();
         $config->iterate($settings);
