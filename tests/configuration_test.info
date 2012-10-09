@@ -6,6 +6,7 @@ hidden = TRUE
 
 files[] = handlers/content_types.test
 files[] = handlers/field.test
+files[] = handlers/permissions.test
 files[] = handlers/variables.test
 
 dependencies[] = ctools
