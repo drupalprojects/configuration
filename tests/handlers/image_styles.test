@@ -6,6 +6,7 @@
  */
 
 use Drupal\configuration\Config\Configuration;
+use Drupal\configuration\Config\ImageStyleConfiguration;
 
 /**
  * Base class for functional tests for configuration management.
@@ -117,6 +118,9 @@ class ConfigurationHandlerImageStyleTestCase extends ConfigurationWebTestCase {
     $original_width = $original_image_style['effects'][1]['data']['width'];
     $original_height = $original_image_style['effects'][1]['data']['height'];
 
+    $image_config = new ImageStyleConfiguration('custom');
+    $initial_hash = $image_config->loadFromActiveStore()->buildHash()->getHash();
+
     $this->assertTrue($original_width == 100 && $original_height == 100, 'Original Width and Height setted to 100');
 
     $web_user = $this->drupalCreateUser(
@@ -141,6 +145,10 @@ class ConfigurationHandlerImageStyleTestCase extends ConfigurationWebTestCase {
 
     $this->assertTrue($modified_width == 200 && $modified_height == 200, 'Modified Width and Height setted to 200');
 
+    $image_config = new ImageStyleConfiguration('custom');
+    $final_hash = $image_config->loadFromActiveStore()->buildHash()->getHash();
+    $this->assertFalse($initial_hash == $final_hash, 'Image Style hash is not the same after modify the image.');
+
     $results = Configuration::revertActiveStore(array('image_style.custom'), FALSE, FALSE);
 
     drupal_static_reset('image_styles');
@@ -150,6 +158,11 @@ class ConfigurationHandlerImageStyleTestCase extends ConfigurationWebTestCase {
     $modified_width = $modified_image_style['effects'][2]['data']['width'];
     $modified_height = $modified_image_style['effects'][2]['data']['height'];
 
+
+    $image_config = new ImageStyleConfiguration('custom');
+    $final_hash = $image_config->loadFromActiveStore()->buildHash()->getHash();
+
     $this->assertTrue($original_width == $modified_width && $original_height == $modified_height, 'Image Style reverted');
+    $this->assertTrue($initial_hash == $final_hash, 'Image Style hash is the same after revert.');
   }
 }

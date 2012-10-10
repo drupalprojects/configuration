@@ -18,6 +18,13 @@ class ImageStyleConfiguration extends Configuration {
     $style = image_style_load($this->getIdentifier());
     $this->style_sanitize($style);
     $this->data = $style;
+
+    /*/ Reset the order of effects, this will help to generate always the same
+    // hash for image styles that have been reverted.
+    $this->data['effects'] = array();
+    foreach ($style['effects'] as $effect) {
+      $this->data['effects'][] = $effect;
+    }*/
     return $this;
   }
 
