@@ -1319,6 +1319,10 @@ class Configuration {
       }
     }
 
+    if ($settings->alreadyProcessed($this)) {
+      return;
+    }
+
     // Now, after proccess the dependencies, proccess the current configuration.
     $this->{$callback}($settings);
     $settings->addToCache($this);
