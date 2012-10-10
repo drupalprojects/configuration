@@ -1,0 +1,150 @@
+<?php
+
+/**
+ * @file
+ * Tests for Configuration Management: Text Formats.
+ */
+
+use Drupal\configuration\Config\Configuration;
+
+/**
+ * Base class for functional tests for configuration management.
+ */
+class ConfigurationHandlerTextFormatTestCase extends ConfigurationWebTestCase {
+
+  protected $profile = 'minimal';
+
+  /**
+   * Test info.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => t('Handler: Text Formats'),
+      'description' => t('Test the configuration API for text formats configurations'),
+      'group' => t('Configuration'),
+    );
+  }
+
+  /**
+   * Implementation of DrupalWebTestCase::setUp().
+   */
+  public function setUp($modules = array()) {
+    global $base_url;
+
+    if (empty($modules)) {
+      parent::setUp(array(
+        'configuration',
+      ));
+    }
+    else {
+      parent::setUp($modules);
+    }
+  }
+
+  public function testImportToActiveStore() {
+    // Change the path from where the configurations are loaded.
+    Configuration::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+
+    $config = 'text_format.custom';
+    $results = Configuration::importToActiveStore(array($config), FALSE, FALSE);
+    $imported = $results->getInfo('imported');
+    $this->assertTrue(in_array($config, $imported), "Configuration for $config was imported.");
+
+    $format_exists = filter_format_load('custom');
+    $this->assertTrue($format_exists, "The text format was saved in the ActiveStore.");
+  }
+
+  public function testExportToDataStore() {
+    variable_set('configuration_config_path', $this->datastore_path);
+    $config_path = variable_get('configuration_config_path', $this->datastore_path);
+    file_prepare_directory($config_path);
+
+    Configuration::setStream($config_path);
+
+    $custom_plain_text_format = array(
+      'format' => 'custom_plain_text',
+      'name' => 'Custom Plain text',
+      'weight' => 10,
+      'filters' => array(
+        // Escape all HTML.
+        'filter_html_escape' => array(
+          'weight' => 0,
+          'status' => 1,
+        ),
+        // URL filter.
+        'filter_url' => array(
+          'weight' => 1,
+          'status' => 1,
+        ),
+        // Line break filter.
+        'filter_autop' => array(
+          'weight' => 2,
+          'status' => 1,
+        ),
+      ),
+    );
+    $custom_plain_text_format = (object) $custom_plain_text_format;
+    filter_format_save($custom_plain_text_format);
+
+    $format_exists = db_query('SELECT 1 FROM {filter_format} WHERE format = :format', array(':format' => 'custom_plain_text'))->fetchField();
+    $this->assertTrue($format_exists, "The text format was saved in the ActiveStore.");
+
+    $config = 'text_format.custom_plain_text';
+    $results = Configuration::exportToDataStore(array($config), FALSE, FALSE);
+    $exported = $results->getInfo('exported');
+    $this->assertTrue(in_array($config, $exported), "Configuration for $config was exported.");
+
+    $file_for_config = $config_path . $config . '.inc';
+
+    $this->assertTrue(file_exists($file_for_config), "The file that storages the text format was created.");
+  }
+
+  public function testCheckModifications() {
+    // Change the path from where the configurations are loaded.
+    Configuration::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+
+    $config = 'text_format.custom';
+    $results = Configuration::importToActiveStore(array($config), FALSE, FALSE, TRUE);
+
+    $object = db_select('configuration_staging', 'cs')
+                        ->fields('cs')
+                        ->condition('component', 'text_format')
+                        ->condition('identifier', 'custom')
+                        ->execute()
+                        ->fetchObject();
+
+    $this->assertTrue(!empty($object), 'The text format was suscessfully tracked.');
+    $original_format = filter_format_load('custom');
+    $original_filters = filter_list_format('custom');
+
+    $web_user = $this->drupalCreateUser(
+      array(
+        'administer filters',
+      )
+    );
+
+    $this->drupalLogin($web_user);
+
+    $edit = array();
+    $edit['name'] = 'modified';
+    $edit['filters[filter_html][settings][allowed_html]'] = '<a> <modified>';
+    $this->drupalPost('admin/config/content/formats/custom', $edit, t('Save configuration'));
+
+    filter_formats_reset();
+    $modified_format = filter_format_load('custom');
+    $modified_filters = filter_list_format('custom');
+
+    $this->assertTrue($modified_filters['filter_html']->settings['allowed_html'] == '<a> <modified>', 'The filter settings for custom text format were modified');
+    $this->assertTrue($modified_format->name == 'modified', 'The format name for custom text format was modified');
+
+    $results = Configuration::revertActiveStore(array('text_format.custom'), FALSE, FALSE);
+
+    filter_formats_reset();
+    $modified_format = filter_format_load('custom');
+    $modified_filters = filter_list_format('custom');
+
+    $this->assertTrue($original_filters['filter_html']->settings['allowed_html'] == $modified_filters['filter_html']->settings['allowed_html'], 'Filter settings reverted');
+    $this->assertTrue($modified_format->name == $original_format->name, 'Text format reverted');
+  }
+
+}
