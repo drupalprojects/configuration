@@ -252,7 +252,8 @@ function configuration_import_directory($path, $enable_modules = TRUE) {
     $settings = Configuration::discoverRequiredModules($configurations);
     $missing = $settings->getInfo('modules_missing');
     if (count($missing)) {
-      drupal_set_message(t('The following modules are required to import the specified configurations but are not available to install: !modules', array('!modules' => implode(', ', $missing))), 'error');
+      $missing = implode(', ', $missing);
+      drupal_set_message(t('The following modules are required to import the specified configurations but are not available to install: %modules', array('%modules' => $missing)), 'error');
       return FALSE;
     }
     else {
@@ -264,11 +265,9 @@ function configuration_import_directory($path, $enable_modules = TRUE) {
   $result = Configuration::importToActiveStore($configurations);
   $imported = $result->getInfo('imported');
   if (is_array($imported) && count($imported) > 0) {
-    drupal_set_message(t('The following components were imported: !components', array('!components' => implode(', ', $imported))), 'status');
-    return TRUE;
+    return $imported;
   }
   else {
-    drupal_set_message(t('No components were imported.'), 'error');
     return FALSE;
   }
 }
