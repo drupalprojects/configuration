@@ -1,0 +1,155 @@
+<?php
+
+/**
+ * @file
+ * Tests for Configuration Management: Image Styles.
+ */
+
+use Drupal\configuration\Config\Configuration;
+
+/**
+ * Base class for functional tests for configuration management.
+ */
+class ConfigurationHandlerImageStyleTestCase extends ConfigurationWebTestCase {
+
+  protected $profile = 'minimal';
+
+  /**
+   * Test info.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => t('Handler: Image Styles'),
+      'description' => t('Test the configuration API for text formats configurations'),
+      'group' => t('Configuration'),
+    );
+  }
+
+  /**
+   * Implementation of DrupalWebTestCase::setUp().
+   */
+  public function setUp($modules = array()) {
+    global $base_url;
+
+    if (empty($modules)) {
+      parent::setUp(array(
+        'image',
+        'configuration',
+      ));
+    }
+    else {
+      parent::setUp($modules);
+    }
+  }
+
+  public function testImportToActiveStore() {
+    // Change the path from where the configurations are loaded.
+    Configuration::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+
+    $config = 'image_style.custom';
+    $results = Configuration::importToActiveStore(array($config), FALSE, FALSE);
+    $imported = $results->getInfo('imported');
+    $this->assertTrue(in_array($config, $imported), "Configuration for $config was imported.");
+
+    $format_exists = image_style_load('custom');
+    $this->assertTrue($format_exists, "The image style was saved in the ActiveStore.");
+    $this->assertTrue(!empty($format_exists['effects']), "The image style saved in the ActiveStore contains effects.");
+  }
+
+  public function testExportToDataStore() {
+    variable_set('configuration_config_path', $this->datastore_path);
+    $config_path = variable_get('configuration_config_path', $this->datastore_path);
+    file_prepare_directory($config_path);
+
+    Configuration::setStream($config_path);
+
+    $web_user = $this->drupalCreateUser(
+      array(
+        'administer image styles',
+      )
+    );
+    $this->drupalLogin($web_user);
+    $style_name = strtolower($this->randomName(10));
+
+    $edit = array();
+    $edit['name'] = $style_name;
+    $this->drupalPost('admin/config/media/image-styles/add', $edit, t('Create new style'));
+    $this->assertRaw(t('Style %name was created.', array('%name' => $style_name)), t('Image style successfully created.'));
+
+    $edit = array();
+    $edit['new'] = 'image_resize';
+    $this->drupalPost(NULL, $edit, t('Add'));
+
+    $edit = array();
+    $edit['data[width]'] = 100;
+    $edit['data[height]'] = 100;
+    $this->drupalPost(NULL, $edit, t('Add effect'));
+    $this->assertRaw(t('The image effect was successfully applied.'));
+
+    $config = 'image_style.' . $style_name;
+    $results = Configuration::exportToDataStore(array($config), FALSE, FALSE);
+    $exported = $results->getInfo('exported');
+    $this->assertTrue(in_array($config, $exported), "Configuration for $config was exported.");
+
+    $file_for_config = $config_path . $config . '.inc';
+
+    $this->assertTrue(file_exists($file_for_config), "The file that storages the image style was created.");
+  }
+
+  public function testCheckModifications() {
+    // Change the path from where the configurations are loaded.
+    Configuration::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+
+    $config = 'image_style.custom';
+    $results = Configuration::importToActiveStore(array($config), FALSE, FALSE, TRUE);
+
+    $object = db_select('configuration_staging', 'cs')
+                        ->fields('cs')
+                        ->condition('component', 'image_style')
+                        ->condition('identifier', 'custom')
+                        ->execute()
+                        ->fetchObject();
+
+    $this->assertTrue(!empty($object), 'The image style was suscessfully tracked.');
+
+    drupal_static_reset('image_styles');
+    $original_image_style = image_style_load('custom');
+    $original_width = $original_image_style['effects'][1]['data']['width'];
+    $original_height = $original_image_style['effects'][1]['data']['height'];
+
+    $this->assertTrue($original_width == 100 && $original_height == 100, 'Original Width and Height setted to 100');
+
+    $web_user = $this->drupalCreateUser(
+      array(
+        'administer image styles',
+      )
+    );
+
+    $this->drupalLogin($web_user);
+
+
+    $edit = array();
+    $edit['data[width]'] = 200;
+    $edit['data[height]'] = 200;
+    $this->drupalPost('admin/config/media/image-styles/edit/custom/effects/1', $edit, t('Update effect'));
+    $this->assertRaw(t('The image effect was successfully applied.'));
+
+    drupal_static_reset('image_styles');
+    $modified_image_style = image_style_load('custom');
+    $modified_width = $modified_image_style['effects'][1]['data']['width'];
+    $modified_height = $modified_image_style['effects'][1]['data']['height'];
+
+    $this->assertTrue($modified_width == 200 && $modified_height == 200, 'Modified Width and Height setted to 200');
+
+    $results = Configuration::revertActiveStore(array('image_style.custom'), FALSE, FALSE);
+
+    drupal_static_reset('image_styles');
+    $modified_image_style = image_style_load('custom');
+
+    // After revert the image styles, the ids are incremented
+    $modified_width = $modified_image_style['effects'][2]['data']['width'];
+    $modified_height = $modified_image_style['effects'][2]['data']['height'];
+
+    $this->assertTrue($original_width == $modified_width && $original_height == $modified_height, 'Image Style reverted');
+  }
+}
