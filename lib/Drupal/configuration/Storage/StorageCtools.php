@@ -30,7 +30,7 @@ class StorageCtools extends StoragePHP {
     $export .= '$optional = ' . $this->export($this->optional_configurations) . ";\n\n";
     $export .= '$modules = ' . $this->export($this->required_modules) . ";";
 
-    $file_contents = "<?php\n/**\n * @file\n * {$filename}\n */\n\n" . $export;
+    $file_contents = "<?php\n/**\n * @file\n * {$filename}\n */\n\n" . $export . "\n";
 
     $this->hash = sha1($file_contents);
 

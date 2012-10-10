@@ -94,7 +94,7 @@ class StoragePhp extends Storage {
     $export .= '$modules = ' . $this->export($this->required_modules) . ";";
 
     $filename = $this->filename;
-    $file_contents = "<?php\n/**\n * @file\n * {$filename}\n */\n\n" . $export;
+    $file_contents = "<?php\n/**\n * @file\n * {$filename}\n */\n\n" . $export . "\n";
 
     $this->hash = sha1($file_contents);
 
