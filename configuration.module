@@ -129,6 +129,13 @@ function configuration_configuration_handlers() {
       'namespace' => $namespace,
     );
   }
+  if (module_exists('wysiwyg')) {
+    $handlers['wysiwyg'] = array(
+      'name' => 'Wysiwyg',
+      'handler' => 'WysiwygConfiguration',
+      'namespace' => $namespace,
+    );
+  }
   if (module_exists('panels')) {
     $handlers['panels'] = array(
       'name' => 'Panels',
