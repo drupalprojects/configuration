@@ -77,7 +77,7 @@ class ImageStyleConfiguration extends Configuration {
         image_style_delete($style);
       }
     }
-    image_style_save($this->getData());
+    image_default_style_save($this->getData());
     $settings->addInfo('imported', $this->getUniqueId());
   }
 }
