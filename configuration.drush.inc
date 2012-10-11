@@ -27,6 +27,8 @@ function configuration_drush_help($section) {
       return dt("Start tracking a configuration changes.");
     case 'drush:csto':
       return dt("Stop tracking a configuration changes.");
+    case 'drush:clist':
+      return dt("Return the list of components and identifiers");
   }
 }
 
@@ -64,6 +66,7 @@ function configuration_drush_command() {
       'drush cimp content_type.article variable.theme_settings' => 'Loads the configurations for content type Article and the variable theme_settings into the ActiveStore',
     ),
     'options' => array(
+      'all' => 'import all components',
       'exclude-dependencies' => 'Export a configuration without export its dependencies.',
       'exclude-optionals' => 'Export a configuration without export its optional configurations.',
       'start-tracking' => 'Export a configuration and automatically start to tracking it.',
@@ -75,10 +78,12 @@ function configuration_drush_command() {
     'description' => 'Export a configuration to the datastore.',
     'aliases' => array('cexp'),
     'examples' => array(
+      'drush cexp --all' => 'Export all tracked components',
       'drush cexp content_type.article' => 'Export the content type article and all its dependencies to the datastore',
       'drush cexp content_type.article --exclude-dependencies --exclude-optionals' => 'Export the only the content type article to the datastore  without include its dependencies and optional configurations.',
     ),
     'options' => array(
+      'all' => 'Export all tracked components',
       'exclude-dependencies' => 'Export a configuration without export its dependencies.',
       'exclude-optionals' => 'Export a configuration without export its optional configurations.',
       'start-tracking' => 'Export a configuration and automatically start to tracking it.',
@@ -90,12 +95,14 @@ function configuration_drush_command() {
     'description' => 'Revert a configuration from the staging area.',
     'aliases' => array('crev'),
     'examples' => array(
+      'drush crev --all' => 'Revert all tracked components',
       'drush crev content_type.article' => 'Revert the content type article using the backup saved in the staging area and its dependencies.',
       'drush crev content_type.article --exclude-dependencies --exclude-optionals' => 'Revert the content type article using the backup saved in the staging area and its dependencies without include its dependencies and optional configurations.',
     ),
     'options' => array(
-      'exclude-dependencies' => 'Export a configuration without export its dependencies.',
-      'exclude-optionals' => 'Export a configuration without export its optional configurations.',
+      'all' => 'revert all components',
+      'exclude-dependencies' => 'Revert a configuration without export its dependencies.',
+      'exclude-optionals' => 'Revert a configuration without export its optional configurations.',
     ),
     'arguments' => array(),
   );
@@ -104,9 +111,12 @@ function configuration_drush_command() {
     'description' => 'Start tracking configuration changes.',
     'aliases' => array('csta'),
     'examples' => array(
+      'drush csta --all' => 'Start tracking changes in all identifiers',
       'drush csta content_type.article' => 'Start tracking changes in the content type article and in all its dependencies',
+      'drush crev content_type.article --exclude-dependencies --exclude-optionals' => 'Revert the content type article using the backup saved in the staging area and its dependencies without include its dependencies and optional configurations.',
     ),
     'options' => array(
+      'all' => 'Start tracking all components',
       'exclude-dependencies' => 'Export a configuration without export its dependencies.',
       'exclude-optionals' => 'Export a configuration without export its optional configurations.',
     ),
@@ -117,17 +127,84 @@ function configuration_drush_command() {
     'description' => 'Stop tracking configuration changes.',
     'aliases' => array('csto'),
     'examples' => array(
+      'drush csto --all' => 'Stop tracking changes in all identifiers',
       'drush csto content_type.article' => 'Stop tracking changes in the content type article and in all its dependencies',
     ),
     'options' => array(
+      'all' => 'Stop tracking all components',
       'exclude-dependencies' => 'Export a configuration without export its dependencies.',
       'exclude-optionals' => 'Export a configuration without export its optional configurations.',
     ),
     'arguments' => array(),
   );
 
+  $items['config-list'] = array(
+    'callback' => '_configuration_list',
+    'description' => 'Return the list of components and identifiers',
+    'aliases' => array('clist'),
+    'examples' => array(
+      'drush clist' => 'Return the list of components and identifiers',
+    ),
+    'arguments' => array(),
+  );
   return $items;
 }
+
+/**
+ * Name: _get_component_and_identifier()
+ * Input : None
+ * Output : List of all components and its identifier
+ */
+function _get_component_and_identifier() {
+  //get all of the components
+  $components = configuration_get_handlers();
+  foreach ($components as $machine_name => $handler) {
+    //get all identifiers from a component
+    $identifiers = configuration_get_identifiers($machine_name);
+    foreach ($identifiers as $identifier) {
+      $rows[] = array(
+        'handler' => $handler['name'],
+        'machine_name' => $machine_name,
+        'identifier' => $identifier,
+      );
+    }
+  }
+  return $rows;
+}
+
+/**
+ * Name: _components_indentifier_formater()
+ * Input : None
+ * Output : List of all components and its identifier in the following format
+ *          components.identifier
+ */
+
+function _components_indentifier_formater() {
+  $formated = array();
+  $components = _get_component_and_identifier();
+  foreach ($components as $component) {
+    if (!empty($component['identifier'])) {
+      $formated[] =  $component['machine_name'] . "." . $component['identifier'];
+    }
+  }
+  return $formated;
+}
+
+/*
+ * Configuration list drush command
+ */
+function _configuration_list() {
+  $header = array();
+  $header[] = array(
+    'Component::Name',
+    'Component::Machine Name',
+    'Identifier',
+  );
+  $content = _get_component_and_identifier();
+  $table = array_merge($header, $content);
+  drush_print_table($table, TRUE);
+}
+
 
 function _configuration_get_identifiers() {
   if ($args = func_get_args()) {
@@ -135,13 +212,11 @@ function _configuration_get_identifiers() {
       return drush_set_error('', 'No components supplied.');
     }
   }
-
   $component = array_shift($args);
   $handlers = configuration_get_handlers();
   if (empty($handlers[$component])) {
     return drush_set_error('', dt('The component @component is not valid or the module to export the configuration is not installed.', array('@component' => $component)));
   }
-
   $identifiers = configuration_get_identifiers($component);
   $rows = array();
   foreach ($identifiers as $identifier) {
@@ -167,12 +242,17 @@ function _configuration_get_components() {
 }
 
 function _configuration_export_to_datastore() {
-  $args = func_get_args();
+  $export_all = drush_get_option('all');
+  if (!empty($export_all)) {
+    $args = _components_indentifier_formater();
+  }
+  else {
+    $args = func_get_args();
+  }
 
   if (empty($args)) {
     return drush_set_error('', dt('No configurations were selected to export'));
   }
-
   $handlers = configuration_get_handlers();
   foreach ($args as $arg) {
 
@@ -204,7 +284,13 @@ function _configuration_export_to_datastore() {
 }
 
 function _configuration_revert_activestore() {
-  $args = func_get_args();
+  $revert_all = drush_get_option('all');
+  if (!empty($revert_all)) {
+    $args = _components_indentifier_formater();
+  }
+  else {
+    $args = func_get_args();
+  }
 
   if (empty($args)) {
     return drush_set_error('', dt('No configurations were selected to revert'));
@@ -236,7 +322,13 @@ function _configuration_revert_activestore() {
 }
 
 function _configuration_start_tracking() {
-  $args = func_get_args();
+  $start_tracking_all = drush_get_option('all');
+  if (!empty($start_tracking_all)) {
+    $args = _components_indentifier_formater();
+  }
+  else {
+    $args = func_get_args();
+  }
 
   if (empty($args)) {
     return drush_set_error('', dt('No configurations were selected to track'));
@@ -268,8 +360,13 @@ function _configuration_start_tracking() {
 }
 
 function _configuration_stop_tracking() {
-  $args = func_get_args();
-
+  $stop_tracking_all = drush_get_option('all');
+  if (!empty($stop_tracking_all)) {
+    $args = _components_indentifier_formater();
+  }
+  else {
+    $args = func_get_args();
+  }
   if (empty($args)) {
     return drush_set_error('', dt('No configurations were selected to export'));
   }
@@ -300,7 +397,13 @@ function _configuration_stop_tracking() {
 }
 
 function _configuration_import_configurations() {
-  $args = func_get_args();
+  $import_all = drush_get_option('all');
+  if (!empty($import_all)) {
+    $args = _components_indentifier_formater();
+  }
+  else {
+    $args = func_get_args();
+  }
   _configuration_import_load_configurations('import', $args);
 }
 
