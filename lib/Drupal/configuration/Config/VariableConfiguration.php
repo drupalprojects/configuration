@@ -15,7 +15,7 @@ class VariableConfiguration extends Configuration {
   static protected $component = 'variable';
   protected $variable_name = '';
 
-  function __construct($identifier) {
+  function __construct($identifier, $component = '') {
     $this->variable_name = $identifier;
     parent::__construct(str_replace(' ', '_', $identifier));
 

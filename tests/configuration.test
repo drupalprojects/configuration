@@ -163,8 +163,8 @@ class ConfigurationApiTest extends ConfigurationWebTestCase {
     $article->description = 'modified';
     node_type_save($article);
 
-    $modified_config = new $handler('article');
-    $original_config = new $handler('article');
+    $modified_config = Configuration::createConfigurationInstance('content_type.article');
+    $original_config = Configuration::createConfigurationInstance('content_type.article');
     $original_config->loadFromStaging();
     $modified_config->loadFromActiveStore();
 

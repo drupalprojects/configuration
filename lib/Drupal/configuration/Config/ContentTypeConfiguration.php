@@ -14,7 +14,7 @@ class ContentTypeConfiguration extends Configuration {
 
   static protected $component = 'content_type';
 
-  function __construct($identifier) {
+  function __construct($identifier, $component = '') {
     parent::__construct($identifier);
     $keys = array(
       'type',

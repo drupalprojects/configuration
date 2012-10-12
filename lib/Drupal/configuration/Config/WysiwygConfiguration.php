@@ -62,8 +62,7 @@ class WysiwygConfiguration extends Configuration {
 
     $formats = filter_formats();
     if (isset($formats[$format])) {
-      $class = Configuration::getConfigurationHandler('text_format');
-      $filter_format = new $class($format);
+      $filter_format = Configuration::createConfigurationInstance('text_format.' . $format);
       $this->addToDependencies($filter_format);
     }
 

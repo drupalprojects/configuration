@@ -184,8 +184,7 @@ function configuration_configuration_handlers() {
  *   For $component == 'variable', $identifier = 'comment_controls_article'
  */
 function configuration_backup_to_staging($component, $identifier, $backup_dependencies = TRUE, $backup_optionals = TRUE) {
-  $handler = Configuration::getConfigurationHandler($component);
-  $configuration = new $handler($identifier);
+  $configuration = Configuration::createConfigurationInstance($component . '.' . $identifier);
   $backuped = array();
   $configuration->backupConfiguration($backuped, $backup_dependencies, $backup_optionals);
   return $backuped;

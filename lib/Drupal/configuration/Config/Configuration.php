@@ -73,7 +73,7 @@ class Configuration {
    */
   static protected $stream = 'config://';
 
-  public function __construct($identifier) {
+  public function __construct($identifier, $component = '') {
     $this->identifier = $identifier;
     $this->storage = static::getStorageInstance();
     $this->storage->setFileName($this->getUniqueId());
@@ -89,6 +89,20 @@ class Configuration {
     // Allow to configure the Storage System per configuration component
     $return = variable_get('configuration_storage_system_' . static::$component, $return);
     return $return;
+  }
+
+  /**
+   * Returns a Configuration Object of the type specified in the firt part of
+   * the $configuration_id.
+   *
+   * @param  string $configuration_id
+   *   A string that identified the configuration and its identifier. e.g
+   *   content_type.article
+   */
+  static public function createConfigurationInstance($configuration_id) {
+    list($component_name, $identifier) = explode('.', $configuration_id, 2);
+    $handler = Configuration::getConfigurationHandler($component_name);
+    return new $handler($identifier, $component_name);
   }
 
   /**
@@ -296,9 +310,7 @@ class Configuration {
       )
     );
     foreach ($list as $component) {
-      list($component_name, $identifier) = explode('.', $component, 2);
-      $handler = Configuration::getConfigurationHandler($component_name);
-      $config = new $handler($identifier);
+      $config = Configuration::createConfigurationInstance($component);
 
       // Make sure the object is built before start to iterate on its
       // dependencies.
@@ -385,9 +397,7 @@ class Configuration {
     );
 
     foreach ($list as $component) {
-      list($component_name, $identifier) = explode('.', $component, 2);
-      $handler = Configuration::getConfigurationHandler($component_name);
-      $config = new $handler($identifier);
+      $config = Configuration::createConfigurationInstance($component);
 
       // Make sure the object is built before start to iterate on its
       // dependencies.
@@ -447,9 +457,7 @@ class Configuration {
     );
 
     foreach ($list as $component) {
-      list($component_name, $identifier) = explode('.', $component, 2);
-      $handler = Configuration::getConfigurationHandler($component_name);
-      $config = new $handler($identifier);
+      $config = Configuration::createConfigurationInstance($component);
 
       // Make sure the object is built before start to iterate on its
       // dependencies.
@@ -505,9 +513,7 @@ class Configuration {
     );
 
     foreach ($list as $component) {
-      list($component_name, $identifier) = explode('.', $component, 2);
-      $handler = Configuration::getConfigurationHandler($component_name);
-      $config = new $handler($identifier);
+      $config = Configuration::createConfigurationInstance($component);
 
       // Make sure the object is built before start to iterate on its
       // dependencies.
@@ -575,9 +581,7 @@ class Configuration {
     );
 
     foreach ($list as $component) {
-      list($component_name, $identifier) = explode('.', $component, 2);
-      $handler = Configuration::getConfigurationHandler($component_name);
-      $config = new $handler($identifier);
+      $config = Configuration::createConfigurationInstance($component);
 
       // Make sure the object is built before start to iterate on its
       // dependencies.
@@ -1111,9 +1115,7 @@ class Configuration {
     drupal_send_headers();
 
     foreach ($list as $component) {
-      list($component_name, $identifier) = explode('.', $component, 2);
-      $handler = Configuration::getConfigurationHandler($component_name);
-      $config = new $handler($identifier);
+      $config = Configuration::createConfigurationInstance($component);
 
       // Make sure the object is built before start to iterate on its
       // dependencies.
@@ -1310,9 +1312,7 @@ class Configuration {
         else {
           $config = $settings->getFromCache($dependency);
           if (!$config) {
-            list($component_name, $identifier) = explode('.', $dependency, 2);
-            $handler = Configuration::getConfigurationHandler($component_name);
-            $config = new $handler($identifier);
+            $config = Configuration::createConfigurationInstance($dependency);
           }
         }
         $config->{$build_callback}();
@@ -1342,9 +1342,7 @@ class Configuration {
         }
         else {
           if (!$config) {
-            list($component_name, $identifier) = explode('.', $optional, 2);
-            $handler = Configuration::getConfigurationHandler($component_name);
-            $config = new $handler($identifier);
+            $config = Configuration::createConfigurationInstance($optional);
           }
         }
         $config->{$build_callback}();

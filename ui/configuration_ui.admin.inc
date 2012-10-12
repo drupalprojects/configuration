@@ -193,9 +193,7 @@ function configuration_ui_notracking_form($form, &$form_state) {
  * Menu Callback Form.
  */
 function configuration_ui_config_info($config_id) {
-  list($component_name, $identifier) = explode('.', $config_id, 2);
-  $handler = Configuration::getConfigurationHandler($component_name);
-  $config = new $handler($identifier);
+  $config = Configuration::createConfigurationInstance($config_id);
 
   $config->loadFromActiveStore();
 
