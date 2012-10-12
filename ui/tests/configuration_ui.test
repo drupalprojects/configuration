@@ -60,9 +60,9 @@ class ConfigurationUITest extends ConfigurationUIWebTestCase {
     }
 
     $this->components = array(
-      'content-type' => 'Content Types',
-      'field' => 'Fields',
-      'image-style' => 'Image Styles',
+      'content-type' => 'Content type',
+      'field' => 'Field',
+      'image-style' => 'Image style',
       'variables' => 'Variable',
       'permission' => 'Permission',
       'vocabulary' => 'Vocabulary',

@@ -22,6 +22,9 @@ class VariableConfiguration extends Configuration {
     $this->storage->setFileName('variable.' . str_replace(' ', '_', $identifier));
   }
 
+  static public function getComponentHumanName($component, $plural = FALSE) {
+    return $plural ? t('Variables') : t('Variable');
+  }
 
   protected function prepareBuild() {
     $this->data = array(

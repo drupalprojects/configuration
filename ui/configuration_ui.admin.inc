@@ -26,9 +26,9 @@ function configuration_ui_tracking_form($form, &$form_state) {
   $tracked = Configuration::trackedConfigurations();
 
   foreach ($tracked as $component => $list) {
+
     $options = array();
     foreach ($list as $identifier => $hash) {
-
       $id = $component . '.' . $identifier;
       $status = '<span class ="config-status" rel="' . $id . '">' . t('Processing...') . '</span>';
 
@@ -40,13 +40,13 @@ function configuration_ui_tracking_form($form, &$form_state) {
     }
 
     if (!empty($options)) {
+      $handler = Configuration::getConfigurationHandler($component);
       $component_exists = TRUE;
-      $component_name = check_plain($handlers[$component]['name']);
       $form[$component] = array(
         '#type' => 'fieldset',
         '#group' => 'packages',
-        '#title' => check_plain($component_name),
-        '#description' => t('Currenly tracked configurations for: @component', array('@component' => $component_name)),
+        '#title' => check_plain($handler::getComponentHumanName($component)),
+        '#description' => t('Currenly tracked configurations for: @component', array('@component' => $handler::getComponentHumanName($component, TRUE))),
         '#collapsible' => TRUE,
         '#collapsed' => TRUE,
         '#tree' => TRUE,
@@ -114,7 +114,6 @@ function configuration_ui_tracking_form($form, &$form_state) {
  */
 function configuration_ui_notracking_form($form, &$form_state) {
   $component_exists = FALSE;
-  $handlers = configuration_configuration_handlers();
 
   $form['packages'] = array('#type' => 'vertical_tabs');
   $form['#attached']['css'] = array(
@@ -132,12 +131,13 @@ function configuration_ui_notracking_form($form, &$form_state) {
     }
 
     if (!empty($options)) {
+      $handler = Configuration::getConfigurationHandler($component);
       $component_exists = TRUE;
       $form[$component] = array(
         '#type' => 'fieldset',
         '#group' => 'packages',
-        '#title' => check_plain($handlers[$component]['name']),
-        '#description' => t('Available configurations for: @component', array('@component' => $handlers[$component]['name'])),
+        '#title' => check_plain($handler::getComponentHumanName($component)),
+        '#description' => t('Available configurations for: @component', array('@component' => $handler::getComponentHumanName($component))),
         '#collapsible' => TRUE,
         '#collapsed' => TRUE,
         '#tree' => TRUE,
@@ -364,7 +364,6 @@ function configuration_ui_import_form($form, &$form_state) {
  */
 function configuration_ui_export_form($form, &$form_state) {
   $component_exists = FALSE;
-  $handlers = configuration_configuration_handlers();
 
   $form['packages'] = array('#type' => 'vertical_tabs');
   $form['#attached']['css'] = array(
@@ -386,12 +385,12 @@ function configuration_ui_export_form($form, &$form_state) {
 
     if (!empty($options)) {
       $component_exists = TRUE;
-      $component_name = check_plain($handlers[$component]['name']);
+      $handler = Configuration::getConfigurationHandler($component);
       $form[$component] = array(
         '#type' => 'fieldset',
         '#group' => 'packages',
-        '#title' => check_plain($component_name),
-        '#description' => t('Available configurations for: @component', array('@component' => $component_name)),
+        '#title' => check_plain($handler::getComponentHumanName($component)),
+        '#description' => t('Available configurations for: @component', array('@component' => $handler::getComponentHumanName($component, TRUE))),
         '#collapsible' => TRUE,
         '#collapsed' => TRUE,
         '#tree' => TRUE,

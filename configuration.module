@@ -73,83 +73,69 @@ function configuration_configuration_handlers() {
   $namespace = 'Drupal\configuration\Config';
   $handlers = array(
     'content_type' => array(
-      'name' => 'Content Types',
       'handler' => 'ContentTypeConfiguration',
       'namespace' => $namespace,
     ),
     'field' => array(
-      'name' => 'Fields',
       'handler' => 'FieldConfiguration',
       'namespace' => $namespace,
     ),
     'image_style' => array(
-      'name' => 'Image Styles',
       'handler' => 'ImageStyleConfiguration',
       'namespace' => $namespace,
     ),
     'text_format' => array(
-      'name' => 'Text Formats',
       'handler' => 'TextFormatConfiguration',
       'namespace' => $namespace,
     ),
     'variable' => array(
-      'name' => 'Variable',
       'handler' => 'VariableConfiguration',
       'namespace' => $namespace,
     ),
     'permission' => array(
-      'name' => 'Permission',
       'handler' => 'PermissionConfiguration',
       'namespace' => $namespace,
     ),
   );
   if (module_exists('taxonomy')) {
     $handlers['vocabulary'] = array(
-      'name' => 'Vocabulary',
       'handler' => 'VocabularyConfiguration',
       'namespace' => $namespace,
     );
   }
   if (module_exists('menu')) {
     $handlers['menu'] = array(
-      'name' => 'Menu',
       'handler' => 'MenuConfiguration',
       'namespace' => $namespace,
     );
     $handlers['menulink'] = array(
-      'name' => 'MenuLink',
       'handler' => 'MenuLinkConfiguration',
       'namespace' => $namespace,
     );
   }
   if (module_exists('views')) {
     $handlers['view'] = array(
-      'name' => 'View',
       'handler' => 'ViewConfiguration',
       'namespace' => $namespace,
     );
   }
   if (module_exists('wysiwyg')) {
     $handlers['wysiwyg'] = array(
-      'name' => 'Wysiwyg',
       'handler' => 'WysiwygConfiguration',
       'namespace' => $namespace,
     );
   }
   if (module_exists('panels')) {
     $handlers['panels'] = array(
-      'name' => 'Panels',
       'handler' => 'PanelsConfiguration',
       'namespace' => $namespace,
     );
     $handlers['panels_pipeline'] = array(
-      'name' => 'Panels Pipeline',
       'handler' => 'PanelsPipelineConfiguration',
       'namespace' => $namespace,
     );
     if (module_exists('panels_mini')) {
       $handlers['panels_mini'] = array(
-        'name' => 'Panels Mini',
         'handler' => 'PanelsMiniConfiguration',
         'namespace' => $namespace,
       );
@@ -157,12 +143,10 @@ function configuration_configuration_handlers() {
   }
   if (module_exists('page_manager')) {
     $handlers['page_manager'] = array(
-      'name' => 'Page Manager',
       'handler' => 'PageManagerConfiguration',
       'namespace' => $namespace,
     );
     $handlers['page_manager_handler'] = array(
-      'name' => 'Page Manager Handler',
       'handler' => 'PageManagerHandlerConfiguration',
       'namespace' => $namespace,
     );

@@ -18,6 +18,10 @@ class VocabularyConfiguration extends Configuration {
     return TRUE;
   }
 
+  static public function getComponentHumanName($component, $plural = FALSE) {
+    return $plural ? t('Vocabularies') : t('Vocabulary');
+  }
+
   public function getEntityType() {
     return 'vocabulary';
   }

@@ -830,6 +830,13 @@ class Configuration {
   }
 
   /**
+   * Returns the human name of the given component.
+   */
+  static public function getComponentHumanName($component, $plural = FALSE) {
+    return t('UNDEFINED: ') . $component;
+  }
+
+  /**
    * Returns the identifier of the configuration object.
    */
   public function getIdentifier() {

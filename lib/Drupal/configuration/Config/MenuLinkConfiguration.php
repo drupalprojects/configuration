@@ -20,6 +20,10 @@ class MenuLinkConfiguration extends Configuration {
     return $this;
   }
 
+  static public function getComponentHumanName($component, $plural = FALSE) {
+    return $plural ? t('Menu links') : t('Menu link');
+  }
+
   public function saveToActiveStore(ConfigIteratorSettings &$settings) {
     menu_link_save($this->getData());
     $settings->addInfo('imported', $this->getUniqueId());

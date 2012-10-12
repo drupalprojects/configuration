@@ -24,6 +24,10 @@ class PermissionConfiguration extends Configuration {
     return $this;
   }
 
+  static public function getComponentHumanName($component, $plural = FALSE) {
+    return $plural ? t('Permissions') : t('Permission');
+  }
+
   public static function getPermissionById($identifier) {
     $perms = static::getPermissionList();
     if (!empty($perms[$identifier])) {

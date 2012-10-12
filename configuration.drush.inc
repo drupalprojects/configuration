@@ -158,14 +158,15 @@ function configuration_drush_command() {
 function _get_component_and_identifier() {
   //get all of the components
   $components = configuration_get_handlers();
-  foreach ($components as $machine_name => $handler) {
+  foreach (array_keys($components) as $component) {
+    $handler = Configuration::getConfigurationHandler($component);
     //get all identifiers from a component
     $handler = Configuration::getConfigurationHandler($machine_name);
     $identifiers = $handler::getAllIdentifiers($machine_name);
     foreach ($identifiers as $identifier) {
       $rows[] = array(
-        'handler' => $components[$machine_name]['name'],
-        'machine_name' => $machine_name,
+        'handler' => $handler::getComponentHumanName($component),
+        'machine_name' => $component,
         'identifier' => $identifier,
       );
     }
@@ -234,10 +235,11 @@ function _configuration_get_components() {
     'Name',
     'Machine Name'
   );
-  foreach ($handlers as $machine_name => $handler) {
+  foreach (array_keys($handlers) as $component) {
+    $handler = Configuration::getConfigurationHandler($component);
     $rows[] = array(
-      'handler' => $handler['name'],
-      'machine_name' => $machine_name,
+      'handler' => $handler::getComponentHumanName($component),
+      'machine_name' => $component,
     );
   }
   drush_print_table($rows, TRUE);

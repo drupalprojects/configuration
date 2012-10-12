@@ -28,6 +28,10 @@ class ImageStyleConfiguration extends Configuration {
     return $this;
   }
 
+  static public function getComponentHumanName($component, $plural = FALSE) {
+    return $plural ? t('Image styles') : t('Image style');
+  }
+
   /**
    * Returns all the identifiers available for this component.
    */

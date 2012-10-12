@@ -19,6 +19,10 @@ class TextFormatConfiguration extends Configuration {
     return $this;
   }
 
+  static public function getComponentHumanName($component, $plural = FALSE) {
+    return $plural ? t('Text formats') : t('Text format');
+  }
+
   /**
    * Returns all the identifiers available for this component.
    */

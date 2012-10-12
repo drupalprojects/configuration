@@ -28,6 +28,10 @@ class ContentTypeConfiguration extends Configuration {
     $this->setKeysToExport($keys);
   }
 
+  static public function getComponentHumanName($component, $plural = FALSE) {
+    return $plural ? t('Content types') : t('Content type');
+  }
+
   public function configForEntity() {
     return TRUE;
   }

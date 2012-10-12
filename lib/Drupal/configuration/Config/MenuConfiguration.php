@@ -19,6 +19,10 @@ class MenuConfiguration extends Configuration {
     return $this;
   }
 
+  static public function getComponentHumanName($component, $plural = FALSE) {
+    return $plural ? t('Menus') : t('Menu');
+  }
+
   public function saveToActiveStore(ConfigIteratorSettings &$settings) {
     menu_save($this->getData());
     $settings->addInfo('imported', $this->getUniqueId());

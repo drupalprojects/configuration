@@ -19,6 +19,10 @@ class FieldConfiguration extends Configuration {
     return $this;
   }
 
+  static public function getComponentHumanName($component, $plural = FALSE) {
+    return $plural ? t('Fields') : t('Field');
+  }
+
   /**
    * Returns all the identifiers available for this component.
    */

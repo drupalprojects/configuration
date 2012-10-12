@@ -19,6 +19,10 @@ class WysiwygConfiguration extends Configuration {
     return $this;
   }
 
+  static public function getComponentHumanName($component, $plural = FALSE) {
+    return $plural ? t('Wyswyg Profiles') : t('Wyswyg Profile');
+  }
+
   /**
    * Returns all the identifiers available for this component.
    */
