@@ -27,7 +27,7 @@ class MenuConfiguration extends Configuration {
   /**
    * Returns all the identifiers available for this component.
    */
-  public static function getAllIdentifiers() {
+  public static function getAllIdentifiers($component) {
     $menus = db_query("SELECT menu_name FROM {menu_custom}")->fetchAll();
     $return = array();
     foreach ($menus as $menu) {

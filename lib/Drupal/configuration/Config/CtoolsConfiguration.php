@@ -29,7 +29,7 @@ abstract class CtoolsConfiguration extends Configuration {
   /**
    * Returns all the identifiers available for the given component.
    */
-  public static function getAllIdentifiers() {
+  public static function getAllIdentifiers($component) {
     ctools_include('export');
     $objects = ctools_export_load_object(static::$table, 'all');
     return drupal_map_assoc(array_keys($objects));

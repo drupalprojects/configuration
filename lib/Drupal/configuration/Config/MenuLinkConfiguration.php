@@ -28,7 +28,7 @@ class MenuLinkConfiguration extends Configuration {
   /**
    * Returns all the identifiers available for this component.
    */
-  public static function getAllIdentifiers() {
+  public static function getAllIdentifiers($component) {
     $menu_links = menu_parent_options(menu_get_menus(), array('mlid' => 0));
     $return = array();
     foreach ($menu_links as $key => $name) {

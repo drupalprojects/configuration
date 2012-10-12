@@ -22,7 +22,7 @@ class TextFormatConfiguration extends Configuration {
   /**
    * Returns all the identifiers available for this component.
    */
-  public static function getAllIdentifiers() {
+  public static function getAllIdentifiers($component) {
     return array_keys(filter_formats());
   }
 

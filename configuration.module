@@ -192,24 +192,6 @@ function configuration_backup_to_staging($component, $identifier, $backup_depend
 }
 
 /**
- * Returns a list of identifiers for a specific component.
- *
- * @param $component
- *   The name of the component to export, i.e, 'content_type',
- *   'field', 'variable', 'permission', etc.
- */
-function configuration_get_identifiers($component) {
-  $handler = Configuration::getConfigurationHandler($component);
-  if ($handler::multiComponent()) {
-    $identifiers = $handler::getAllIdentifiers($component);
-  }
-  else {
-    $identifiers = $handler::getAllIdentifiers();
-  }
-  return $identifiers;
-}
-
-/**
  * Returns a list of components that can be exported.
  */
 function configuration_get_handlers() {

@@ -160,10 +160,11 @@ function _get_component_and_identifier() {
   $components = configuration_get_handlers();
   foreach ($components as $machine_name => $handler) {
     //get all identifiers from a component
-    $identifiers = configuration_get_identifiers($machine_name);
+    $handler = Configuration::getConfigurationHandler($machine_name);
+    $identifiers = $handler::getAllIdentifiers($machine_name);
     foreach ($identifiers as $identifier) {
       $rows[] = array(
-        'handler' => $handler['name'],
+        'handler' => $components[$machine_name]['name'],
         'machine_name' => $machine_name,
         'identifier' => $identifier,
       );
@@ -217,7 +218,8 @@ function _configuration_get_identifiers() {
   if (empty($handlers[$component])) {
     return drush_set_error('', dt('The component @component is not valid or the module to export the configuration is not installed.', array('@component' => $component)));
   }
-  $identifiers = configuration_get_identifiers($component);
+  $handler = Configuration::getConfigurationHandler($component);
+  $identifiers = $handler::getAllIdentifiers($component);
   $rows = array();
   foreach ($identifiers as $identifier) {
     $rows[]['identifier'] = $identifier;

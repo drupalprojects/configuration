@@ -22,7 +22,7 @@ class FieldConfiguration extends Configuration {
   /**
    * Returns all the identifiers available for this component.
    */
-  public static function getAllIdentifiers() {
+  public static function getAllIdentifiers($component) {
     $identifiers = array();
     foreach (field_info_fields() as $field) {
       foreach ($field['bundles'] as $entity_type => $bundles) {

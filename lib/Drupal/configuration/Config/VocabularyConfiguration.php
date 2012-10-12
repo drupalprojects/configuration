@@ -50,7 +50,7 @@ class VocabularyConfiguration extends Configuration {
   /**
    * Returns all the identifiers available for this component.
    */
-  public static function getAllIdentifiers() {
+  public static function getAllIdentifiers($component) {
     $return = array();
     $vocabularies = taxonomy_get_vocabularies();
     foreach ($vocabularies as $vocabulary) {

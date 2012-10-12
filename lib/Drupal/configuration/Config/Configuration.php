@@ -131,7 +131,7 @@ class Configuration {
   /**
    * Returns all the identifiers available for this component.
    */
-  public static function getAllIdentifiers() {
+  public static function getAllIdentifiers($component) {
     return array();
   }
 
@@ -651,8 +651,9 @@ class Configuration {
     $tracked = static::trackedConfigurations();
     $non_tracked = array();
 
-    foreach ($handlers as $component => $handler) {
-      $identifiers = configuration_get_identifiers($component);
+    foreach (array_keys($handlers) as $component) {
+      $handler = Configuration::getConfigurationHandler($component);
+      $identifiers = $handler::getAllIdentifiers($component);
       foreach ($identifiers as $identifier) {
         if (empty($tracked[$component]) || empty($tracked[$component][$identifier])) {
           $id = $component . '.' . $identifier;
@@ -676,7 +677,7 @@ class Configuration {
     $all = array();
 
     foreach ($handlers as $component => $handler) {
-      $identifiers = configuration_get_identifiers($component);
+      $identifiers = Configuration::getAllIdentifiers($component);
       foreach ($identifiers as $identifier) {
         $id = $component . '.' . $identifier;
         if (!empty($tracked[$component][$identifier])) {

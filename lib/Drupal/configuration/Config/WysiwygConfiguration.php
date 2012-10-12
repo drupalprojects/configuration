@@ -22,7 +22,7 @@ class WysiwygConfiguration extends Configuration {
   /**
    * Returns all the identifiers available for this component.
    */
-  public static function getAllIdentifiers() {
+  public static function getAllIdentifiers($component) {
     $profiles = array();
 
     $formats = filter_formats();
