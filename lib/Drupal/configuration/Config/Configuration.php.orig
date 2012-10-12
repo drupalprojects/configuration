@@ -87,7 +87,7 @@ class Configuration {
     // Specify a default Storage system
     $return = variable_get('configuration_storage_system', $default);
     // Allow to configure the Storage System per configuration component
-    $return = variable_get('configuration_storage_system_' . static::getComponent(), $return);
+    $return = variable_get('configuration_storage_system_' . static::$component, $return);
     return $return;
   }
 
@@ -178,7 +178,7 @@ class Configuration {
     $path = drupal_realpath('config://');
     $storage_system = static::getStorageSystem();
     $ext = $storage_system::$file_extension;
-    $look_for = '/\A' . static::getComponent() . '\..*' . $ext . '$/';
+    $look_for = '/\A' . static::$component . '\..*' . $ext . '$/';
 
     $files = file_scan_directory($path, $look_for);
 
@@ -246,12 +246,12 @@ class Configuration {
    */
   public function saveToStaging() {
     db_delete('configuration_staging')
-      ->condition('component', static::getComponent())
+      ->condition('component', static::$component)
       ->condition('identifier', $this->getIdentifier())
       ->execute();
 
     $fields = array(
-      'component' => static::getComponent(),
+      'component' => static::$component,
       'identifier' => $this->getIdentifier(),
       'hash' => $this->getHash(),
       'data' => serialize($this->getData()),
@@ -416,7 +416,7 @@ class Configuration {
    */
   public function removeFromStaging(ConfigIteratorSettings &$settings) {
     db_delete('configuration_staging')
-      ->condition('component', static::getComponent())
+      ->condition('component', static::$component)
       ->condition('identifier', $this->getIdentifier())
       ->execute();
 
@@ -785,7 +785,7 @@ class Configuration {
   public function getStatus($human_name = TRUE) {
     $staging_hash = db_select('configuration_staging', 'cs')
                       ->fields('cs', array('hash'))
-                      ->condition('component', static::getComponent())
+                      ->condition('component', static::$component)
                       ->condition('identifier', $this->getIdentifier())
                       ->execute()
                       ->fetchField();
@@ -819,7 +819,7 @@ class Configuration {
    * @return string
    */
   public function getUniqueId() {
-    return static::getComponent() . '.' . $this->getIdentifier();
+    return static::$component . '.' . $this->getIdentifier();
   }
 
   /**
@@ -1011,14 +1011,14 @@ class Configuration {
       // First, look for the dependency in the staging table.
       $exists = db_select('configuration_staging', 'cs')
                         ->fields('cs', array('identifier'))
-                        ->condition('component', static::getComponent())
+                        ->condition('component', static::$component)
                         ->condition('identifier', $this->getIdentifier())
                         ->fetchField();
 
       if (!$exists) {
         // If not exists in the database, look into the config:// directory.
         $storage_system = static::getStorageSystem();
-        $file_exists = $storage_system::configFileExists(static::getComponent(), $this->getIdentifier());
+        $file_exists = $storage_system::configFileExists(static::$component, $this->getIdentifier());
         if (!$file_exists) {
           return FALSE;
         }
