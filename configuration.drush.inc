@@ -17,6 +17,10 @@ function configuration_drush_help($section) {
       return dt("Return the list of identifiers for a given component.");
     case 'drush:cgc':
       return dt("Return the list of configurations components that can be exported.");
+    case 'drush:cgt':
+      return dt("Return the list of configurations components that are tracked.");
+    case 'drush:cgnt':
+      return dt("Return the list of configurations components that are not tracked.");
     case 'drush:cimp':
       return dt("Import configurations into the ActiveStore.");
     case 'drush:cexp':
@@ -54,6 +58,24 @@ function configuration_drush_command() {
     'aliases' => array('cgc'),
     'examples' => array(
       'drush cgc' => 'Return the list of all available configuration components that can be exported',
+    ),
+    'arguments' => array(),
+  );
+  $items['config-get-tracked'] = array(
+    'callback' => '_configuration_get_tracked',
+    'description' => 'Return the list of configurations components that are tracked.',
+    'aliases' => array('cgt'),
+    'examples' => array(
+      'drush cgt' => 'Return the list of configurations components that are tracked.',
+    ),
+    'arguments' => array(),
+  );
+  $items['config-get-non-tracked'] = array(
+    'callback' => '_configuration_get_not_tracked',
+    'description' => 'Return the list of configurations components that are not tracked.',
+    'aliases' => array('cgnt'),
+    'examples' => array(
+      'drush cgnt' => 'Return the list of configurations components that are not tracked.',
     ),
     'arguments' => array(),
   );
@@ -204,7 +226,69 @@ function _configuration_list() {
   $table = array_merge($header, $content);
   drush_print_table($table, TRUE);
 }
+/*
+ * Name: _configuration_get_tracked()
+ * Input : None
+ * Output : List of all components that are tracked
+ */
 
+function _configuration_get_tracked() {
+  $header = array();
+  $header[] = array(
+    'Component::Machine Name',
+    'Identifier',
+    'Status',
+    'Hash',
+  );
+  //get tracked file
+  $tracked = Configuration::trackedConfigurations();
+  //format the result
+  foreach ($tracked as $component => $list) {
+    foreach ($list as $identifier => $hash) {
+      //check status
+      $configuration = Configuration::createConfigurationInstance($component);
+      $content[] = array(
+        'component' => $component,
+        'identifier' => $identifier,
+        'status' => $configuration->getStatus(),
+        'hash' => $hash,
+      );
+    }
+  }
+  if (empty($content)) {
+    return drush_print('No tracked components');
+  }
+  $table = array_merge($header, $content);
+  drush_print_table($table, TRUE);
+}
+
+/**
+ * Name: _configuration_get_not_tracked()
+ * Input: None
+ * Output: List of all components that are not tracked
+ */
+function _configuration_get_not_tracked() {
+  $header = array();
+  $header[] = array(
+    'Component::Machine Name',
+    'Identifier',
+  );
+  $not_tracked = Configuration::nonTrackedConfigurations();
+
+  if (empty($not_tracked)) {
+    return drush_print('All components have been tracked');
+  }
+  foreach ($not_tracked as $component => $list) {
+    foreach ($list as $identifier) {
+      $content[] = array(
+        'component' => $component,
+        'identifier' => $identifier,
+      );
+    }
+  }
+  $table = array_merge($header, $content);
+  drush_print_table($table, TRUE);
+}
 
 function _configuration_get_identifiers() {
   if ($args = func_get_args()) {
