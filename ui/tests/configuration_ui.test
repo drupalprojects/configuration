@@ -127,6 +127,9 @@ class ConfigurationUITest extends ConfigurationUIWebTestCase {
     $edit = array();
     $edit['content_type[tracked][content_type.article]'] = TRUE;
     $this->drupalPost('admin/config/system/configuration/notracking', $edit, t('Start Tracking'));
+    foreach ($this->configurations as $id) {
+      $this->assertRaw('Tracking ' .  $id);
+    }
 
     $this->drupalGet('admin/config/system/configuration/notracking');
     foreach ($this->configurations as $id) {
@@ -147,7 +150,9 @@ class ConfigurationUITest extends ConfigurationUIWebTestCase {
     $edit = array();
     $edit['content_type[tracked][content_type.article]'] = TRUE;
     $this->drupalPost('admin/config/system/configuration/tracking', $edit, t('Stop Tracking'));
-
+    foreach ($this->configurations as $id) {
+      $this->assertRaw('Untracked ' .  $id);
+    }
     $this->assertRaw('No Configurations were found');
 
     $this->drupalGet('admin/config/system/configuration/notracking');

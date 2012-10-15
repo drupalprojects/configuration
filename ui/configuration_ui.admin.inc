@@ -227,6 +227,12 @@ function configuration_ui_activate_form_submit($form, &$form_state) {
   $revert_dependencies = $form_state['values']['include_dependencies'];
   $revert_optionals = $form_state['values']['include_optionals'];
   $result = Configuration::revertActiveStore($args, $revert_dependencies, $revert_optionals);
+  $configurations = $result->getInfo('imported');
+  if (!empty($configurations)) {
+    foreach ($configurations as $configuration) {
+      drupal_set_message(t('Reverted @configuration.', array('@configuration' => $configuration)));
+    }
+  }
 }
 
 /**
@@ -237,6 +243,13 @@ function configuration_ui_stop_tracking_form_submit($form, &$form_state) {
   $stop_tracking_dependencies = $form_state['values']['include_dependencies'];
   $stop_tracking_optionals = $form_state['values']['include_optionals'];
   $result = Configuration::stopTracking($args, $stop_tracking_dependencies, $stop_tracking_optionals);
+
+  $configurations = $result->getInfo('untracked');
+  if (!empty($configurations)) {
+    foreach ($configurations as $configuration) {
+      drupal_set_message(t('Untracked @configuration.', array('@configuration' => $configuration)));
+    }
+  }
 }
 
 /**
@@ -301,16 +314,28 @@ function configuration_ui_export_to_datastore_form_submit($form, &$form_state) {
   $export_dependencies = $form_state['values']['include_dependencies'];
   $export_optionals = $form_state['values']['include_optionals'];
   $result = Configuration::exportToDataStore($args, $export_dependencies, $export_optionals);
+  $configurations = $result->getInfo('exported');
+  if (!empty($configurations)) {
+    foreach ($configurations as $configuration) {
+      drupal_set_message(t('Exported @configuration.', array('@configuration' => $configuration)));
+    }
+  }
 }
 
 /**
- * Submit handler for stop tracking configs.
+ * Submit handler for start tracking configs.
  */
 function configuration_ui_start_tracking_form_submit($form, &$form_state) {
   $args = configuration_ui_get_form_components($form, $form_state);
   $start_tracking_dependencies = $form_state['values']['include_dependencies'];
   $start_tracking_optionals = $form_state['values']['include_optionals'];
   $result = Configuration::startTracking($args, $start_tracking_dependencies, $start_tracking_optionals);
+  $configurations = $result->getInfo('exported');
+  if (!empty($configurations)) {
+    foreach ($configurations as $configuration) {
+      drupal_set_message(t('Tracking @configuration.', array('@configuration' => $configuration)));
+    }
+  }
 }
 
 function configuration_ui_tracking_form_validate() {
