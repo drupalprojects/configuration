@@ -10,6 +10,7 @@ files[] = handlers/image_styles.test
 files[] = handlers/permissions.test
 files[] = handlers/text_formats.test
 files[] = handlers/variables.test
+files[] = handlers/vocabularies.test
 
 dependencies[] = ctools
 dependencies[] = views
