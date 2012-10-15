@@ -145,15 +145,6 @@ class Configuration {
   }
 
   /**
-   * Returns a list of all the clases that manages configurations
-   */
-  public static function getAllConfigurationHandlers() {
-    // @TODO: Use the chache for this
-    $handlers = module_invoke_all('configuration_handlers');
-    return $handlers;
-  }
-
-  /**
    * Returns a handler that manages the configurations for the given component.
    */
   public static function getConfigurationHandler($component = NULL, $skip_module_checking = FALSE) {
@@ -163,7 +154,7 @@ class Configuration {
       $map = array();
     }
     if (!isset($handlers)) {
-      $handlers = Configuration::getAllConfigurationHandlers();
+      $handlers = module_invoke_all('configuration_handlers');
     }
     foreach ($handlers as $handler) {
       if ($skip_module_checking || $handler::isActive()) {
@@ -1009,16 +1000,14 @@ class Configuration {
    * to the current configuration that is being exported.
    */
   public function findDependencies() {
-    $handlers = static::getAllConfigurationHandlers();
+    $handlers = Configuration::getConfigurationHandler();
     $stack = array();
     // Include this configuration to the stack to avoid add it again
     // in a circular dependency cycle
     $stack[$this->getUniqueId()] = TRUE;
 
     foreach ($handlers as $component => $handler) {
-      if ($handler::isActive()) {
-        $handler::alterDependencies($this, $stack);
-      }
+      $handler::alterDependencies($this, $stack);
     }
   }
 

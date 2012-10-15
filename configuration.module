@@ -109,21 +109,13 @@ function configuration_backup_to_staging($component, $identifier, $backup_depend
 }
 
 /**
- * Returns a list of components that can be exported.
- */
-function configuration_get_handlers() {
-  return Configuration::getAllConfigurationHandlers();
-}
-
-/**
  * Load a list of configurations from config:// into the staging area.
  */
 function configuration_load_configurations($list = array()) {
-  $handlers = configuration_get_handlers();
+  $handlers = Configuration::getConfigurationHandler();
   $components = array();
-  foreach ($handlers as $handler) {
-    $class = '\\' . $handler['namespace'] . '\\' . $handler['handler'];
-    $components = array_merge($components, $class::scanDataStore());
+  foreach ($handlers as $component => $handler) {
+    $components = array_merge($components, $handler::scanDataStore());
   }
   $to_load = Configuration::importConfigurations($components, $list, TRUE, TRUE, FALSE);
   foreach ($to_load as $config) {

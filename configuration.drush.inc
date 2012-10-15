@@ -157,9 +157,8 @@ function configuration_drush_command() {
  */
 function _get_component_and_identifier() {
   //get all of the components
-  $components = configuration_get_handlers();
-  foreach (array_keys($components) as $component) {
-    $handler = Configuration::getConfigurationHandler($component);
+  $handlers = Configuration::getConfigurationHandler();
+  foreach ($handlers as $component => $handler) {
     //get all identifiers from a component
     $identifiers = $handler::getAllIdentifiers($component);
     foreach ($identifiers as $identifier) {
@@ -214,11 +213,11 @@ function _configuration_get_identifiers() {
     }
   }
   $component = array_shift($args);
-  $handlers = configuration_get_handlers();
+  $handlers = Configuration::getConfigurationHandler();
   if (empty($handlers[$component])) {
     return drush_set_error('', dt('The component @component is not valid or the module to export the configuration is not installed.', array('@component' => $component)));
   }
-  $handler = Configuration::getConfigurationHandler($component);
+  $handler = $handlers[$component];
   $identifiers = $handler::getAllIdentifiers($component);
   $rows = array();
   foreach ($identifiers as $identifier) {
@@ -228,14 +227,13 @@ function _configuration_get_identifiers() {
 }
 
 function _configuration_get_components() {
-  $handlers = configuration_get_handlers();
+  $handlers = Configuration::getConfigurationHandler();
   $rows = array();
   $rows[] = array(
     'Name',
     'Machine Name'
   );
-  foreach (array_keys($handlers) as $component) {
-    $handler = Configuration::getConfigurationHandler($component);
+  foreach ($handlers as $component => $handler) {
     $rows[] = array(
       'handler' => $handler::getComponentHumanName($component),
       'machine_name' => $component,
@@ -256,23 +254,22 @@ function _configuration_export_to_datastore() {
   if (empty($args)) {
     return drush_set_error('', dt('No configurations were selected to export'));
   }
-  $handlers = configuration_get_handlers();
+  $handlers = Configuration::getConfigurationHandler();
   foreach ($args as $arg) {
-
     list($component, $identifier) = explode('.', $arg, 2);
-
     if (empty($handlers[$component])) {
       return drush_set_error('', dt('The component @component is not valid or the module to export the configuration is not installed.', array('@component' => $component)));
     }
-
     if (empty($identifier)) {
       return drush_set_error('', dt('No identifier supplied for @arg.', array('@arg' => $arg)));
     }
   }
+
   $rows = array();
   $export_dependencies = !drush_get_option('exclude-dependencies');
   $export_optionals = !drush_get_option('exclude-optionals');
   $start_tracking = drush_get_option('start-tracking');
+
   $result = Configuration::exportToDataStore($args, $export_dependencies, $export_optionals, $start_tracking);
   $hashes = $result->getInfo('hash');
   foreach ($result->getInfo('exported') as $id => $exported) {
@@ -299,7 +296,7 @@ function _configuration_revert_activestore() {
     return drush_set_error('', dt('No configurations were selected to revert'));
   }
 
-  $handlers = configuration_get_handlers();
+  $handlers = Configuration::getConfigurationHandler();
   foreach ($args as $arg) {
 
     list($component, $identifier) = explode('.', $arg, 2);
@@ -337,7 +334,7 @@ function _configuration_start_tracking() {
     return drush_set_error('', dt('No configurations were selected to track'));
   }
 
-  $handlers = configuration_get_handlers();
+  $handlers = Configuration::getConfigurationHandler();
   foreach ($args as $arg) {
 
     list($component, $identifier) = explode('.', $arg, 2);
