@@ -12,16 +12,26 @@ use Drupal\configuration\Utils\ConfigIteratorSettings;
 
 class MenuLinkConfiguration extends Configuration {
 
-  static protected $component = 'menulink';
-
   protected function prepareBuild() {
     list(, $mlid) = explode('.', $this->getIdentifier());
     $this->data = menu_link_load($mlid);
     return $this;
   }
 
+  public static function isActive() {
+    return module_exists('menu');
+  }
+
   static public function getComponentHumanName($component, $plural = FALSE) {
     return $plural ? t('Menu links') : t('Menu link');
+  }
+
+  public function getComponent() {
+    return 'menu_link';
+  }
+
+  static public function supportedComponents() {
+    return array('menu_link');
   }
 
   public function saveToActiveStore(ConfigIteratorSettings &$settings) {

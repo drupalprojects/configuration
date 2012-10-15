@@ -12,8 +12,6 @@ use Drupal\configuration\Utils\ConfigIteratorSettings;
 
 class TextFormatConfiguration extends Configuration {
 
-  static protected $component = 'text_format';
-
   protected function prepareBuild() {
     $this->data = $this->filter_format_load($this->getIdentifier());
     return $this;
@@ -21,6 +19,14 @@ class TextFormatConfiguration extends Configuration {
 
   static public function getComponentHumanName($component, $plural = FALSE) {
     return $plural ? t('Text formats') : t('Text format');
+  }
+
+  public function getComponent() {
+    return 'text_format';
+  }
+
+  static public function supportedComponents() {
+    return array('text_format');
   }
 
   /**

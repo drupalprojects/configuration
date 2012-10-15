@@ -12,8 +12,6 @@ use Drupal\configuration\Utils\ConfigIteratorSettings;
 
 class ImageStyleConfiguration extends Configuration {
 
-  static protected $component = 'image_style';
-
   protected function prepareBuild() {
     $style = image_style_load($this->getIdentifier());
     $this->style_sanitize($style);
@@ -28,8 +26,20 @@ class ImageStyleConfiguration extends Configuration {
     return $this;
   }
 
+  public static function isActive() {
+    return module_exists('image');
+  }
+
   static public function getComponentHumanName($component, $plural = FALSE) {
     return $plural ? t('Image styles') : t('Image style');
+  }
+
+  public function getComponent() {
+    return 'image_style';
+  }
+
+  static public function supportedComponents() {
+    return array('image_style');
   }
 
   /**

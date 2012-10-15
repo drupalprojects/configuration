@@ -11,14 +11,20 @@ use Drupal\configuration\Config\CtoolsConfiguration;
 
 class PageManagerHandlerConfiguration extends CtoolsConfiguration {
 
-  // The name of the component that this class handles.
-  static protected $component = 'page_manager_handler';
+  public static function isActive() {
+    return module_exists('page_manager');
+  }
 
-  // The table where the configurations are storaged.
-  static protected $table = 'page_manager_handlers';
+  static public function getComponentHumanName($component, $plural = FALSE) {
+    return $plural ? t('Page Manager Handlers') : t('Page Manage Handler');
+  }
 
-  public function findRequiredModules() {
-    $this->addToModules('page_manager');
+  public function getComponent() {
+    return 'page_manager_handlers';
+  }
+
+  static public function supportedComponents() {
+    return array('page_manager_handlers');
   }
 
   public static function alterDependencies(Configuration $config, &$stack) {

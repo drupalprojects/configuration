@@ -11,11 +11,21 @@ use Drupal\configuration\Config\CtoolsConfiguration;
 
 class ViewConfiguration extends CtoolsConfiguration {
 
-  // The name of the component that this class handles.
-  static protected $component = 'view';
+  public static function isActive() {
+    return module_exists('views');
+  }
 
-  // The table where the configurations are storaged.
-  static protected $table = 'views_view';
+  static public function getComponentHumanName($component, $plural = FALSE) {
+    return $plural ? t('Views') : t('View');
+  }
+
+  public function getComponent() {
+    return 'views_view';
+  }
+
+  static public function supportedComponents() {
+    return array('views_view');
+  }
 
   public function findRequiredModules() {
     $this->addToModules('views');
@@ -52,7 +62,7 @@ class ViewConfiguration extends CtoolsConfiguration {
 
       // This alternative works more consistent althoug it's no so pretty.
 
-      @eval(ctools_export_crud_export($config->getTable(), $config_data));
+      @eval(ctools_export_crud_export($config->getComponent(), $config_data));
 
       $config_data = $handler;
 

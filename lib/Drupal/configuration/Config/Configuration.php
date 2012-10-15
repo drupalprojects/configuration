@@ -13,11 +13,6 @@ use Drupal\configuration\Utils\ConfigIteratorSettings;
 class Configuration {
 
   /**
-   * The component of this configuration, example, content_type, field, etc.
-   */
-  static protected $component = '';
-
-  /**
    * The identifier that identifies to the component, usually the machine name.
    */
   protected $identifier;
@@ -75,19 +70,19 @@ class Configuration {
 
   public function __construct($identifier, $component = '') {
     $this->identifier = $identifier;
-    $this->storage = static::getStorageInstance();
+    $this->storage = static::getStorageInstance($component);
     $this->storage->setFileName($this->getUniqueId());
   }
 
   /**
    * Returns a class with its namespace to save data to the disk.
    */
-  static protected function getStorageSystem() {
+  static protected function getStorageSystem($component) {
     $default = '\Drupal\configuration\Storage\StoragePhp';
     // Specify a default Storage system
     $return = variable_get('configuration_storage_system', $default);
     // Allow to configure the Storage System per configuration component
-    $return = variable_get('configuration_storage_system_' . static::getComponent(), $return);
+    $return = variable_get('configuration_storage_system_' . $component, $return);
     return $return;
   }
 
@@ -109,8 +104,8 @@ class Configuration {
    * Returns a Storage Object ready to load or write configurations from the
    * disk.
    */
-  static protected function getStorageInstance() {
-    $storage = static::getStorageSystem();
+  static protected function getStorageInstance($component) {
+    $storage = static::getStorageSystem($component);
     $return = new $storage();
     $return::setStream(static::$stream);
     return $return;
@@ -161,30 +156,48 @@ class Configuration {
   /**
    * Returns a handler that manages the configurations for the given component.
    */
-  public static function getConfigurationHandler($component) {
+  public static function getConfigurationHandler($component = NULL, $skip_module_checking = FALSE) {
     static $handlers;
-    if (!isset($handlers)) {
-      $handlers = static::getAllConfigurationHandlers();
+    static $map;
+    if (!isset($map)) {
+      $map = array();
     }
-    return '\\' . $handlers[$component]['namespace'] . '\\' . $handlers[$component]['handler'];
+    if (!isset($handlers)) {
+      $handlers = Configuration::getAllConfigurationHandlers();
+    }
+    foreach ($handlers as $handler) {
+      if ($skip_module_checking || $handler::isActive()) {
+        foreach($handler::supportedComponents() as $component_name) {
+          $map[$component_name] = $handler;
+        }
+      }
+    }
+    if (empty($component)) {
+      return $map;
+    }
+    else {
+      if (!empty($map[$component])) {
+        return $map[$component];
+      }
+    }
   }
 
   /**
    * Returns the list of components available in the DataStore.
    */
-  public static function scanDataStore() {
+  public static function scanDataStore($component) {
     $list_of_components = array();
 
     $path = drupal_realpath('config://');
-    $storage_system = static::getStorageSystem();
+    $storage_system = static::getStorageSystem($component);
     $ext = $storage_system::$file_extension;
-    $look_for = '/\A' . static::getComponent() . '\..*' . $ext . '$/';
+    $look_for = '/\A' . $component . '\..*' . $ext . '$/';
 
     $files = file_scan_directory($path, $look_for);
 
     foreach ($files as $file) {
       if (!in_array($file->name, $list_of_components)) {
-        $storage = static::getStorageInstance();
+        $storage = static::getStorageInstance($component);
         $storage
           ->setFileName($file->name)
           ->load();
@@ -246,12 +259,12 @@ class Configuration {
    */
   public function saveToStaging() {
     db_delete('configuration_staging')
-      ->condition('component', static::getComponent())
+      ->condition('component', $this->getComponent())
       ->condition('identifier', $this->getIdentifier())
       ->execute();
 
     $fields = array(
-      'component' => static::getComponent(),
+      'component' => $this->getComponent(),
       'identifier' => $this->getIdentifier(),
       'hash' => $this->getHash(),
       'data' => serialize($this->getData()),
@@ -416,7 +429,7 @@ class Configuration {
    */
   public function removeFromStaging(ConfigIteratorSettings &$settings) {
     db_delete('configuration_staging')
-      ->condition('component', static::getComponent())
+      ->condition('component', $this->getComponent())
       ->condition('identifier', $this->getIdentifier())
       ->execute();
 
@@ -628,8 +641,9 @@ class Configuration {
                   ->fields('cs', array('component', 'identifier', 'hash'))
                   ->execute()
                   ->fetchAll();
+
     // Prepare the array to return
-    $handlers = configuration_configuration_handlers();
+    $handlers = Configuration::getConfigurationHandler();
     $return = array();
     foreach ($handlers as $component => $handler) {
       $return[$component] = array();
@@ -650,9 +664,9 @@ class Configuration {
    * @return array
    */
   static public function nonTrackedConfigurations() {
-    $handlers = configuration_configuration_handlers();
+    $handlers = Configuration::getConfigurationHandler();
 
-    $tracked = static::trackedConfigurations();
+    $tracked = Configuration::trackedConfigurations();
     $non_tracked = array();
 
     foreach (array_keys($handlers) as $component) {
@@ -785,7 +799,7 @@ class Configuration {
   public function getStatus($human_name = TRUE) {
     $staging_hash = db_select('configuration_staging', 'cs')
                       ->fields('cs', array('hash'))
-                      ->condition('component', static::getComponent())
+                      ->condition('component', $this->getComponent())
                       ->condition('identifier', $this->getIdentifier())
                       ->execute()
                       ->fetchField();
@@ -819,14 +833,20 @@ class Configuration {
    * @return string
    */
   public function getUniqueId() {
-    return static::getComponent() . '.' . $this->getIdentifier();
+    return $this->getComponent() . '.' . $this->getIdentifier();
   }
 
   /**
    * Returns the component that this configuration represent.
    */
-  static public function getComponent() {
-    return static::$component;
+  public function getComponent() {
+  }
+
+  /**
+   * Returns the all the components that this handler can handle.
+   */
+  static public function supportedComponents() {
+    return array();
   }
 
   /**
@@ -834,6 +854,17 @@ class Configuration {
    */
   static public function getComponentHumanName($component, $plural = FALSE) {
     return t('UNDEFINED: ') . $component;
+  }
+
+  /**
+   * Determine if the handler can be used. Usually this function should check
+   * that modules required to handle the configuration are installed.
+   *
+   *  @return boolean
+   *    TRUE if the handler is active and can be used. FALSE otherwise.
+   */
+  public static function isActive() {
+    return TRUE;
   }
 
   /**
@@ -984,9 +1015,10 @@ class Configuration {
     // in a circular dependency cycle
     $stack[$this->getUniqueId()] = TRUE;
 
-    foreach ($handlers as $configuration_component => $info) {
-      $class = '\\' . $info['namespace'] . '\\' . $info['handler'];
-      $class::alterDependencies($this, $stack);
+    foreach ($handlers as $component => $handler) {
+      if ($handler::isActive()) {
+        $handler::alterDependencies($this, $stack);
+      }
     }
   }
 
@@ -1018,14 +1050,14 @@ class Configuration {
       // First, look for the dependency in the staging table.
       $exists = db_select('configuration_staging', 'cs')
                         ->fields('cs', array('identifier'))
-                        ->condition('component', static::getComponent())
+                        ->condition('component', $this->getComponent())
                         ->condition('identifier', $this->getIdentifier())
                         ->fetchField();
 
       if (!$exists) {
         // If not exists in the database, look into the config:// directory.
         $storage_system = static::getStorageSystem();
-        $file_exists = $storage_system::configFileExists(static::getComponent(), $this->getIdentifier());
+        $file_exists = $storage_system::configFileExists($this->getComponent(), $this->getIdentifier());
         if (!$file_exists) {
           return FALSE;
         }

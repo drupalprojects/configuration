@@ -12,8 +12,6 @@ use Drupal\configuration\Utils\ConfigIteratorSettings;
 
 class FieldConfiguration extends Configuration {
 
-  static protected $component = 'field';
-
   protected function prepareBuild() {
     $this->data = $this->field_load($this->identifier);
     return $this;
@@ -21,6 +19,14 @@ class FieldConfiguration extends Configuration {
 
   static public function getComponentHumanName($component, $plural = FALSE) {
     return $plural ? t('Fields') : t('Field');
+  }
+
+  public function getComponent() {
+    return 'field';
+  }
+
+  static public function supportedComponents() {
+    return array('field');
   }
 
   /**

@@ -12,8 +12,6 @@ use Drupal\configuration\Utils\ConfigIteratorSettings;
 
 class WysiwygConfiguration extends Configuration {
 
-  static protected $component = 'wysiwyg';
-
   protected function prepareBuild() {
     $this->data = wysiwyg_get_profile($this->getIdentifier());
     return $this;
@@ -21,6 +19,18 @@ class WysiwygConfiguration extends Configuration {
 
   static public function getComponentHumanName($component, $plural = FALSE) {
     return $plural ? t('Wyswyg Profiles') : t('Wyswyg Profile');
+  }
+
+  public static function isActive() {
+    return module_exists('wysiwyg');
+  }
+
+  public function getComponent() {
+    return 'wysiwyg';
+  }
+
+  static public function supportedComponents() {
+    return array('wysiwyg');
   }
 
   /**

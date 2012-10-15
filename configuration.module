@@ -70,87 +70,21 @@ function configuration_stream_wrappers() {
  * Implements hook_configuration_handlers().
  */
 function configuration_configuration_handlers() {
-  $namespace = 'Drupal\configuration\Config';
   $handlers = array(
-    'content_type' => array(
-      'handler' => 'ContentTypeConfiguration',
-      'namespace' => $namespace,
-    ),
-    'field' => array(
-      'handler' => 'FieldConfiguration',
-      'namespace' => $namespace,
-    ),
-    'image_style' => array(
-      'handler' => 'ImageStyleConfiguration',
-      'namespace' => $namespace,
-    ),
-    'text_format' => array(
-      'handler' => 'TextFormatConfiguration',
-      'namespace' => $namespace,
-    ),
-    'variable' => array(
-      'handler' => 'VariableConfiguration',
-      'namespace' => $namespace,
-    ),
-    'permission' => array(
-      'handler' => 'PermissionConfiguration',
-      'namespace' => $namespace,
-    ),
+    'content_type' => '\Drupal\configuration\Config\ContentTypeConfiguration',
+    'field'        => '\Drupal\configuration\Config\FieldConfiguration',
+    'image_style'  => '\Drupal\configuration\Config\ImageStyleConfiguration',
+    'text_format'  => '\Drupal\configuration\Config\TextFormatConfiguration',
+    'variable'     => '\Drupal\configuration\Config\VariableConfiguration',
+    'permission'   => '\Drupal\configuration\Config\PermissionConfiguration',
+    'vocabulary'   => '\Drupal\configuration\Config\VocabularyConfiguration',
+    'menu'         => '\Drupal\configuration\Config\MenuConfiguration',
+    'menu_link'    => '\Drupal\configuration\Config\MenuLinkConfiguration',
+    'ctools'       => '\Drupal\configuration\Config\CtoolsConfiguration',
+    'views'        => '\Drupal\configuration\Config\ViewConfiguration',
+    'page_manager' => '\Drupal\configuration\Config\PageManagerHandlerConfiguration',
+    'wysiwyg'      => '\Drupal\configuration\Config\WysiwygConfiguration',
   );
-  if (module_exists('taxonomy')) {
-    $handlers['vocabulary'] = array(
-      'handler' => 'VocabularyConfiguration',
-      'namespace' => $namespace,
-    );
-  }
-  if (module_exists('menu')) {
-    $handlers['menu'] = array(
-      'handler' => 'MenuConfiguration',
-      'namespace' => $namespace,
-    );
-    $handlers['menulink'] = array(
-      'handler' => 'MenuLinkConfiguration',
-      'namespace' => $namespace,
-    );
-  }
-  if (module_exists('views')) {
-    $handlers['view'] = array(
-      'handler' => 'ViewConfiguration',
-      'namespace' => $namespace,
-    );
-  }
-  if (module_exists('wysiwyg')) {
-    $handlers['wysiwyg'] = array(
-      'handler' => 'WysiwygConfiguration',
-      'namespace' => $namespace,
-    );
-  }
-  if (module_exists('panels')) {
-    $handlers['panels'] = array(
-      'handler' => 'PanelsConfiguration',
-      'namespace' => $namespace,
-    );
-    $handlers['panels_pipeline'] = array(
-      'handler' => 'PanelsPipelineConfiguration',
-      'namespace' => $namespace,
-    );
-    if (module_exists('panels_mini')) {
-      $handlers['panels_mini'] = array(
-        'handler' => 'PanelsMiniConfiguration',
-        'namespace' => $namespace,
-      );
-    }
-  }
-  if (module_exists('page_manager')) {
-    $handlers['page_manager'] = array(
-      'handler' => 'PageManagerConfiguration',
-      'namespace' => $namespace,
-    );
-    $handlers['page_manager_handler'] = array(
-      'handler' => 'PageManagerHandlerConfiguration',
-      'namespace' => $namespace,
-    );
-  }
 
   return $handlers;
 }

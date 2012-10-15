@@ -12,8 +12,6 @@ use Drupal\configuration\Utils\ConfigIteratorSettings;
 
 class ContentTypeConfiguration extends Configuration {
 
-  static protected $component = 'content_type';
-
   function __construct($identifier, $component = '') {
     parent::__construct($identifier);
     $keys = array(
@@ -26,6 +24,14 @@ class ContentTypeConfiguration extends Configuration {
       'help',
     );
     $this->setKeysToExport($keys);
+  }
+
+  public function getComponent() {
+    return 'content_type';
+  }
+
+  static public function supportedComponents() {
+    return array('content_type');
   }
 
   static public function getComponentHumanName($component, $plural = FALSE) {

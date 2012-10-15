@@ -15,7 +15,7 @@ class VariableConfiguration extends Configuration {
   static protected $component = 'variable';
   protected $variable_name = '';
 
-  function __construct($identifier, $component = '') {
+  public function __construct($identifier, $component = '') {
     $this->variable_name = $identifier;
     parent::__construct(str_replace(' ', '_', $identifier));
 
@@ -24,6 +24,14 @@ class VariableConfiguration extends Configuration {
 
   static public function getComponentHumanName($component, $plural = FALSE) {
     return $plural ? t('Variables') : t('Variable');
+  }
+
+  public function getComponent() {
+    return 'variable';
+  }
+
+  static public function supportedComponents() {
+    return array('variable');
   }
 
   protected function prepareBuild() {

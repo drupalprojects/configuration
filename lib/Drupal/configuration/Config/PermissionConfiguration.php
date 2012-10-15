@@ -12,8 +12,6 @@ use Drupal\configuration\Utils\ConfigIteratorSettings;
 
 class PermissionConfiguration extends Configuration {
 
-  static protected $component = 'permission';
-
   protected function prepareBuild() {
     $permissions_roles = $this->get_permissions();
     $permission = static::getPermissionById($this->identifier);
@@ -26,6 +24,14 @@ class PermissionConfiguration extends Configuration {
 
   static public function getComponentHumanName($component, $plural = FALSE) {
     return $plural ? t('Permissions') : t('Permission');
+  }
+
+  public function getComponent() {
+    return 'permission';
+  }
+
+  static public function supportedComponents() {
+    return array('permission');
   }
 
   public static function getPermissionById($identifier) {

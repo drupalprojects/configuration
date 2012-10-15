@@ -12,15 +12,25 @@ use Drupal\configuration\Utils\ConfigIteratorSettings;
 
 class MenuConfiguration extends Configuration {
 
-  static protected $component = 'menu';
-
   protected function prepareBuild() {
     $this->data = menu_load($this->getIdentifier());
     return $this;
   }
 
+  public static function isActive() {
+    return module_exists('menu');
+  }
+
   static public function getComponentHumanName($component, $plural = FALSE) {
     return $plural ? t('Menus') : t('Menu');
+  }
+
+  public function getComponent() {
+    return 'menu';
+  }
+
+  static public function supportedComponents() {
+    return array('menu');
   }
 
   public function saveToActiveStore(ConfigIteratorSettings &$settings) {

@@ -12,14 +12,24 @@ use Drupal\configuration\Utils\ConfigIteratorSettings;
 
 class VocabularyConfiguration extends Configuration {
 
-  static protected $component = 'vocabulary';
-
   public function configForEntity() {
     return TRUE;
   }
 
   static public function getComponentHumanName($component, $plural = FALSE) {
     return $plural ? t('Vocabularies') : t('Vocabulary');
+  }
+
+  public static function isActive() {
+    return module_exists('taxonomy');
+  }
+
+  public function getComponent() {
+    return 'vocabulary';
+  }
+
+  static public function supportedComponents() {
+    return array('vocabulary');
   }
 
   public function getEntityType() {
