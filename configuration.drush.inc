@@ -161,8 +161,7 @@ function _get_component_and_identifier() {
   foreach (array_keys($components) as $component) {
     $handler = Configuration::getConfigurationHandler($component);
     //get all identifiers from a component
-    $handler = Configuration::getConfigurationHandler($machine_name);
-    $identifiers = $handler::getAllIdentifiers($machine_name);
+    $identifiers = $handler::getAllIdentifiers($component);
     foreach ($identifiers as $identifier) {
       $rows[] = array(
         'handler' => $handler::getComponentHumanName($component),
