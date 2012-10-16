@@ -581,7 +581,7 @@ class ConfigurationManagement {
    * @return
    *   A string of the tar file contents.
    */
-  protected static function createTarContent($name, $contents) {
+  public static function createTarContent($name, $contents) {
     $tar = '';
     $binary_data_first = pack("a100a8a8a8a12A12",
       $name,

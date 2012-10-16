@@ -703,7 +703,7 @@ class Configuration {
     $settings->addInfo('exported', $this->getUniqueId());
     $settings->addInfo('exported_files', $file_name);
 
-    print static::createTarContent("configuration/{$file_name}", $file_content);
+    print ConfigurationManagement::createTarContent("configuration/{$file_name}", $file_content);
   }
 
   /**
