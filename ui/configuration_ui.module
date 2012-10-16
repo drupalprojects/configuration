@@ -96,6 +96,15 @@ function configuration_ui_menu() {
     'type' => MENU_LOCAL_TASK,
     'weight' => 9,
   );
+  $items['admin/config/system/configuration/settings'] = array(
+    'title' => 'Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('configuration_ui_settings_form'),
+    'access arguments' => array('access configuration management'),
+    'file' => 'configuration_ui.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 10,
+  );
 
   return $items;
 }

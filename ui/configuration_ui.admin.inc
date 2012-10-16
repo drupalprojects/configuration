@@ -82,11 +82,22 @@ function configuration_ui_tracking_form($form, &$form_state) {
     }
   }
   $form['buttons'] = array('#theme' => 'configuration_ui_form_buttons', '#tree' => FALSE);
-  $form['buttons']['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Write Activestore to Datastore'),
-    '#submit' => array('configuration_ui_export_to_datastore_form_submit'),
-  );
+
+  // Do not allow writing to datastore if on remote server.
+  if (variable_get('configuration_remote_server', 0) < 1) {
+    $form['buttons']['submit'] = array(
+      '#type' => 'submit',
+      '#value' => t('Write Activestore to Datastore'),
+      '#submit' => array('configuration_ui_export_to_datastore_form_submit'),
+    );
+  }
+  else {
+    $form['buttons']['submit'] = array(
+      '#type' => 'submit',
+      '#value' => t('Export All Tracked Configurations'),
+      '#submit' => array('configuration_ui_export_traked_to_tar_file_form_submit'),
+    );
+  }
   $form['buttons']['stop_tracking'] = array(
     '#type' => 'submit',
     '#value' => t('Stop Tracking'),
@@ -468,10 +479,28 @@ function configuration_ui_export_form($form, &$form_state) {
 }
 
 /**
- * Submit handler for export to datastore.
+ * Submit handler for export to a tar file.
  */
 function configuration_ui_export_to_tar_file_form_submit($form, &$form_state) {
   $args = configuration_ui_get_form_components($form, $form_state);
+  $export_dependencies = $form_state['values']['include_dependencies'];
+  $export_optionals = $form_state['values']['include_optionals'];
+  Configuration::exportAsTar($args, $export_dependencies, $export_optionals);
+}
+
+/**
+ * Submit handler for export tracked configurations to a tar file.
+ */
+function configuration_ui_export_traked_to_tar_file_form_submit($form, &$form_state) {
+  $args = array();
+  //get tracked file
+  $tracked = Configuration::trackedConfigurations();
+  //format the result
+  foreach ($tracked as $component => $list) {
+    foreach ($list as $identifier => $hash) {
+      $args[] = $component . '.' . $identifier;
+    }
+  }
   $export_dependencies = $form_state['values']['include_dependencies'];
   $export_optionals = $form_state['values']['include_optionals'];
   Configuration::exportAsTar($args, $export_dependencies, $export_optionals);
@@ -491,4 +520,36 @@ function configuration_ui_import_form_submit($form, &$form_state) {
     $imported = $optionals = array('items' => $settings->getInfo('imported'));
     drupal_set_message(filter_xss(theme('item_list', $imported), array('ul', 'li')));
   }
+}
+
+/**
+ * Menu Callback Form.
+ */
+function configuration_ui_settings_form($form, &$form_state) {
+
+  $form['general_settings'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('General Settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+  );
+
+  $form['general_settings']['configuration_config_path'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Configuration directory configs are stored in.'),
+    '#description' => t('Configuration directory to store config files. This defaults to inside the files directory for easy write access. Since most users ignore the files directory in their VCS, you may want to set this outside of your files directory so that configs are included in version control.'),
+    '#size' => 40,
+    '#maxlength' => 255,
+    '#default_value' => variable_get('configuration_config_path', conf_path() . '/files/config'),
+    '#after_build' => array('system_check_directory'),
+  );
+
+  $form['general_settings']['configuration_remote_server'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('This is a remote server'),
+    '#description' => t('If this is a remote server and you do not have access to the filesystem of this server, the ability to write files to datastore should not be allowed.'),
+    '#default_value' => variable_get('configuration_remote_server', -1),
+  );
+
+  return system_settings_form($form);
 }
