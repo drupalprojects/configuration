@@ -5,7 +5,7 @@
  * Tests for Configuration Management: Variables.
  */
 
-use Drupal\configuration\Config\Configuration;
+use Drupal\configuration\Config\ConfigurationManagement;
 
 /**
  * Base class for functional tests for configuration management.
@@ -43,10 +43,10 @@ class ConfigurationHandlerVariableTestCase extends ConfigurationWebTestCase {
 
   public function testImportToActiveStore() {
     // Change the path from where the configurations are loaded.
-    Configuration::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+    ConfigurationManagement::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
 
     $config = 'variable.site_name';
-    $results = Configuration::importToActiveStore(array($config), FALSE, FALSE);
+    $results = ConfigurationManagement::importToActiveStore(array($config), FALSE, FALSE);
     $imported = $results->getInfo('imported');
     $this->assertTrue(in_array($config, $imported), "Configuration for $config was imported.");
 
@@ -59,7 +59,7 @@ class ConfigurationHandlerVariableTestCase extends ConfigurationWebTestCase {
     $config_path = variable_get('configuration_config_path', $this->datastore_path);
     file_prepare_directory($config_path);
 
-    Configuration::setStream($config_path);
+    ConfigurationManagement::setStream($config_path);
 
     $variable_name = drupal_strtolower($this->randomName());
     variable_set($variable_name, $this->randomName());
@@ -68,7 +68,7 @@ class ConfigurationHandlerVariableTestCase extends ConfigurationWebTestCase {
     $this->assertTrue($variable_exists, "The variable was saved in the ActiveStore.");
 
     $config = 'variable.' . $variable_name;
-    $results = Configuration::exportToDataStore(array($config), FALSE, FALSE);
+    $results = ConfigurationManagement::exportToDataStore(array($config), FALSE, FALSE);
     $exported = $results->getInfo('exported');
     $this->assertTrue(in_array($config, $exported), "Configuration for $config was exported.");
 
@@ -79,8 +79,8 @@ class ConfigurationHandlerVariableTestCase extends ConfigurationWebTestCase {
 
   public function testCheckModifications() {
     // Change the path from where the configurations are loaded.
-    Configuration::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
-    $results = Configuration::importToActiveStore(array('variable.site_name'), FALSE, FALSE, TRUE);
+    ConfigurationManagement::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+    $results = ConfigurationManagement::importToActiveStore(array('variable.site_name'), FALSE, FALSE, TRUE);
 
     $object = db_select('configuration_staging', 'cs')
                         ->fields('cs')
@@ -106,7 +106,7 @@ class ConfigurationHandlerVariableTestCase extends ConfigurationWebTestCase {
 
     $this->assertTrue(variable_get('site_name', '') == 'Modified', 'The variable for site name was modified');
 
-    $results = Configuration::revertActiveStore(array('variable.site_name'), FALSE, FALSE);
+    $results = ConfigurationManagement::revertActiveStore(array('variable.site_name'), FALSE, FALSE);
 
     $current_value = variable_get('site_name', '');
 

@@ -8,6 +8,7 @@
 namespace Drupal\configuration\Config;
 
 use Drupal\configuration\Config\Configuration;
+use Drupal\configuration\Config\ConfigurationManagement;
 use Drupal\configuration\Utils\ConfigIteratorSettings;
 
 class WysiwygConfiguration extends Configuration {
@@ -76,7 +77,7 @@ class WysiwygConfiguration extends Configuration {
 
     $formats = filter_formats();
     if (isset($formats[$format])) {
-      $filter_format = Configuration::createConfigurationInstance('text_format.' . $format);
+      $filter_format = ConfigurationManagement::createConfigurationInstance('text_format.' . $format);
       $this->addToDependencies($filter_format);
     }
 

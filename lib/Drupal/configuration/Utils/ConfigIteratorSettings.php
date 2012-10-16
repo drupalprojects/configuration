@@ -16,7 +16,7 @@ class ConfigIteratorSettings {
   protected $build_callback;
 
   /**
-   * The Configuration::callback to call on every iteration.
+   * The ConfigurationManagement::callback to call on every iteration.
    */
   protected $callback;
 

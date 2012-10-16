@@ -6,7 +6,7 @@
  * Let you perform configuration actions from the console.
  */
 
-use Drupal\configuration\Config\Configuration;
+use Drupal\configuration\Config\ConfigurationManagement;
 
 /**
  * Implements of hook_drush_help()
@@ -179,7 +179,7 @@ function configuration_drush_command() {
  */
 function _get_component_and_identifier() {
   //get all of the components
-  $handlers = Configuration::getConfigurationHandler();
+  $handlers = ConfigurationManagement::getConfigurationHandler();
   foreach ($handlers as $component => $handler) {
     //get all identifiers from a component
     $identifiers = $handler::getAllIdentifiers($component);
@@ -241,12 +241,12 @@ function _configuration_get_tracked() {
     'Hash',
   );
   //get tracked file
-  $tracked = Configuration::trackedConfigurations();
+  $tracked = ConfigurationManagement::trackedConfigurations();
   //format the result
   foreach ($tracked as $component => $list) {
     foreach ($list as $identifier => $hash) {
       //check status
-      $configuration = Configuration::createConfigurationInstance($component);
+      $configuration = ConfigurationManagement::createConfigurationInstance($component);
       $content[] = array(
         'component' => $component,
         'identifier' => $identifier,
@@ -273,7 +273,7 @@ function _configuration_get_not_tracked() {
     'Component::Machine Name',
     'Identifier',
   );
-  $not_tracked = Configuration::nonTrackedConfigurations();
+  $not_tracked = ConfigurationManagement::nonTrackedConfigurations();
 
   if (empty($not_tracked)) {
     return drush_print('All components have been tracked');
@@ -297,7 +297,7 @@ function _configuration_get_identifiers() {
     }
   }
   $component = array_shift($args);
-  $handlers = Configuration::getConfigurationHandler();
+  $handlers = ConfigurationManagement::getConfigurationHandler();
   if (empty($handlers[$component])) {
     return drush_set_error('', dt('The component @component is not valid or the module to export the configuration is not installed.', array('@component' => $component)));
   }
@@ -311,7 +311,7 @@ function _configuration_get_identifiers() {
 }
 
 function _configuration_get_components() {
-  $handlers = Configuration::getConfigurationHandler();
+  $handlers = ConfigurationManagement::getConfigurationHandler();
   $rows = array();
   $rows[] = array(
     'Name',
@@ -338,7 +338,7 @@ function _configuration_export_to_datastore() {
   if (empty($args)) {
     return drush_set_error('', dt('No configurations were selected to export'));
   }
-  $handlers = Configuration::getConfigurationHandler();
+  $handlers = ConfigurationManagement::getConfigurationHandler();
   foreach ($args as $arg) {
     list($component, $identifier) = explode('.', $arg, 2);
     if (empty($handlers[$component])) {
@@ -354,7 +354,7 @@ function _configuration_export_to_datastore() {
   $export_optionals = !drush_get_option('exclude-optionals');
   $start_tracking = drush_get_option('start-tracking');
 
-  $result = Configuration::exportToDataStore($args, $export_dependencies, $export_optionals, $start_tracking);
+  $result = ConfigurationManagement::exportToDataStore($args, $export_dependencies, $export_optionals, $start_tracking);
   $hashes = $result->getInfo('hash');
   foreach ($result->getInfo('exported') as $id => $exported) {
     $rows[] = array(
@@ -380,7 +380,7 @@ function _configuration_revert_activestore() {
     return drush_set_error('', dt('No configurations were selected to revert'));
   }
 
-  $handlers = Configuration::getConfigurationHandler();
+  $handlers = ConfigurationManagement::getConfigurationHandler();
   foreach ($args as $arg) {
 
     list($component, $identifier) = explode('.', $arg, 2);
@@ -396,7 +396,7 @@ function _configuration_revert_activestore() {
   $rows = array();
   $revert_dependencies = !drush_get_option('exclude-dependencies');
   $revert_optionals = !drush_get_option('exclude-optionals');
-  $result = Configuration::revertActiveStore($args, $revert_dependencies, $revert_optionals);
+  $result = ConfigurationManagement::revertActiveStore($args, $revert_dependencies, $revert_optionals);
   foreach ($result->getInfo('imported') as $exported) {
     $rows[]['imported'] = $exported;
   }
@@ -418,7 +418,7 @@ function _configuration_start_tracking() {
     return drush_set_error('', dt('No configurations were selected to track'));
   }
 
-  $handlers = Configuration::getConfigurationHandler();
+  $handlers = ConfigurationManagement::getConfigurationHandler();
   foreach ($args as $arg) {
 
     list($component, $identifier) = explode('.', $arg, 2);
@@ -434,7 +434,7 @@ function _configuration_start_tracking() {
   $rows = array();
   $start_tracking_dependencies = !drush_get_option('exclude-dependencies');
   $start_tracking_optionals = !drush_get_option('exclude-optionals');
-  $result = Configuration::startTracking($args, $start_tracking_dependencies, $start_tracking_optionals);
+  $result = ConfigurationManagement::startTracking($args, $start_tracking_dependencies, $start_tracking_optionals);
   foreach ($result->getInfo('exported') as $tracking) {
     $rows[]['exported'] = $tracking;
   }
@@ -471,7 +471,7 @@ function _configuration_stop_tracking() {
   $rows = array();
   $stop_tracking_dependencies = !drush_get_option('exclude-dependencies');
   $stop_tracking_optionals = !drush_get_option('exclude-optionals');
-  $result = Configuration::stopTracking($args, $stop_tracking_dependencies, $stop_tracking_optionals);
+  $result = ConfigurationManagement::stopTracking($args, $stop_tracking_dependencies, $stop_tracking_optionals);
   foreach ($result->getInfo('untracked') as $untracked) {
     $rows[]['untracked'] = $untracked;
   }
@@ -500,7 +500,7 @@ function _configuration_import_load_configurations($action, $args) {
 
   if (drush_get_option(array('skip-enable-modules'), FALSE)) {
     if ($action == 'import') {
-      Configuration::importToActiveStore($args);
+      ConfigurationManagement::importToActiveStore($args);
     }
     else {
       configuration_load_configurations($args);
@@ -510,7 +510,7 @@ function _configuration_import_load_configurations($action, $args) {
     $import_dependencies = !drush_get_option('exclude-dependencies');
     $import_optionals = !drush_get_option('exclude-optionals');
     $start_tracking = drush_get_option('start-tracking');
-    $settings = Configuration::discoverRequiredModules($args, $import_dependencies, $import_optionals);
+    $settings = ConfigurationManagement::discoverRequiredModules($args, $import_dependencies, $import_optionals);
 
     $missing = $settings->getInfo('modules_missing');
     $to_install = $settings->getInfo('modules_to_install');
@@ -535,7 +535,7 @@ function _configuration_import_load_configurations($action, $args) {
         drupal_flush_all_caches();
       }
 
-      $import_results = Configuration::importToActiveStore($args, $import_dependencies, $import_optionals, $start_tracking);
+      $import_results = ConfigurationManagement::importToActiveStore($args, $import_dependencies, $import_optionals, $start_tracking);
       $rows = array();
       foreach ($import_results->getInfo('imported') as $imported) {
         $rows[]['identifier'] = $imported;

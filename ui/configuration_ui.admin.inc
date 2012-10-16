@@ -5,7 +5,7 @@
  * User interface functions for Configuration Management.
  */
 
-use Drupal\configuration\Config\Configuration;
+use Drupal\configuration\Config\ConfigurationManagement;
 use Drupal\configuration\Utils\ConfigIteratorSettings;
 
 /**
@@ -23,7 +23,7 @@ function configuration_ui_tracking_form($form, &$form_state) {
     drupal_get_path('module', 'configuration_ui') . '/js/configuration_ui.js'
   );
 
-  $tracked = Configuration::trackedConfigurations();
+  $tracked = ConfigurationManagement::trackedConfigurations();
 
   foreach ($tracked as $component => $list) {
 
@@ -40,7 +40,7 @@ function configuration_ui_tracking_form($form, &$form_state) {
     }
 
     if (!empty($options)) {
-      $handler = Configuration::getConfigurationHandler($component);
+      $handler = ConfigurationManagement::getConfigurationHandler($component);
       $component_exists = TRUE;
       $form[$component] = array(
         '#type' => 'fieldset',
@@ -130,7 +130,7 @@ function configuration_ui_notracking_form($form, &$form_state) {
   $form['#attached']['css'] = array(
     drupal_get_path('module', 'configuration_ui') . '/theme/configuration.css'
   );
-  $non_tracked = Configuration::nonTrackedConfigurations();
+  $non_tracked = ConfigurationManagement::nonTrackedConfigurations();
 
   foreach ($non_tracked as $component => $list) {
     $options = array();
@@ -142,7 +142,7 @@ function configuration_ui_notracking_form($form, &$form_state) {
     }
 
     if (!empty($options)) {
-      $handler = Configuration::getConfigurationHandler($component);
+      $handler = ConfigurationManagement::getConfigurationHandler($component);
       $component_exists = TRUE;
       $form[$component] = array(
         '#type' => 'fieldset',
@@ -204,7 +204,7 @@ function configuration_ui_notracking_form($form, &$form_state) {
  * Menu Callback Form.
  */
 function configuration_ui_config_info($config_id) {
-  $config = Configuration::createConfigurationInstance($config_id);
+  $config = ConfigurationManagement::createConfigurationInstance($config_id);
 
   $config->loadFromActiveStore();
 
@@ -237,7 +237,7 @@ function configuration_ui_activate_form_submit($form, &$form_state) {
   $args = configuration_ui_get_form_components($form, $form_state);
   $revert_dependencies = $form_state['values']['include_dependencies'];
   $revert_optionals = $form_state['values']['include_optionals'];
-  $result = Configuration::revertActiveStore($args, $revert_dependencies, $revert_optionals);
+  $result = ConfigurationManagement::revertActiveStore($args, $revert_dependencies, $revert_optionals);
   $configurations = $result->getInfo('imported');
   if (!empty($configurations)) {
     foreach ($configurations as $configuration) {
@@ -253,7 +253,7 @@ function configuration_ui_stop_tracking_form_submit($form, &$form_state) {
   $args = configuration_ui_get_form_components($form, $form_state);
   $stop_tracking_dependencies = $form_state['values']['include_dependencies'];
   $stop_tracking_optionals = $form_state['values']['include_optionals'];
-  $result = Configuration::stopTracking($args, $stop_tracking_dependencies, $stop_tracking_optionals);
+  $result = ConfigurationManagement::stopTracking($args, $stop_tracking_dependencies, $stop_tracking_optionals);
 
   $configurations = $result->getInfo('untracked');
   if (!empty($configurations)) {
@@ -285,7 +285,7 @@ function configuration_ui_stop_tracking_single_confirm_submit($form, &$form_stat
     $args = array($form_state['values']['component_id']);
     $stop_tracking_dependencies = FALSE;
     $stop_tracking_optionals = FALSE;
-    $result = Configuration::stopTracking($args, $stop_tracking_dependencies, $stop_tracking_optionals);
+    $result = ConfigurationManagement::stopTracking($args, $stop_tracking_dependencies, $stop_tracking_optionals);
   }
   $form_state['redirect'] = 'admin/config/system/configuration';
 }
@@ -312,7 +312,7 @@ function configuration_ui_start_tracking_single_confirm_submit($form, &$form_sta
     $args = array($form_state['values']['component_id']);
     $start_tracking_dependencies = FALSE;
     $start_tracking_optionals = FALSE;
-    $result = Configuration::startTracking($args, $start_tracking_dependencies, $start_tracking_optionals);
+    $result = ConfigurationManagement::startTracking($args, $start_tracking_dependencies, $start_tracking_optionals);
   }
   $form_state['redirect'] = 'admin/config/system/configuration/notracking';
 }
@@ -324,7 +324,7 @@ function configuration_ui_export_to_datastore_form_submit($form, &$form_state) {
   $args = configuration_ui_get_form_components($form, $form_state);
   $export_dependencies = $form_state['values']['include_dependencies'];
   $export_optionals = $form_state['values']['include_optionals'];
-  $result = Configuration::exportToDataStore($args, $export_dependencies, $export_optionals);
+  $result = ConfigurationManagement::exportToDataStore($args, $export_dependencies, $export_optionals);
   $configurations = $result->getInfo('exported');
   if (!empty($configurations)) {
     foreach ($configurations as $configuration) {
@@ -340,7 +340,7 @@ function configuration_ui_start_tracking_form_submit($form, &$form_state) {
   $args = configuration_ui_get_form_components($form, $form_state);
   $start_tracking_dependencies = $form_state['values']['include_dependencies'];
   $start_tracking_optionals = $form_state['values']['include_optionals'];
-  $result = Configuration::startTracking($args, $start_tracking_dependencies, $start_tracking_optionals);
+  $result = ConfigurationManagement::startTracking($args, $start_tracking_dependencies, $start_tracking_optionals);
   $configurations = $result->getInfo('exported');
   if (!empty($configurations)) {
     foreach ($configurations as $configuration) {
@@ -406,7 +406,7 @@ function configuration_ui_export_form($form, &$form_state) {
     drupal_get_path('module', 'configuration_ui') . '/theme/configuration.css'
   );
 
-  $tracked = Configuration::allConfigurations();
+  $tracked = ConfigurationManagement::allConfigurations();
 
   foreach ($tracked as $component => $list) {
     $options = array();
@@ -421,7 +421,7 @@ function configuration_ui_export_form($form, &$form_state) {
 
     if (!empty($options)) {
       $component_exists = TRUE;
-      $handler = Configuration::getConfigurationHandler($component);
+      $handler = ConfigurationManagement::getConfigurationHandler($component);
       $form[$component] = array(
         '#type' => 'fieldset',
         '#group' => 'packages',
@@ -485,7 +485,7 @@ function configuration_ui_export_to_tar_file_form_submit($form, &$form_state) {
   $args = configuration_ui_get_form_components($form, $form_state);
   $export_dependencies = $form_state['values']['include_dependencies'];
   $export_optionals = $form_state['values']['include_optionals'];
-  Configuration::exportAsTar($args, $export_dependencies, $export_optionals);
+  ConfigurationManagement::exportAsTar($args, $export_dependencies, $export_optionals);
 }
 
 /**
@@ -494,7 +494,7 @@ function configuration_ui_export_to_tar_file_form_submit($form, &$form_state) {
 function configuration_ui_export_traked_to_tar_file_form_submit($form, &$form_state) {
   $args = array();
   //get tracked file
-  $tracked = Configuration::trackedConfigurations();
+  $tracked = ConfigurationManagement::trackedConfigurations();
   //format the result
   foreach ($tracked as $component => $list) {
     foreach ($list as $identifier => $hash) {
@@ -503,7 +503,7 @@ function configuration_ui_export_traked_to_tar_file_form_submit($form, &$form_st
   }
   $export_dependencies = $form_state['values']['include_dependencies'];
   $export_optionals = $form_state['values']['include_optionals'];
-  Configuration::exportAsTar($args, $export_dependencies, $export_optionals);
+  ConfigurationManagement::exportAsTar($args, $export_dependencies, $export_optionals);
 }
 
 /**
@@ -513,7 +513,7 @@ function configuration_ui_import_form_submit($form, &$form_state) {
 
   $validators = array('file_validate_extensions' => array('tar'));
   if ($file = file_save_upload('import_configurations', $validators)) {
-    $settings = Configuration::importToActiveStoreFromTar($file->uri);
+    $settings = ConfigurationManagement::importToActiveStoreFromTar($file->uri);
 
     file_delete($file);
     drupal_set_message(t('The following configurations have been migrated into the ActiveStore:'));

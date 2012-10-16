@@ -6,6 +6,7 @@
  */
 
 namespace Drupal\configuration\Storage;
+use Drupal\configuration\Config\ConfigurationManagement;
 
 class Storage {
 
@@ -27,14 +28,12 @@ class Storage {
 
   static public $file_extension = '';
 
-  static protected $stream = 'config://';
-
   /**
    * Returns TRUE if the file for a configuration exists
    * in the config:// directory.
    */
   static public function configFileExists($component, $identifier) {
-    return file_exists(static::$stream . $component . '.' . $identifier . '.' . static::$file_extension);
+    return file_exists(ConfigurationManagement::getStream() . $component . '.' . $identifier . '.' . static::$file_extension);
   }
 
   public function __construct() {
@@ -141,11 +140,4 @@ class Storage {
     return $this->hash;
   }
 
-  public static function setStream($stream) {
-    static::$stream = $stream;
-  }
-
-  public static function getStream() {
-    return static::$stream;
-  }
 }

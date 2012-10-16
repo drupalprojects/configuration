@@ -89,11 +89,11 @@ class FieldConfiguration extends Configuration {
 
     $supported_handler = FALSE;
     if ($entity_type == 'node') {
-      $parent_config = Configuration::createConfigurationInstance('content_type.' . $bundle_name);
+      $parent_config = ConfigurationManagement::createConfigurationInstance('content_type.' . $bundle_name);
       $this->addToDependencies($parent_config);
     }
     elseif ($entity_type == 'vocabulary') {
-      $parent_config = Configuration::createConfigurationInstance('vocabulary.' . $bundle_name);
+      $parent_config = ConfigurationManagement::createConfigurationInstance('vocabulary.' . $bundle_name);
       $this->addToDependencies($parent_config);
     }
     parent::findDependencies();

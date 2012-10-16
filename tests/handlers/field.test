@@ -5,7 +5,7 @@
  * Tests for Configuration Management: Fields.
  */
 
-use Drupal\configuration\Config\Configuration;
+use Drupal\configuration\Config\ConfigurationManagement;
 
 /**
  * Base class for functional tests for configuration management.
@@ -46,13 +46,13 @@ class ConfigurationHandlerFieldTestCase extends ConfigurationWebTestCase {
 
   public function testImportToActiveStore() {
     // Change the path from where the configurations are loaded.
-    Configuration::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+    ConfigurationManagement::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
 
     $config = 'content_type.article';
-    $results = Configuration::importToActiveStore(array($config), FALSE, FALSE);
+    $results = ConfigurationManagement::importToActiveStore(array($config), FALSE, FALSE);
 
     $config = 'field.node.body.article';
-    $results = Configuration::importToActiveStore(array($config), FALSE, FALSE);
+    $results = ConfigurationManagement::importToActiveStore(array($config), FALSE, FALSE);
     $imported = $results->getInfo('imported');
     $this->assertTrue(in_array($config, $imported), "Configuration for $config was imported.");
 
@@ -79,7 +79,7 @@ class ConfigurationHandlerFieldTestCase extends ConfigurationWebTestCase {
     variable_set('configuration_config_path', $this->datastore_path);
     $config_path = variable_get('configuration_config_path', $this->datastore_path);
     file_prepare_directory($config_path);
-    Configuration::setStream($config_path);
+    ConfigurationManagement::setStream($config_path);
 
     $web_user = $this->drupalCreateUser(
       array(
@@ -99,7 +99,7 @@ class ConfigurationHandlerFieldTestCase extends ConfigurationWebTestCase {
     $this->drupalPost(NULL, array(), t('Save'));
 
     $config = 'field.node.my_field.' . $type->type;
-    $results = Configuration::exportToDataStore(array($config), FALSE, FALSE);
+    $results = ConfigurationManagement::exportToDataStore(array($config), FALSE, FALSE);
     $exported = $results->getInfo('exported');
     $this->assertTrue(in_array($config, $exported), "Configuration for $config was exported.");
 
@@ -118,11 +118,11 @@ class ConfigurationHandlerFieldTestCase extends ConfigurationWebTestCase {
 
     $this->drupalLogin($web_user);
     // Change the path from where the configurations are loaded.
-    Configuration::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
-    $results = Configuration::importToActiveStore(array('content_type.article'), FALSE, FALSE, TRUE);
+    ConfigurationManagement::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+    $results = ConfigurationManagement::importToActiveStore(array('content_type.article'), FALSE, FALSE, TRUE);
 
     $config = 'field.node.body.article';
-    $results = Configuration::importToActiveStore(array($config), FALSE, FALSE, TRUE);
+    $results = ConfigurationManagement::importToActiveStore(array($config), FALSE, FALSE, TRUE);
 
     $object = db_select('configuration_staging', 'cs')
                         ->fields('cs')
@@ -136,7 +136,7 @@ class ConfigurationHandlerFieldTestCase extends ConfigurationWebTestCase {
     $edit['instance[label]'] = 'Modified';
     $this->drupalPost('admin/structure/types/manage/article/fields/body', $edit, t('Save settings'));
 
-    $results = Configuration::revertActiveStore(array('field.node.body.article'), FALSE, FALSE);
+    $results = ConfigurationManagement::revertActiveStore(array('field.node.body.article'), FALSE, FALSE);
 
     list($component, $entity_type, $field_name, $bundle) = explode('.', $config);
     $field = field_info_instance($entity_type, $field_name, $bundle);

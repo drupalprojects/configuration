@@ -5,7 +5,7 @@
  * Tests for Configuration Management: Vocabularies.
  */
 
-use Drupal\configuration\Config\Configuration;
+use Drupal\configuration\Config\ConfigurationManagement;
 
 /**
  * Base class for functional tests for configuration management.
@@ -44,10 +44,10 @@ class ConfigurationHandlerVariableTestCase extends ConfigurationWebTestCase {
 
   public function testImportToActiveStore() {
     // Change the path from where the configurations are loaded.
-    Configuration::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+    ConfigurationManagement::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
 
     $config = 'vocabulary.tags';
-    $results = Configuration::importToActiveStore(array($config), FALSE, FALSE);
+    $results = ConfigurationManagement::importToActiveStore(array($config), FALSE, FALSE);
     $imported = $results->getInfo('imported');
     $this->assertTrue(in_array($config, $imported), "Configuration for $config was imported.");
 
@@ -60,7 +60,7 @@ class ConfigurationHandlerVariableTestCase extends ConfigurationWebTestCase {
     $config_path = variable_get('configuration_config_path', $this->datastore_path);
     file_prepare_directory($config_path);
 
-    Configuration::setStream($config_path);
+    ConfigurationManagement::setStream($config_path);
 
 
     $vocabulary = new stdClass();
@@ -76,7 +76,7 @@ class ConfigurationHandlerVariableTestCase extends ConfigurationWebTestCase {
     $this->assertTrue($vocabulary_exists, "The vocabulary was saved in the ActiveStore.");
 
     $config = 'vocabulary.' . $vocabulary->machine_name;
-    $results = Configuration::exportToDataStore(array($config), FALSE, FALSE);
+    $results = ConfigurationManagement::exportToDataStore(array($config), FALSE, FALSE);
     $exported = $results->getInfo('exported');
     $this->assertTrue(in_array($config, $exported), "Configuration for $config was exported.");
 
@@ -87,8 +87,8 @@ class ConfigurationHandlerVariableTestCase extends ConfigurationWebTestCase {
 
   public function testCheckModifications() {
     // Change the path from where the configurations are loaded.
-    Configuration::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
-    $results = Configuration::importToActiveStore(array('vocabulary.tags'), FALSE, FALSE, TRUE);
+    ConfigurationManagement::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+    $results = ConfigurationManagement::importToActiveStore(array('vocabulary.tags'), FALSE, FALSE, TRUE);
 
     $object = db_select('configuration_staging', 'cs')
                         ->fields('cs')
@@ -115,7 +115,7 @@ class ConfigurationHandlerVariableTestCase extends ConfigurationWebTestCase {
 
     $this->assertRaw(t('Updated vocabulary %name.', array('%name' => 'Modified')), 'The vocabulary for site name was modified');
 
-    $results = Configuration::revertActiveStore(array('vocabulary.tags'), FALSE, FALSE);
+    $results = ConfigurationManagement::revertActiveStore(array('vocabulary.tags'), FALSE, FALSE);
     $current_vocabulary = taxonomy_vocabulary_load($vid);
 
     $this->assertEqual($original_vocabulary->name, $current_vocabulary->name, 'The vocabulary was suscessfully reverted.');

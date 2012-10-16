@@ -50,7 +50,7 @@ define('CONFIGURATION_MODULE_TO_INSTALL', 0x0101);
  */
 define('CONFIGURATION_MODULE_INSTALLED', 0x0102);
 
-use Drupal\configuration\Config\Configuration;
+use Drupal\configuration\Config\ConfigurationManagement;
 
 /**
  * Implements hook_stream_wrappers().
@@ -102,7 +102,7 @@ function configuration_configuration_handlers() {
  *   For $component == 'variable', $identifier = 'comment_controls_article'
  */
 function configuration_backup_to_staging($component, $identifier, $backup_dependencies = TRUE, $backup_optionals = TRUE) {
-  $configuration = Configuration::createConfigurationInstance($component . '.' . $identifier);
+  $configuration = ConfigurationManagement::createConfigurationInstance($component . '.' . $identifier);
   $backuped = array();
   $configuration->backupConfiguration($backuped, $backup_dependencies, $backup_optionals);
   return $backuped;
@@ -112,12 +112,12 @@ function configuration_backup_to_staging($component, $identifier, $backup_depend
  * Load a list of configurations from config:// into the staging area.
  */
 function configuration_load_configurations($list = array()) {
-  $handlers = Configuration::getConfigurationHandler();
+  $handlers = ConfigurationManagement::getConfigurationHandler();
   $components = array();
   foreach ($handlers as $component => $handler) {
     $components = array_merge($components, $handler::scanDataStore());
   }
-  $to_load = Configuration::importConfigurations($components, $list, TRUE, TRUE, FALSE);
+  $to_load = ConfigurationManagement::importConfigurations($components, $list, TRUE, TRUE, FALSE);
   foreach ($to_load as $config) {
     $config->saveToStaging();
   }
@@ -133,14 +133,14 @@ function configuration_load_configurations($list = array()) {
  *
  */
 function configuration_import_directory($path, $enable_modules = TRUE) {
-  Configuration::setStream($path);
+  ConfigurationManagement::setStream($path);
 
   $file_content = drupal_substr(file_get_contents($path . 'configurations.inc'), 6);
   // this line creates a $configurations array with a list of components.
   @eval($file_content);
 
   if ($enable_modules) {
-    $settings = Configuration::discoverRequiredModules($configurations);
+    $settings = ConfigurationManagement::discoverRequiredModules($configurations);
     $missing = $settings->getInfo('modules_missing');
     if (count($missing)) {
       $missing = implode(', ', $missing);
@@ -153,7 +153,7 @@ function configuration_import_directory($path, $enable_modules = TRUE) {
     }
   }
 
-  $result = Configuration::importToActiveStore($configurations);
+  $result = ConfigurationManagement::importToActiveStore($configurations);
   $imported = $result->getInfo('imported');
   if (is_array($imported) && count($imported) > 0) {
     return $imported;

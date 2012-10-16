@@ -4,7 +4,7 @@
  * Tests for Configuration Management
  */
 
-use Drupal\configuration\Config\Configuration;
+use Drupal\configuration\Config\ConfigurationManagement;
 
 /**
  * Base class for functional tests for configuration management.

@@ -5,7 +5,7 @@
  * Tests for Configuration Management: Image Styles.
  */
 
-use Drupal\configuration\Config\Configuration;
+use Drupal\configuration\Config\ConfigurationManagement;
 use Drupal\configuration\Config\ImageStyleConfiguration;
 
 /**
@@ -45,10 +45,10 @@ class ConfigurationHandlerImageStyleTestCase extends ConfigurationWebTestCase {
 
   public function testImportToActiveStore() {
     // Change the path from where the configurations are loaded.
-    Configuration::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+    ConfigurationManagement::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
 
     $config = 'image_style.custom';
-    $results = Configuration::importToActiveStore(array($config), FALSE, FALSE);
+    $results = ConfigurationManagement::importToActiveStore(array($config), FALSE, FALSE);
     $imported = $results->getInfo('imported');
     $this->assertTrue(in_array($config, $imported), "Configuration for $config was imported.");
 
@@ -62,7 +62,7 @@ class ConfigurationHandlerImageStyleTestCase extends ConfigurationWebTestCase {
     $config_path = variable_get('configuration_config_path', $this->datastore_path);
     file_prepare_directory($config_path);
 
-    Configuration::setStream($config_path);
+    ConfigurationManagement::setStream($config_path);
 
     $web_user = $this->drupalCreateUser(
       array(
@@ -88,7 +88,7 @@ class ConfigurationHandlerImageStyleTestCase extends ConfigurationWebTestCase {
     $this->assertRaw(t('The image effect was successfully applied.'));
 
     $config = 'image_style.' . $style_name;
-    $results = Configuration::exportToDataStore(array($config), FALSE, FALSE);
+    $results = ConfigurationManagement::exportToDataStore(array($config), FALSE, FALSE);
     $exported = $results->getInfo('exported');
     $this->assertTrue(in_array($config, $exported), "Configuration for $config was exported.");
 
@@ -99,10 +99,10 @@ class ConfigurationHandlerImageStyleTestCase extends ConfigurationWebTestCase {
 
   public function testCheckModifications() {
     // Change the path from where the configurations are loaded.
-    Configuration::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+    ConfigurationManagement::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
 
     $config = 'image_style.custom';
-    $results = Configuration::importToActiveStore(array($config), FALSE, FALSE, TRUE);
+    $results = ConfigurationManagement::importToActiveStore(array($config), FALSE, FALSE, TRUE);
 
     $object = db_select('configuration_staging', 'cs')
                         ->fields('cs')
@@ -149,7 +149,7 @@ class ConfigurationHandlerImageStyleTestCase extends ConfigurationWebTestCase {
     $final_hash = $image_config->loadFromActiveStore()->buildHash()->getHash();
     $this->assertFalse($initial_hash == $final_hash, 'Image Style hash is not the same after modify the image.');
 
-    $results = Configuration::revertActiveStore(array('image_style.custom'), FALSE, FALSE);
+    $results = ConfigurationManagement::revertActiveStore(array('image_style.custom'), FALSE, FALSE);
 
     drupal_static_reset('image_styles');
     $modified_image_style = image_style_load('custom');

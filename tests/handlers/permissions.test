@@ -5,7 +5,7 @@
  * Tests for Configuration Management: Permissions.
  */
 
-use Drupal\configuration\Config\Configuration;
+use Drupal\configuration\Config\ConfigurationManagement;
 
 /**
  * Base class for functional tests for configuration management.
@@ -47,9 +47,9 @@ class ConfigurationHandlerPermissionTestCase extends ConfigurationWebTestCase {
     $developer_rid = $this->drupalCreateRole(array(), 'developer');
 
     // Change the path from where the configurations are loaded.
-    Configuration::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+    ConfigurationManagement::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
     $config = 'permission.administer_content_types';
-    $results = Configuration::importToActiveStore(array($config), FALSE, FALSE);
+    $results = ConfigurationManagement::importToActiveStore(array($config), FALSE, FALSE);
     $imported = $results->getInfo('imported');
     $this->assertTrue(in_array($config, $imported), "Configuration for $config was imported.");
 
@@ -64,10 +64,10 @@ class ConfigurationHandlerPermissionTestCase extends ConfigurationWebTestCase {
     $config_path = variable_get('configuration_config_path', $this->datastore_path);
     file_prepare_directory($config_path);
 
-    Configuration::setStream($config_path);
+    ConfigurationManagement::setStream($config_path);
 
     $config = 'permission.administer_content_types';
-    $results = Configuration::exportToDataStore(array($config), FALSE, FALSE);
+    $results = ConfigurationManagement::exportToDataStore(array($config), FALSE, FALSE);
     $exported = $results->getInfo('exported');
     $this->assertTrue(in_array($config, $exported), "Configuration for $config was exported.");
 
@@ -82,8 +82,8 @@ class ConfigurationHandlerPermissionTestCase extends ConfigurationWebTestCase {
     $developer_rid = $this->drupalCreateRole(array(), 'developer');
 
     // Change the path from where the configurations are loaded.
-    Configuration::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
-    $results = Configuration::importToActiveStore(array('permission.administer_content_types'), FALSE, FALSE, TRUE);
+    ConfigurationManagement::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+    $results = ConfigurationManagement::importToActiveStore(array('permission.administer_content_types'), FALSE, FALSE, TRUE);
 
     $object = db_select('configuration_staging', 'cs')
                         ->fields('cs')
@@ -114,7 +114,7 @@ class ConfigurationHandlerPermissionTestCase extends ConfigurationWebTestCase {
 
     $this->assertTrue(empty($current_value), 'Developers cannot administer content types.');
 
-    $results = Configuration::revertActiveStore(array('permission.administer_content_types'), FALSE, FALSE);
+    $results = ConfigurationManagement::revertActiveStore(array('permission.administer_content_types'), FALSE, FALSE);
 
     $current_value = $this->canDevelopersAdministerContentTypes($developer_rid);
 

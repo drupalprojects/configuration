@@ -5,7 +5,7 @@
  * Tests for Configuration Management: Content Types.
  */
 
-use Drupal\configuration\Config\Configuration;
+use Drupal\configuration\Config\ConfigurationManagement;
 
 /**
  * Base class for functional tests for configuration management.
@@ -45,10 +45,10 @@ class ConfigurationHandlerContentTypeTestCase extends ConfigurationWebTestCase {
 
   public function testImportToActiveStore() {
     // Change the path from where the configurations are loaded.
-    Configuration::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+    ConfigurationManagement::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
 
     $config = 'content_type.article';
-    $results = Configuration::importToActiveStore(array($config), FALSE, FALSE);
+    $results = ConfigurationManagement::importToActiveStore(array($config), FALSE, FALSE);
     $imported = $results->getInfo('imported');
     $this->assertTrue(in_array($config, $imported), "Configuration for $config was imported.");
 
@@ -63,7 +63,7 @@ class ConfigurationHandlerContentTypeTestCase extends ConfigurationWebTestCase {
     $config_path = variable_get('configuration_config_path', $this->datastore_path);
     file_prepare_directory($config_path);
 
-    Configuration::setStream($config_path);
+    ConfigurationManagement::setStream($config_path);
 
     $type = $this->drupalCreateContentType();
 
@@ -71,7 +71,7 @@ class ConfigurationHandlerContentTypeTestCase extends ConfigurationWebTestCase {
     $this->assertTrue($type_exists, 'The new content type has been created in the database.');
 
     $config = 'content_type.' . $type->type;
-    $results = Configuration::exportToDataStore(array($config), FALSE, FALSE);
+    $results = ConfigurationManagement::exportToDataStore(array($config), FALSE, FALSE);
     $exported = $results->getInfo('exported');
     $this->assertTrue(in_array($config, $exported), "Configuration for $config was exported.");
 
@@ -82,8 +82,8 @@ class ConfigurationHandlerContentTypeTestCase extends ConfigurationWebTestCase {
 
   public function testCheckModifications() {
     // Change the path from where the configurations are loaded.
-    Configuration::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
-    $results = Configuration::importToActiveStore(array('content_type.article'), FALSE, FALSE, TRUE);
+    ConfigurationManagement::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+    $results = ConfigurationManagement::importToActiveStore(array('content_type.article'), FALSE, FALSE, TRUE);
 
     drupal_flush_all_caches();
     $non_modified_article = node_type_load('article');
@@ -102,7 +102,7 @@ class ConfigurationHandlerContentTypeTestCase extends ConfigurationWebTestCase {
     $modified_article->description = 'modified';
     node_type_save($modified_article);
 
-    $results = Configuration::revertActiveStore(array('content_type.article'), FALSE, FALSE);
+    $results = ConfigurationManagement::revertActiveStore(array('content_type.article'), FALSE, FALSE);
 
     drupal_flush_all_caches();
     $modified_article = node_type_load('article');

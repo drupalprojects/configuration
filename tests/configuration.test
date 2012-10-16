@@ -4,7 +4,7 @@
  * Tests for Configuration Management
  */
 
-use Drupal\configuration\Config\Configuration;
+use Drupal\configuration\Config\ConfigurationManagement;
 
 /**
  * Base class for functional tests for configuration management.
@@ -114,7 +114,7 @@ class ConfigurationApiTest extends ConfigurationWebTestCase {
   }
 
   public function testExportToDatastore() {
-    $results = Configuration::exportToDataStore(array('content_type.article'));
+    $results = ConfigurationManagement::exportToDataStore(array('content_type.article'));
     $exported = $results->getInfo('exported');
 
     foreach ($this->configurations as $config) {
@@ -126,11 +126,11 @@ class ConfigurationApiTest extends ConfigurationWebTestCase {
   }
 
   public function testStartAndStopTracking() {
-    $results = Configuration::startTracking(array('content_type.article'));
+    $results = ConfigurationManagement::startTracking(array('content_type.article'));
     $exported = $results->getInfo('exported');
 
-    $tracked = Configuration::trackedConfigurations();
-    $non_tracked = Configuration::nonTrackedConfigurations();
+    $tracked = ConfigurationManagement::trackedConfigurations();
+    $non_tracked = ConfigurationManagement::nonTrackedConfigurations();
     foreach ($this->configurations as $id) {
       list($component, $identifier) = explode('.', $id, 2);
       $this->assertTrue(!empty($tracked[$component][$identifier]), t('@id is being tracked', array('@id' => $id)));
@@ -140,12 +140,12 @@ class ConfigurationApiTest extends ConfigurationWebTestCase {
     $count_tracked = db_query("SELECT COUNT(component) FROM {configuration_staging}")->fetchField();
     $this->assertTrue($count_tracked == count($exported), t("@num of @total configurations have been tracked.", array('@num' => $count_tracked, '@total' => count($exported))));
 
-    $results = Configuration::stopTracking(array('content_type.article'));
+    $results = ConfigurationManagement::stopTracking(array('content_type.article'));
     $count_tracked = db_query("SELECT COUNT(component) FROM {configuration_staging}")->fetchField();
     $this->assertTrue(empty($count_tracked), "No configurations have been tracked.");
 
-    $tracked = Configuration::trackedConfigurations();
-    $non_tracked = Configuration::nonTrackedConfigurations();
+    $tracked = ConfigurationManagement::trackedConfigurations();
+    $non_tracked = ConfigurationManagement::nonTrackedConfigurations();
     foreach ($this->configurations as $id) {
       list($component, $identifier) = explode('.', $id, 2);
       $this->assertTrue(empty($tracked[$component][$identifier]), t('@id is not being tracked', array('@id' => $id)));
@@ -153,24 +153,24 @@ class ConfigurationApiTest extends ConfigurationWebTestCase {
   }
 
   public function testRevertActiveStore() {
-    $results = Configuration::startTracking(array('content_type.article'));
+    $results = ConfigurationManagement::startTracking(array('content_type.article'));
     $exported = $results->getInfo('exported');
 
-    $handler = Configuration::getConfigurationHandler('content_type');
+    $handler = ConfigurationManagement::getConfigurationHandler('content_type');
 
     $content_types = node_type_get_types();
     $article = $content_types['article'];
     $article->description = 'modified';
     node_type_save($article);
 
-    $modified_config = Configuration::createConfigurationInstance('content_type.article');
-    $original_config = Configuration::createConfigurationInstance('content_type.article');
+    $modified_config = ConfigurationManagement::createConfigurationInstance('content_type.article');
+    $original_config = ConfigurationManagement::createConfigurationInstance('content_type.article');
     $original_config->loadFromStaging();
     $modified_config->loadFromActiveStore();
 
     $this->assertTrue($original_config->getHash() != $modified_config->getHash(), "Hash for content type Article has changed after modify the content type.");
 
-    $results = Configuration::revertActiveStore(array('content_type.article'));
+    $results = ConfigurationManagement::revertActiveStore(array('content_type.article'));
     $modified_config->loadFromActiveStore();
 
     $this->assertTrue($original_config->getHash() == $modified_config->getHash(), "Configuration for content type Article has been reverted.");
@@ -220,7 +220,7 @@ class ConfigurationImportTestCase extends ConfigurationWebTestCase {
     }
 
     // Change the path from where the configurations are loaded.
-    Configuration::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+    ConfigurationManagement::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
 
     $this->configurations = array(
       'variable.node_options_article',
@@ -246,7 +246,7 @@ class ConfigurationImportTestCase extends ConfigurationWebTestCase {
   }
 
   public function testImportToActiveStore() {
-    $results = Configuration::importToActiveStore(array('content_type.article'));
+    $results = ConfigurationManagement::importToActiveStore(array('content_type.article'));
     $imported = $results->getInfo('imported');
 
     foreach ($this->configurations as $config) {
