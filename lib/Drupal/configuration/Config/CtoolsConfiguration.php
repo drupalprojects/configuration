@@ -48,6 +48,10 @@ class CtoolsConfiguration extends Configuration {
   }
 
   static public function supportedComponents() {
+    if (!static::isActive()) {
+      return array();
+    }
+
     $supported = array();
     ctools_include('export');
     foreach (ctools_export_get_schemas_by_module() as $module => $schemas) {
@@ -86,7 +90,9 @@ class CtoolsConfiguration extends Configuration {
     if ($object && ($object->export_type & EXPORT_IN_DATABASE)) {
       ctools_export_crud_delete($this->getComponent(), $object);
     }
-    ctools_export_crud_save($this->getComponent(), $this->getData());
+    $data = $this->getData();
+    $data = $data->export_type = EXPORT_IN_DATABASE;
+    ctools_export_crud_save($this->getComponent(), $data);
     $settings->addInfo('imported', $this->getUniqueId());
   }
 
