@@ -219,5 +219,11 @@ class ConfigurationUISettingsTest extends ConfigurationUIWebTestCase {
     );
     $this->drupalPost('admin/config/system/configuration/settings', $edit, t('Save configuration'));
     $this->assertRaw(t('The directory %directory does not exist.', array('%directory' => $directory)));
+
+    $edit = array();
+    $this->drupalPost('admin/config/system/configuration/settings', $edit, t('Syncronize configurations'));
+
+    $this->assertRaw('The following modules have been enabled:', 'Modules enabled');
+    $this->assertRaw(t('Imported %config', array('%config' => 'content_type.article')));
   }
 }

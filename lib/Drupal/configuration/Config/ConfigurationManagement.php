@@ -341,25 +341,59 @@ class ConfigurationManagement {
   /**
    * Returns a list of configurations that are currently being tracked.
    *
+   * @param boolean $tree
+   *   A boolean flag to indicate if the tracked configuration have to be
+   *   organized in a tree structure.
+   *
    * @return array
+   *   If $tree is TRUE the returned array is structured in the this way:
+   *
+   *   @code
+   *     array(
+   *       'content_type' => array(
+   *         'article' => 'c08223610b3eb55161d4539c704e40989dcf3e72',
+   *         'page' => '5161d4539c704e40989dcf3e72c08223610b3eb5'
+   *       ),
+   *       'variable' => array(
+   *         'site_name' =>'539c704e40989dcf35161d4e72c08223610b3eb5'
+   *       )
+   *     );
+   *
+   *     If $tree is FALSE the returned array is structured in the this way:
+   *
+   *     array(
+   *       'content_type.article' => 'c08223610b3eb55161d4539c704e40989dcf3e72',
+   *       'content_type.page' => '5161d4539c704e40989dcf3e72c08223610b3eb5',
+   *       'variable.site_name' =>'539c704e40989dcf35161d4e72c08223610b3eb5'
+   *     );
+   *   @endcode
    */
-  static public function trackedConfigurations() {
+  static public function trackedConfigurations($tree = TRUE) {
     $tracked = db_select('configuration_staging', 'cs')
                   ->fields('cs', array('component', 'identifier', 'hash'))
                   ->execute()
                   ->fetchAll();
 
+    $return = array();
     // Prepare the array to return
     $handlers = static::getConfigurationHandler();
-    $return = array();
-    foreach ($handlers as $component => $handler) {
-      $return[$component] = array();
+
+    if ($tree) {
+      foreach ($handlers as $component => $handler) {
+        $return[$component] = array();
+      }
     }
+
 
     foreach ($tracked as $object) {
       // Only return tracked Configurations for supported components.
-      if (isset($return[$object->component])) {
-        $return[$object->component][$object->identifier] = $object->hash;
+      if (isset($handlers[$object->component])) {
+        if ($tree) {
+          $return[$object->component][$object->identifier] = $object->hash;
+        }
+        else {
+          $return[$object->component . '.' . $object->identifier] = $object->hash;
+        }
       }
     }
     return $return;

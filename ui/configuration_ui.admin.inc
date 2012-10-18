@@ -527,6 +527,24 @@ function configuration_ui_import_form_submit($form, &$form_state) {
  */
 function configuration_ui_settings_form($form, &$form_state) {
 
+  $form['configuration_ops'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Configuration Operations'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+    '#description' => '<p>' . t('Updates the tracked configurations using the configurations defined in configuration.inc file. You should click on this button every time you update the DataStore and want to see the changes materialized in your site.') . '<p>',
+  );
+  $form['configuration_ops']['sync_configurations'] = array(
+    '#type' => 'submit',
+    '#value' => t('Syncronize configurations'),
+    '#submit' => array('configuration_sync_configurations_submit'),
+  );
+  $form['configuration_ops']['preserve_tracked'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Preserve tracked configurations.'),
+    '#description' => '<p>' . t('If checked, all the configurations current being tracked will still be tracked even if they are not in listed in the configuration.inc file of your DataStore. If not checked, those configurations that are not listed in the configuration.inc file and are currently being tracked will be automatically untracked.') . '<p>',
+  );
+
   $form['general_settings'] = array(
     '#type' => 'fieldset',
     '#title' => t('General Settings'),
@@ -567,5 +585,48 @@ function configuration_ui_validate_settings($form, &$form_state) {
       form_set_error($form_element['#parents'][0], t('The directory %directory does not exist.', array('%directory' => $directory)));
       watchdog('file system', 'The directory %directory does not exist.', array('%directory' => $directory), WATCHDOG_ERROR);
     }
+  }
+}
+
+function configuration_sync_configurations_submit($form, &$form_state) {
+  $to_track = array_keys(ConfigurationManagement::readTrackingFile());
+  $modules_results = ConfigurationManagement::discoverRequiredModules($to_track, FALSE, FALSE, TRUE);
+
+  $missing_modules = $modules_results->getInfo('missing_modules');
+
+  if (!empty($missing_modules)) {
+    drupal_set_message(t('Configurations cannot be syncronized because the following modules are not available to install: %modules', array('%modules' => implode(', ', $missing_modules))), 'error');
+    $error = TRUE;
+  }
+  else {
+    $modules_to_install = $modules_results->getInfo('modules_to_install');
+    drupal_set_message(t('The following will be enabled: %modules', array('%modules' => implode(', ', $modules_to_install))));
+    if (!empty($modules_to_install)) {
+      module_enable($modules_to_install, FALSE);
+      drupal_set_message(t('The following modules have been enabled: %modules', array('%modules' => implode(', ', $modules_to_install))));
+    }
+
+  }
+
+  // If we have to stop stracking some configurations, figure out which
+  // configurations have to be untracked.
+  if (empty($form_state['values']['preserve_tracked'])) {
+
+    $being_tracked = array_keys(ConfigurationManagement::trackedConfigurations(FALSE));
+
+    $to_untrack = array_diff($being_tracked, $to_track);
+
+    $un_track_results = ConfigurationManagement::stopTracking($to_untrack, TRUE, TRUE);
+
+    if (count($un_track_results->getInfo('untracked'))) {
+      foreach ($un_track_results->getInfo('untracked') as $untracked_config) {
+        drupal_set_message(t('Untracked %config', array('%config' => $untracked_config)));
+      }
+    }
+  }
+
+  $results = ConfigurationManagement::importToActiveStore($to_track, FALSE, FALSE, TRUE);
+  foreach ($results->getInfo('imported') as $imported) {
+    drupal_set_message(t('Imported %config', array('%config' => $imported)));
   }
 }
