@@ -541,7 +541,6 @@ function configuration_ui_settings_form($form, &$form_state) {
     '#size' => 40,
     '#maxlength' => 255,
     '#default_value' => variable_get('configuration_config_path', conf_path() . '/files/config'),
-    '#after_build' => array('system_check_directory'),
   );
 
   $form['general_settings']['configuration_remote_server'] = array(
@@ -551,5 +550,22 @@ function configuration_ui_settings_form($form, &$form_state) {
     '#default_value' => variable_get('configuration_remote_server', -1),
   );
 
+  $form['#validate'][] = 'configuration_ui_validate_settings';
   return system_settings_form($form);
+}
+
+function configuration_ui_validate_settings($form, &$form_state) {
+  $form_element = $form['general_settings']['configuration_config_path'];
+
+  if (empty($form_state['values']['configuration_remote_server'])) {
+    system_check_directory($form_element);
+  }
+  else {
+    $directory = $form_state['values']['configuration_config_path'];
+    if (!is_dir($directory)) {
+      // If the directory does not exists and cannot be created.
+      form_set_error($form_element['#parents'][0], t('The directory %directory does not exist.', array('%directory' => $directory)));
+      watchdog('file system', 'The directory %directory does not exist.', array('%directory' => $directory), WATCHDOG_ERROR);
+    }
+  }
 }

@@ -163,3 +163,61 @@ class ConfigurationUITest extends ConfigurationUIWebTestCase {
 
   }
 }
+
+class ConfigurationUISettingsTest extends ConfigurationUIWebTestCase {
+
+  protected $profile = 'minimal';
+
+  /**
+   * Test info.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => t('Test Configuration Settings UI'),
+      'description' => t('Test the Configuration Management UI: Settings Tab'),
+      'group' => t('Configuration UI'),
+    );
+  }
+
+  /**
+   * Set up test.
+   */
+  public function setUp($modules = array()) {
+    if (empty($modules)) {
+      parent::setUp(array(
+        'configuration_ui',
+      ));
+    }
+    else {
+      parent::setUp($modules);
+    }
+  }
+
+  public function testSyncronizeUI() {
+    // Change the path to be able to read configurations from the test folder
+    // Test the syncronize feature
+    $web_user = $this->drupalCreateUser(
+      array(
+        'administer configuration management',
+      )
+    );
+    $this->drupalLogin($web_user);
+
+    // Test the Validations
+    $edit = array(
+      'configuration_config_path' => drupal_get_path('module', 'configuration') . '/tests/test_configs/',
+      'configuration_remote_server' => TRUE,
+    );
+    $this->drupalPost('admin/config/system/configuration/settings', $edit, t('Save configuration'));
+
+    $this->assertRaw('The configuration options have been saved.');
+
+    $directory = 'non/existent/path';
+    $edit = array(
+      'configuration_config_path' => $directory,
+      'configuration_remote_server' => TRUE,
+    );
+    $this->drupalPost('admin/config/system/configuration/settings', $edit, t('Save configuration'));
+    $this->assertRaw(t('The directory %directory does not exist.', array('%directory' => $directory)));
+  }
+}
