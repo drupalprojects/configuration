@@ -254,3 +254,54 @@ class ConfigurationImportTestCase extends ConfigurationWebTestCase {
     }
   }
 }
+
+/**
+ * Test the discovery of required modules to use configurations.
+ */
+class ConfigurationDiscoverModulesTestCase extends ConfigurationWebTestCase {
+
+  protected $profile = 'minimal';
+
+  /**
+   * Implementation of DrupalWebTestCase::setUp().
+   */
+  public function setUp($modules = array()) {
+    global $base_url;
+
+    if (empty($modules)) {
+      parent::setUp(array(
+        'configuration',
+      ));
+    }
+    else {
+      parent::setUp($modules);
+    }
+  }
+
+  /**
+   * Test info.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => t('Discover Required modules API'),
+      'description' => t('Test Configuration for the API that discover what tare the required modules to import a configuration.'),
+      'group' => t('Configuration'),
+    );
+  }
+
+  public function testDiscoverRequiredModules() {
+    ConfigurationManagement::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+
+    $results = ConfigurationManagement::discoverRequiredModules(array('content_type.article'));
+
+    $modules_to_install = $results->getInfo('modules_to_install');
+
+    $this->assertTrue(in_array('taxonomy', $modules_to_install), 'Taxonomy module have to be installed');
+    $this->assertTrue(in_array('file', $modules_to_install), 'File module have to be installed');
+    $this->assertTrue(in_array('image', $modules_to_install), 'Image module have to be installed');
+    $this->assertTrue(in_array('options', $modules_to_install), 'Options module have to be installed');
+
+    $missing_modules = $results->getInfo('missing_modules');
+    $this->assertTrue(empty($missing_modules), 'There are not missing modules');
+  }
+}

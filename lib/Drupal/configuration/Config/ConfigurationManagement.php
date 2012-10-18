@@ -103,8 +103,8 @@ class ConfigurationManagement {
       array(
         'build_callback' => 'loadFromStorage',
         'callback' => 'discoverModules',
-        'process_dependencies' => $import_dependencies,
-        'process_optionals' => $import_optionals,
+        'process_dependencies' => $include_dependencies,
+        'process_optionals' => $include_optionals,
         'info' => array(
           'modules' => array(),
           'modules_missing' => array(),
@@ -113,7 +113,9 @@ class ConfigurationManagement {
       )
     );
     foreach ($list as $component) {
-      $config = static::createConfigurationInstance($component);
+      list($component_name, $identifier) = explode('.', $component, 2);
+      $handler = static::getConfigurationHandler($component_name, TRUE);
+      $config = new $handler($identifier, $component_name);
 
       // Make sure the object is built before start to iterate on its
       // dependencies.
