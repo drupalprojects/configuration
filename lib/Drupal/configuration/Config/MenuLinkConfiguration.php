@@ -57,7 +57,7 @@ class MenuLinkConfiguration extends Configuration {
   }
 
   public static function alterDependencies(Configuration $config, &$stack) {
-    if ($config->getComponent() == 'menulink') {
+    if ($config->getComponent() == 'menu_link') {
       list(, $mlid) = explode('.', $config->getIdentifier());
       $config_data = $config->getData();
       if ($config_data['plid'] > 0) {
