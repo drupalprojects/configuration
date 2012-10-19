@@ -699,9 +699,7 @@ class Configuration {
    * @param  ConfigIteratorSettings $settings
    * @see iterate()
    */
-  protected function printRaw(ConfigIteratorSettings &$settings) {
-    $this->build();
-
+  public function raw() {
     // Save the configuration into a file.
     $file_content = $this->storage
                       ->setData($this->data)
@@ -710,6 +708,19 @@ class Configuration {
                       ->setOptionalConfigurations(drupal_map_assoc(array_keys($this->getOptionalConfigurations())))
                       ->setModules(array_keys($this->getRequiredModules()))
                       ->getDataToSave();
+    return $file_content;
+  }
+
+  /**
+   * Print the configuration as plain text formatted to use in a tar file.
+   *
+   * @param  ConfigIteratorSettings $settings
+   * @see iterate()
+   */
+  protected function printRaw(ConfigIteratorSettings &$settings) {
+    $this->build();
+
+    $file_content = $this->raw();
 
     $this->buildHash();
     $settings->addInfo('hash', $this->getHash());

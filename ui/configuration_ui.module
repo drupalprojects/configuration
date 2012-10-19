@@ -73,6 +73,16 @@ function configuration_ui_menu() {
     'access arguments' => array('administer configuration management'),
   );
 
+  if (module_exists('diff')) {
+    $items['admin/config/configuration/diff/%'] = array(
+      'title' => 'Configuration Management',
+      'page callback' => 'configuration_ui_config_diff',
+      'page arguments' => array(4),
+      'file' => 'configuration_ui.admin.inc',
+      'access arguments' => array('administer configuration management'),
+    );
+  }
+
   $items['admin/config/system/configuration/migrate'] = array(
     'title' => 'Migrate',
     'page callback' => 'drupal_get_form',

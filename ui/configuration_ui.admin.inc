@@ -204,12 +204,22 @@ function configuration_ui_notracking_form($form, &$form_state) {
  * Menu Callback Form.
  */
 function configuration_ui_config_info($config_id) {
+  static $diff_exists;
+
+  if (!isset($diff_exists)) {
+    $diff_exists = module_exists('diff');
+  }
+
   $config = ConfigurationManagement::createConfigurationInstance($config_id);
 
   $config->loadFromActiveStore();
 
+  $status = check_plain($config->getStatus());
+  if ($diff_exists && $status != t('In Sync')) {
+    $status = l(check_plain($status), 'admin/config/configuration/diff/' . arg(4), array('attributes' => array('title' => t('View differences'))));
+  }
   if (arg(5) == 'status') {
-    print $config->getStatus();
+    print $status;
     exit();
   }
 
@@ -217,7 +227,8 @@ function configuration_ui_config_info($config_id) {
 
   $page .= '<h2>' . t('Configuration for: @config', array('@config' => $config->getUniqueID())) . '</h2>';
   $page .= '<p>' . t('Hash: @hash', array('@hash' => $config->getHash())) . '</p>';
-  $page .= '<p>' . t('Status: <strong>@status</strong>', array('@status' => $config->getStatus())) . '</p>';
+
+  $page .= '<p>' . t('Status: <strong>!status</strong>', array('!status' => $status)) . '</p>';
 
   $page .= '<p>' . t('Dependencies:') . '</p>';
   $dependencies = array('items' => array_keys($config->getDependencies()));
@@ -228,6 +239,39 @@ function configuration_ui_config_info($config_id) {
   $page .= theme('item_list', $optionals);
 
   return $page;
+}
+
+/**
+ * Menu Callback Form.
+ */
+function configuration_ui_config_diff($config_id) {
+  $activestore = ConfigurationManagement::createConfigurationInstance($config_id);
+  $datastore = ConfigurationManagement::createConfigurationInstance($config_id);
+
+  drupal_add_css(drupal_get_path('module', 'configuration_ui') . '/theme/configuration.css');
+
+  $output = '';
+
+  module_load_include('inc', 'diff', 'diff.engine');
+  $formatter = new DrupalDiffFormatter();
+
+  $formatter->leading_context_lines = 2;
+  $formatter->trailing_context_lines = 2;
+
+  $rows[] = array();
+
+  $rows[] = array(array(array('data' => 'test', 'colspan' => 4, 'header' => TRUE)));
+  $diff = new Diff(explode("\n", $datastore->loadFromStorage()->raw()), explode("\n", $activestore->loadFromActiveStore()->raw()));
+  $rows = array_merge($rows, $formatter->format($diff));
+
+  $header = array(
+    array('data' => t('Datastore'), 'colspan' => 2),
+    array('data' => t('Activestore'), 'colspan' => 2),
+  );
+  $output .= theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('class' => array('diff', 'configuration-diff'))));
+
+  $output = array('page' => array('#markup' => "<div class='configuration-comparison'>{$output}</div>"));
+  return $output;
 }
 
 /**
