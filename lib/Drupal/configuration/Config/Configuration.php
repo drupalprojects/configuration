@@ -367,18 +367,15 @@ class Configuration {
     if ($this->broken) {
       return $human_name ? t('Removed from ActiveStore') : 0;
     }
-
-    $staging_hash = db_select('configuration_staging', 'cs')
-                      ->fields('cs', array('hash'))
-                      ->condition('component', $this->getComponent())
-                      ->condition('identifier', $this->getIdentifier())
-                      ->execute()
-                      ->fetchField();
-    if (empty($staging_hash)) {
+    $tracked = ConfigurationManagement::readTrackingFile();
+    if (isset($tracked[$this->getUniqueId()])) {
+      $file_hash = $tracked[$this->getUniqueId()];
+    }
+    if (!isset($file_hash)) {
       return $human_name ? t('ActiveStore only') : CONFIGURATION_ACTIVESTORE_ONLY;
     }
     else {
-      if ($this->getHash() == $staging_hash) {
+      if ($this->getHash() == $file_hash) {
         return $human_name ? t('In Sync') : CONFIGURATION_IN_SYNC;
       }
       else {
