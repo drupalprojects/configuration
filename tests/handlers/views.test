@@ -1,0 +1,132 @@
+<?php
+
+/**
+ * @file
+ * Tests for Configuration Management: Views.
+ */
+
+use Drupal\configuration\Config\ConfigurationManagement;
+
+/**
+ * Base class for functional tests for configuration management.
+ */
+class ConfigurationHandlerViewTestCase extends ConfigurationWebTestCase {
+
+  protected $profile = 'minimal';
+
+  /**
+   * Test info.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => t('Handler: Views'),
+      'description' => t('Test the configuration API for views configurations'),
+      'group' => t('Configuration'),
+    );
+  }
+
+  /**
+   * Implementation of DrupalWebTestCase::setUp().
+   */
+  public function setUp($modules = array()) {
+    global $base_url;
+
+    if (empty($modules)) {
+      parent::setUp(array(
+        'configuration',
+        'ctools',
+        'views',
+        'views_ui',
+      ));
+    }
+    else {
+      parent::setUp($modules);
+    }
+  }
+
+  public function testImportToActiveStore() {
+    // Change the path from where the configurations are loaded.
+    ConfigurationManagement::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+
+    $config = 'views_view.test';
+    $results = ConfigurationManagement::importToActiveStore(array($config), FALSE, FALSE);
+    $imported = $results->getInfo('imported');
+    $this->assertTrue(in_array($config, $imported), "Configuration for $config was imported.");
+
+    $view_exists = views_get_view('test');
+    $this->assertTrue(!empty($view_exists->name), "The view was saved in the ActiveStore.");
+  }
+
+  public function testExportToDataStore() {
+    variable_set('configuration_config_path', $this->datastore_path);
+    $config_path = variable_get('configuration_config_path', $this->datastore_path);
+    file_prepare_directory($config_path);
+
+    ConfigurationManagement::setStream($config_path);
+
+    $web_user = $this->drupalCreateUser(
+      array(
+        'administer views',
+        'access content',
+      )
+    );
+    $this->drupalLogin($web_user);
+
+    $edit = array();
+    $edit['human_name'] = 'Test';
+    $edit['name'] = $view_name = strtolower($this->randomName(10));
+    $edit['page[title]'] = 'My custom view';
+    $edit['page[path]'] = 'custom_view';
+    $this->drupalPost('admin/structure/views/add', $edit, t('Save & exit'));
+    $this->assertRaw('My custom view', "The view was saved in the ActiveStore.");
+
+    $config = 'views_view.' . $view_name;
+    $results = ConfigurationManagement::exportToDataStore(array($config), FALSE, FALSE);
+    $exported = $results->getInfo('exported');
+    $this->assertTrue(in_array($config, $exported), "Configuration for $config was exported.");
+
+    $file_for_config = $config_path . $config . '.inc';
+
+    $this->assertTrue(file_exists($file_for_config), "The file that storages the view was created.");
+  }
+
+  public function testCheckModifications() {
+    // Change the path from where the configurations are loaded.
+    ConfigurationManagement::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+
+    $config = 'views_view.test';
+    $results = ConfigurationManagement::importToActiveStore(array($config), FALSE, FALSE, TRUE);
+    $view = views_get_view('test', TRUE);
+
+    $object = db_select('configuration_staging', 'cs')
+                        ->fields('cs')
+                        ->condition('component', 'views_view')
+                        ->condition('identifier', 'test')
+                        ->execute()
+                        ->fetchObject();
+
+    $this->assertTrue(!empty($object), 'The view was suscessfully tracked.');
+    $view_config_original = ConfigurationManagement::createConfigurationInstance('views_view.test');
+    $original_hash = $view_config_original->loadFromActiveStore()->getHash();
+
+    $view = views_get_view('test');
+    $view->display['default']->display_options['pager']['options']['items_per_page'] = 5;
+    views_save_view($view);
+
+    $view = views_get_view('test', TRUE);
+
+    $view_config_modified = ConfigurationManagement::createConfigurationInstance('views_view.test');
+
+    $modified_hash = $view_config_modified->loadFromActiveStore()->getHash();
+
+    $this->assertFalse($original_hash == $modified_hash, 'View hash is not the same after modify the view.');
+
+    $results = ConfigurationManagement::importToActiveStore(array('views_view.test'), FALSE, FALSE);
+    $view = views_get_view('test', TRUE);
+
+    $view_config_modified = ConfigurationManagement::createConfigurationInstance('views_view.test');
+    $final_hash = $view_config_modified->loadFromActiveStore()->getHash();
+
+    $this->assertTrue($original_hash == $final_hash, 'View reverted.');
+  }
+}

@@ -61,6 +61,12 @@ class Configuration {
    */
   protected $built;
 
+  /**
+   * A boolean flag to indicate if the configuration object couldn't be loaded
+   * from it source.
+   */
+  protected $broken = FALSE;
+
   public function __construct($identifier, $component = '') {
     $this->identifier = $identifier;
     $this->storage = static::getStorageInstance($component);
@@ -325,6 +331,7 @@ class Configuration {
    */
   public function build($include_dependencies = TRUE) {
     $this->prepareBuild();
+    $this->broken = $this->data === NULL;
     if ($include_dependencies) {
       $this->findDependencies();
     }
@@ -341,6 +348,10 @@ class Configuration {
    * @return NULL
    */
   public function buildHash() {
+    if ($this->broken) {
+      $this->setHash('Broken Configuration');
+      return $this;
+    }
     $this->storage
         ->setData($this->data)
         ->setKeysToExport($this->getKeysToExport())
@@ -353,6 +364,10 @@ class Configuration {
   }
 
   public function getStatus($human_name = TRUE) {
+    if ($this->broken) {
+      return $human_name ? t('Removed from ActiveStore') : 0;
+    }
+
     $staging_hash = db_select('configuration_staging', 'cs')
                       ->fields('cs', array('hash'))
                       ->condition('component', $this->getComponent())

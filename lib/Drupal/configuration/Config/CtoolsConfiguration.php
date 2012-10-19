@@ -87,11 +87,11 @@ class CtoolsConfiguration extends Configuration {
   public function saveToActiveStore(ConfigIteratorSettings &$settings) {
     ctools_include('export');
     $object = ctools_export_crud_load($this->getComponent(), $this->getIdentifier());
-    if ($object && ($object->export_type & EXPORT_IN_DATABASE)) {
+    if ($object) {
       ctools_export_crud_delete($this->getComponent(), $object);
     }
     $data = $this->getData();
-    $data = $data->export_type = EXPORT_IN_DATABASE;
+    $data->export_type = EXPORT_IN_DATABASE;
     ctools_export_crud_save($this->getComponent(), $data);
     $settings->addInfo('imported', $this->getUniqueId());
   }
