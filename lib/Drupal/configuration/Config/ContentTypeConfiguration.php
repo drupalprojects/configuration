@@ -17,7 +17,6 @@ class ContentTypeConfiguration extends Configuration {
     $keys = array(
       'type',
       'name',
-      'base',
       'description',
       'has_title',
       'title_label',
@@ -74,6 +73,7 @@ class ContentTypeConfiguration extends Configuration {
 
   public function saveToActiveStore(ConfigIteratorSettings &$settings) {
     $info = (object)$this->getData();
+    $info->base = 'node_content';
     node_type_save($info);
     $settings->addInfo('imported', $this->getUniqueId());
   }
