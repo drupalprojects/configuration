@@ -237,12 +237,14 @@ class Configuration {
    * the current configuration.
    */
   public function removeFromStaging(ConfigIteratorSettings &$settings) {
-    db_delete('configuration_staging')
+    $deleted = db_delete('configuration_staging')
       ->condition('component', $this->getComponent())
       ->condition('identifier', $this->getIdentifier())
       ->execute();
 
-    $settings->addInfo('untracked', $this->getUniqueId());
+    if ($deleted > 0) {
+      $settings->addInfo('untracked', $this->getUniqueId());
+    }
   }
 
   /**

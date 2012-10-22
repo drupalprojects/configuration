@@ -455,7 +455,7 @@ function _configuration_stop_tracking() {
     return drush_set_error('', dt('No configurations were selected to export'));
   }
 
-  $handlers = configuration_get_handlers();
+  $handlers = ConfigurationManagement::getConfigurationHandler();
   foreach ($args as $arg) {
 
     list($component, $identifier) = explode('.', $arg, 2);
