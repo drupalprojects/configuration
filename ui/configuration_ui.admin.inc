@@ -191,8 +191,8 @@ function configuration_ui_notracking_form($form, &$form_state) {
   if (!$component_exists) {
     $form['no_configs'] = array(
       '#markup' => t('No Configurations were found. Please use the
-      !export_link page to begin tracking new Configurations.',
-          array('!export_link' => l(t('Not Tracking'), 'admin/config/system/configuration/notracking'))),
+      !export_link page to check Configurations you are tracking right now.',
+          array('!export_link' => l(t('Tracking'), 'admin/config/system/configuration/tracking'))),
     );
     unset($form['buttons']);
   }
