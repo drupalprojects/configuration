@@ -326,7 +326,9 @@ abstract class Configuration {
     if ($include_dependencies) {
       $this->findDependencies();
     }
-    $this->findRequiredModules();
+    if (empty($this->broken)) {
+      $this->findRequiredModules();
+    }
     $this->built = TRUE;
     return $this;
   }
