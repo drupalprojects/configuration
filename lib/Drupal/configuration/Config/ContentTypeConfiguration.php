@@ -74,6 +74,10 @@ class ContentTypeConfiguration extends Configuration {
   public function saveToActiveStore(ConfigIteratorSettings &$settings) {
     $info = (object)$this->getData();
     $info->base = 'node_content';
+    $info->module = 'node';
+    $info->custom = 1;
+    $info->modified = 1;
+    $info->locked = 0;
     node_type_save($info);
     $settings->addInfo('imported', $this->getUniqueId());
   }

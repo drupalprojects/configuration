@@ -66,7 +66,7 @@ class ConfigurationHandlerContentTypeTestCase extends ConfigurationWebTestCase {
     $this->drupalLogin($web_user);
 
     $this->drupalGet('admin/structure/types');
-    $this->assertLinkByHref('admin/structure/types/manage/article', 0, 'Imported content type can be edited');
+    $this->assertLinkByHref('admin/structure/types/manage/article/delete', 0, 'Imported content type can be deleted');
   }
 
   public function testExportToDataStore() {

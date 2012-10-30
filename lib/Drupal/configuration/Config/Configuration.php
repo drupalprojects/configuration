@@ -10,7 +10,7 @@ namespace Drupal\configuration\Config;
 use \StdClass;
 use Drupal\configuration\Utils\ConfigIteratorSettings;
 
-class Configuration {
+abstract class Configuration {
 
   /**
    * The identifier that identifies to the component, usually the machine name.
@@ -93,13 +93,6 @@ class Configuration {
     $storage = static::getStorageSystem($component);
     $return = new $storage();
     return $return;
-  }
-
-  /**
-   * Return TRUE if this class can handle multiple configurations componenets.
-   */
-  static public function multiComponent() {
-    return FALSE;
   }
 
   /**
@@ -297,9 +290,7 @@ class Configuration {
    * I.e, content types should call to node_save_type(), variables should call
    * to variable_set(), etc.
    */
-  public function saveToActiveStore(ConfigIteratorSettings &$settings) {
-    // Override
-  }
+  abstract public function saveToActiveStore(ConfigIteratorSettings &$settings);
 
   public function export(ConfigIteratorSettings &$settings) {
     $this->build();
@@ -336,9 +327,7 @@ class Configuration {
    * Gets the structure of the configuration and save
    * it into the $data attribute.
    */
-  protected function prepareBuild() {
-    // This method must be overrided by children classes.
-  }
+  abstract protected function prepareBuild();
 
   /**
    * Build the configuration object based on the component name and
@@ -354,7 +343,9 @@ class Configuration {
     if ($include_dependencies) {
       $this->findDependencies();
     }
-    $this->findRequiredModules();
+    if (empty($this->broken)) {
+      $this->findRequiredModules();
+    }
     $this->built = TRUE;
     return $this;
   }
@@ -401,13 +392,6 @@ class Configuration {
         return $human_name ? t('Overriden') : CONFIGURATION_ACTIVESTORE_OVERRIDEN;
       }
     }
-
-  }
-
-  /**
-   * Provides the differences between two configurations of the same component.
-   */
-  public function diff() {
 
   }
 
