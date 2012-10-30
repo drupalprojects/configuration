@@ -103,7 +103,16 @@ class StoragePhp extends Storage {
   }
 
   public function save() {
-    file_put_contents(ConfigurationManagement::getStream() . $this->filename, $this->getDataToSave());
+    if ($this->checkFilePermissions($this->filename)) {
+      file_put_contents(ConfigurationManagement::getStream() . $this->filename, $this->getDataToSave());
+    }
+    return $this;
+  }
+
+  public function delete() {
+    if ($this->checkFilePermissions($this->filename)) {
+      file_unmanaged_delete(ConfigurationManagement::getStream() . $this->filename);
+    }
     return $this;
   }
 

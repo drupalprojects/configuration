@@ -128,13 +128,17 @@ class ConfigurationApiTest extends ConfigurationWebTestCase {
   public function testStartAndStopTracking() {
     $results = ConfigurationManagement::startTracking(array('content_type.article'));
     $exported = $results->getInfo('exported');
-
+    $dirpath = drupal_realpath(ConfigurationManagement::getStream()) . '/';
     $tracked = ConfigurationManagement::trackedConfigurations();
     $non_tracked = ConfigurationManagement::nonTrackedConfigurations();
     foreach ($this->configurations as $id) {
       list($component, $identifier) = explode('.', $id, 2);
+      if (!empty($tracked[$component][$identifier])) {
+        $filename = $dirpath . $id . '.inc';
+        $this->assertTrue(file_exists($filename), t('@filename file was created.', array('@filename' => $filename)));
+      }
       $this->assertTrue(!empty($tracked[$component][$identifier]), t('@id is being tracked', array('@id' => $id)));
-      $this->assertTrue(empty($non_tracked[$component][$identifier]), t('@id is not in the list of untracked configurations', array('@id' => $id)));
+      $this->assertTrue(empty($non_tracked[$component][$identifier]), t('@id is not being tracked', array('@id' => $id)));
     }
 
     $count_tracked = db_query("SELECT COUNT(component) FROM {configuration_staging}")->fetchField();
@@ -148,6 +152,10 @@ class ConfigurationApiTest extends ConfigurationWebTestCase {
     $non_tracked = ConfigurationManagement::nonTrackedConfigurations();
     foreach ($this->configurations as $id) {
       list($component, $identifier) = explode('.', $id, 2);
+      if (empty($tracked[$component][$identifier])) {
+        $filename = $dirpath . $id . '.inc';
+        $this->assertTrue(!file_exists($filename), t('@filename file was deleted.', array('@filename' => $filename)));
+      }
       $this->assertTrue(empty($tracked[$component][$identifier]), t('@id is not being tracked', array('@id' => $id)));
     }
   }

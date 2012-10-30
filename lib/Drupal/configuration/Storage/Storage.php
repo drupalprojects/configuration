@@ -36,6 +36,33 @@ class Storage {
     return file_exists(ConfigurationManagement::getStream() . $component . '.' . $identifier . '.' . static::$file_extension);
   }
 
+  /**
+   * Returns TRUE if the current user has write permissions for a configuration
+   * file in the config:// directory.
+   */
+  static public function checkFilePermissions($filename) {
+    $dir_path = ConfigurationManagement::getStream();
+    $full_path = $dir_path . $filename;
+    if (is_writable($dir_path) || drupal_chmod($dir_path)) {
+      if (file_exists($full_path)) {
+        if (is_writable($full_path) || drupal_chmod($full_path)) {
+          return TRUE;
+        }
+        else {
+          drupal_set_message(t('The current user do not have permissions to edit the file %file.', array('%file' => $full_path)), 'error');
+        }
+      }
+      else {
+        return TRUE;
+      }
+    }
+    else {
+      watchdog('configuration', 'The current user do not have write permissions in the directory %dir.', array('%dir' => $dir_path), WATCHDOG_ERROR);
+      drupal_set_message(t('The current user do not have write permissions in the directory %dir.', array('%dir' => $dir_path)), 'error', FALSE);
+    }
+    return FALSE;
+  }
+
   public function __construct() {
     $this->reset();
   }

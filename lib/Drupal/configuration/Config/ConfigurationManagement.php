@@ -10,6 +10,7 @@ namespace Drupal\configuration\Config;
 use \StdClass;
 use Drupal\configuration\Config\Configuration;
 use Drupal\configuration\Utils\ConfigIteratorSettings;
+use Drupal\configuration\Storage\Storage;
 
 class ConfigurationManagement {
 
@@ -179,7 +180,7 @@ class ConfigurationManagement {
     $settings = new ConfigIteratorSettings(
       array(
         'build_callback' => 'build',
-        'callback' => 'removeFromStaging',
+        'callback' => 'removeConfiguration',
         'process_dependencies' => $stop_track_dependencies,
         'process_optionals' => $stop_track_optionals,
         'info' => array(
@@ -187,17 +188,27 @@ class ConfigurationManagement {
         )
       )
     );
+    if (Storage::checkFilePermissions('tracked.inc')) {
+      foreach ($list as $component) {
+        $config = static::createConfigurationInstance($component);
 
-    foreach ($list as $component) {
-      $config = static::createConfigurationInstance($component);
+        // Make sure the object is built before start to iterate on its
+        // dependencies.
+        $config->build();
+        $config->iterate($settings);
+      }
 
-      // Make sure the object is built before start to iterate on its
-      // dependencies.
-      $config->build();
-      $config->iterate($settings);
+      $tracked = static::trackedConfigurations();
+      $args = array();
+      foreach ($tracked as $component => $list) {
+        foreach ($list as $identifier => $hash) {
+          $id = $component . '.' . $identifier;
+          $args[] = $id;
+        }
+      }
+
+      static::exportToDataStore($args, TRUE, TRUE, TRUE);
     }
-
-    //@TODO: Delete the file from the DataStore.
 
     return $settings;
   }
@@ -469,7 +480,9 @@ class ConfigurationManagement {
     $file_content = "<?php\n\n";
     $file_content .= "// This file contains the current being tracked configurations.\n\n";
     $file_content .= '$tracked = ' . var_export($file, TRUE) . ";\n";
-    file_put_contents(static::getStream() . 'tracked.inc', $file_content);
+    if (Storage::checkFilePermissions('tracked.inc')) {
+      file_put_contents(static::getStream() . 'tracked.inc', $file_content);
+    }
   }
 
   /**

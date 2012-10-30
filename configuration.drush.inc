@@ -472,12 +472,14 @@ function _configuration_stop_tracking() {
   $stop_tracking_dependencies = !drush_get_option('exclude-dependencies');
   $stop_tracking_optionals = !drush_get_option('exclude-optionals');
   $result = ConfigurationManagement::stopTracking($args, $stop_tracking_dependencies, $stop_tracking_optionals);
-  foreach ($result->getInfo('untracked') as $untracked) {
-    $rows[]['untracked'] = $untracked;
+  $configurations = $result->getInfo('untracked');
+  if (!empty($configurations)) {
+    foreach ($configurations as $untracked) {
+      $rows[]['untracked'] = $untracked;
+    }
+    drush_log(dt('The configurations changes for for the following items are not being tracked anymore.'), 'ok');
+    drush_print_table($rows);
   }
-
-  drush_log(dt('The configurations changes for for the following items are not being tracked anymore.'), 'ok');
-  drush_print_table($rows);
 }
 
 function _configuration_import_configurations() {

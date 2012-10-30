@@ -236,6 +236,15 @@ class Configuration {
    * Removes the configuration record from the configuration_staging table for
    * the current configuration.
    */
+  public function removeConfiguration(ConfigIteratorSettings &$settings) {
+    $this->removeFromStaging($settings);
+    $this->removeFromDataStore($settings);
+  }
+
+  /**
+   * Removes the configuration record from the configuration_staging table for
+   * the current configuration.
+   */
   public function removeFromStaging(ConfigIteratorSettings &$settings) {
     $deleted = db_delete('configuration_staging')
       ->condition('component', $this->getComponent())
@@ -245,6 +254,14 @@ class Configuration {
     if ($deleted > 0) {
       $settings->addInfo('untracked', $this->getUniqueId());
     }
+  }
+
+
+  /**
+   * Removes the configuration file from the dataStore folder.
+   */
+  public function removeFromDataStore(ConfigIteratorSettings &$settings) {
+    $this->storage->delete();
   }
 
   /**
