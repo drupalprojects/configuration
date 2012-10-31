@@ -102,6 +102,20 @@ abstract class Configuration {
     return array();
   }
 
+    /**
+   * Cache wrapper for getAllIdentifiers().
+   */
+  public static function getAllIdentifiersCached($component) {
+    static $identifiers;
+    if (!isset($identifiers)) {
+      $identifiers = array();
+    }
+    if (!isset($identifiers[$component])) {
+      $identifiers[$component] = static::getAllIdentifiers($component);
+    }
+    return  $identifiers[$component];
+  }
+
   /**
    * Returns the list of components available in the DataStore.
    */

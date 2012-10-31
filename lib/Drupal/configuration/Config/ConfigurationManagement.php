@@ -423,7 +423,7 @@ class ConfigurationManagement {
 
     foreach (array_keys($handlers) as $component) {
       $handler = static::getConfigurationHandler($component);
-      $identifiers = $handler::getAllIdentifiers($component);
+      $identifiers = $handler::getAllIdentifiersCached($component);
       foreach ($identifiers as $identifier) {
         if (empty($tracked[$component]) || empty($tracked[$component][$identifier])) {
           $id = $component . '.' . $identifier;
@@ -448,7 +448,7 @@ class ConfigurationManagement {
     $all = array();
 
     foreach ($handlers as $component => $handler) {
-      $identifiers = $handler::getAllIdentifiers($component);
+      $identifiers = $handler::getAllIdentifiersCached($component);
       foreach ($identifiers as $identifier) {
         $id = $component . '.' . $identifier;
         if (!empty($tracked[$component][$identifier])) {
