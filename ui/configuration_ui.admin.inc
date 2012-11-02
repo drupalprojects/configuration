@@ -270,7 +270,6 @@ function configuration_ui_config_diff($config_id) {
 
   $rows[] = array();
 
-  $rows[] = array(array(array('data' => 'test', 'colspan' => 4, 'header' => TRUE)));
   $diff = new Diff(explode("\n", $datastore->loadFromStorage()->raw()), explode("\n", $activestore->loadFromActiveStore()->raw()));
   $rows = array_merge($rows, $formatter->format($diff));
 
