@@ -230,13 +230,23 @@ function configuration_ui_config_info($config_id) {
 
   $page .= '<p>' . t('Status: <strong>!status</strong>', array('!status' => $status)) . '</p>';
 
-  $page .= '<p>' . t('Dependencies:') . '</p>';
   $dependencies = array('items' => array_keys($config->getDependencies()));
-  $page .= theme('item_list', $dependencies);
+  if (!empty($dependencies['items'])) {
+    $page .= '<p>' . t('Dependencies:') . '</p>';
+    $page .= theme('item_list', $dependencies);
+  }
+  else {
+    $page .= '<p>' . t('No Dependencies') . '</p>';
+  }
 
-  $page .= '<p>' . t('Optional Configurations:') . '</p>';
   $optionals = array('items' => array_keys($config->getOptionalConfigurations()));
-  $page .= theme('item_list', $optionals);
+  if (!empty($optionals['items'])) {
+    $page .= '<p>' . t('Optional Configurations:') . '</p>';
+    $page .= theme('item_list', $optionals);
+  }
+  else {
+    $page .= '<p>' . t('No Optional Configurations') . '</p>';
+  }
 
   return $page;
 }
