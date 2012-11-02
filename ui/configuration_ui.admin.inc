@@ -377,7 +377,7 @@ function configuration_ui_export_to_datastore_form_submit($form, &$form_state) {
   $args = configuration_ui_get_form_components($form, $form_state);
   $export_dependencies = $form_state['values']['include_dependencies'];
   $export_optionals = $form_state['values']['include_optionals'];
-  $result = ConfigurationManagement::exportToDataStore($args, $export_dependencies, $export_optionals);
+  $result = ConfigurationManagement::exportToDataStore($args, $export_dependencies, $export_optionals, TRUE);
   $configurations = $result->getInfo('exported');
   if (!empty($configurations)) {
     foreach ($configurations as $configuration) {
