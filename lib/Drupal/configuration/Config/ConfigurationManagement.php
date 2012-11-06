@@ -554,6 +554,9 @@ class ConfigurationManagement {
           'exported' => array(),
           'exported_files' => array(),
           'hash' => array(),
+        ),
+        'settings' => array(
+          'format' => 'tar',
         )
       )
     );
@@ -586,6 +589,52 @@ class ConfigurationManagement {
     print static::createTarContent("configuration/configurations.inc", $file_content);
 
     print pack("a1024", "");
+    exit;
+  }
+
+  /**
+   * Download the entire configuration packaged up into tar file
+   */
+  public static function rawDepdendencyInfo($list = array(), $include_dependencies = TRUE, $include_optionals = TRUE) {
+    $settings = new ConfigIteratorSettings(
+      array(
+        'build_callback' => 'build',
+        'callback' => 'printRaw',
+        'process_dependencies' => $include_dependencies,
+        'process_optionals' => $include_optionals,
+        'info' => array(
+          'exported' => array(),
+          'exported_files' => array(),
+          'hash' => array(),
+        ),
+        'settings' => array(
+          'print' => array(
+            'optionals' => $include_optionals,
+            'dependencies' => $include_dependencies,
+          ),
+        )
+      )
+    );
+
+    // Clear out output buffer to remove any garbage from tar output.
+    if (ob_get_level()) {
+      ob_end_clean();
+    }
+
+    drupal_add_http_header('Content-type', 'application/json');
+    print "{\n";
+
+    foreach ($list as $component) {
+      $config = static::createConfigurationInstance($component);
+
+      // Make sure the object is built before start to iterate on its
+      // dependencies.
+      $config->build();
+      $config->iterate($settings);
+    }
+    print '"null": "null"';
+    print "}\n";
+
     exit;
   }
 

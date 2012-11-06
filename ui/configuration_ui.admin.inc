@@ -55,12 +55,12 @@ function configuration_ui_tracking_form($form, &$form_state) {
             'vertical-tabs' => drupal_get_path('module', 'configuration_ui') . '/theme/vertical-tabs.js',
           ),
         ),
+        '#attributes' => array('class' => array('configuration')),
       );
       $form[$component]['tracked'] = array(
         '#type' => 'tableselect',
         '#header' => array('Configuration', 'Status', 'Operations'),
         '#options' => $options,
-        '#attributes' => array('class' => array('configuration'))
       );
       $form['dependencies_option'] = array(
         '#type' => 'fieldset',
@@ -130,6 +130,9 @@ function configuration_ui_notracking_form($form, &$form_state) {
   $form['#attached']['css'] = array(
     drupal_get_path('module', 'configuration_ui') . '/theme/configuration.css'
   );
+  $form['#attached']['js'] = array(
+    drupal_get_path('module', 'configuration_ui') . '/js/configuration_ui.js'
+  );
   $non_tracked = ConfigurationManagement::nonTrackedConfigurations();
 
   foreach ($non_tracked as $component => $list) {
@@ -157,6 +160,7 @@ function configuration_ui_notracking_form($form, &$form_state) {
             'vertical-tabs' => drupal_get_path('module', 'configuration_ui') . '/theme/vertical-tabs.js',
           ),
         ),
+        '#attributes' => array('class' => array('configuration')),
       );
       $form[$component]['tracked'] = array(
         '#type' => 'tableselect',
@@ -220,6 +224,18 @@ function configuration_ui_config_info($config_id) {
   }
   if (arg(5) == 'status') {
     print $status;
+    exit();
+  }
+  if (arg(5) == 'dependencies') {
+    ConfigurationManagement::rawDepdendencyInfo(array($config_id), TRUE, FALSE);
+    exit();
+  }
+  if (arg(5) == 'optionals') {
+    ConfigurationManagement::rawDepdendencyInfo(array($config_id), FALSE, TRUE);
+    exit();
+  }
+  if (arg(5) == 'dependencies_optionals') {
+    ConfigurationManagement::rawDepdendencyInfo(array($config_id), TRUE, TRUE);
     exit();
   }
 
@@ -458,7 +474,9 @@ function configuration_ui_export_form($form, &$form_state) {
   $form['#attached']['css'] = array(
     drupal_get_path('module', 'configuration_ui') . '/theme/configuration.css'
   );
-
+  $form['#attached']['js'] = array(
+    drupal_get_path('module', 'configuration_ui') . '/js/configuration_ui.js'
+  );
   $tracked = ConfigurationManagement::allConfigurations();
 
   foreach ($tracked as $component => $list) {
@@ -488,6 +506,7 @@ function configuration_ui_export_form($form, &$form_state) {
             'vertical-tabs' => drupal_get_path('module', 'configuration_ui') . '/theme/vertical-tabs.js',
           ),
         ),
+        '#attributes' => array('class' => array('configuration')),
       );
       $form[$component]['tracked'] = array(
         '#type' => 'tableselect',

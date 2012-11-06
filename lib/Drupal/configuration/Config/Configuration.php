@@ -734,7 +734,6 @@ abstract class Configuration {
   protected function printRaw(ConfigIteratorSettings &$settings) {
     $this->build();
 
-    $file_content = $this->raw();
 
     $this->buildHash();
     $settings->addInfo('hash', $this->getHash());
@@ -743,7 +742,25 @@ abstract class Configuration {
     $settings->addInfo('exported', $this->getUniqueId());
     $settings->addInfo('exported_files', $file_name);
 
-    print ConfigurationManagement::createTarContent("configuration/{$file_name}", $file_content);
+    if ($settings->getSetting('format') == 'tar') {
+      $file_content = $this->raw();
+      print ConfigurationManagement::createTarContent("configuration/{$file_name}", $file_content);
+    }
+    else {
+      $print = $settings->getSetting('print');
+      if (is_array($print)) {
+        if (!empty($print['dependencies'])) {
+          foreach (array_keys($this->getDependencies()) as $line) {
+            print '  "' . $line . '": "' . $line . "\",\n";
+          }
+        }
+        if (!empty($print['optionals'])) {
+          foreach (array_keys($this->getOptionalConfigurations()) as $line) {
+            print '  "' . $line . '": "' . $line . "\",\n";
+          }
+        }
+      }
+    }
   }
 
   /**
