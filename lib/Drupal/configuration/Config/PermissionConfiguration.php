@@ -57,6 +57,19 @@ class PermissionConfiguration extends Configuration {
   }
 
   public static function alterDependencies(Configuration $config, &$stack) {
+    if ($config->getComponent() == 'permission') {
+
+      foreach (node_permissions_get_configured_types() as $type) {
+        foreach (array_keys(node_list_permissions($type)) as $permission) {
+          $data = $config->getData();
+          if ($permission == $data['permission']) {
+            $content_type = ConfigurationManagement::createConfigurationInstance('content_type.' . $type);
+            $config->addToDependencies($content_type);
+            break;
+          }
+        }
+      }
+    }
     if ($config->getComponent() == 'content_type') {
       $permissions = node_list_permissions($config->getIdentifier());
 

@@ -139,6 +139,9 @@ class ConfigurationApiTest extends ConfigurationWebTestCase {
       }
       $this->assertTrue(!empty($tracked[$component][$identifier]), t('@id is being tracked', array('@id' => $id)));
       $this->assertTrue(empty($non_tracked[$component][$identifier]), t('@id is not being tracked', array('@id' => $id)));
+
+      $handler = ConfigurationManagement::createConfigurationInstance($id);
+      $this->assertTrue($handler->loadFromActiveStore()->getStatus() == t('In Sync'), $id . ' is In Sync');
     }
 
     $count_tracked = db_query("SELECT COUNT(component) FROM {configuration_staging}")->fetchField();
