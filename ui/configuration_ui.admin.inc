@@ -28,12 +28,12 @@ function configuration_ui_tracking_form($form, &$form_state) {
   foreach ($tracked as $component => $list) {
 
     $options = array();
-    foreach ($list as $identifier => $hash) {
+    foreach ($list as $identifier => $info) {
       $id = $component . '.' . $identifier;
       $status = '<span class ="config-status" rel="' . $id . '">' . t('Processing...') . '</span>';
 
       $options[$id] = array(
-        $identifier,
+        check_plain($info['name']),
         $status,
         l(t('Stop Tracking'), 'admin/config/system/configuration/stop_tracking/' . $id) . ' | ' . l(t('View info'), 'admin/config/configuration/view/' . $id)
       );
@@ -137,9 +137,10 @@ function configuration_ui_notracking_form($form, &$form_state) {
 
   foreach ($non_tracked as $component => $list) {
     $options = array();
-    foreach ($list as $identifier => $id) {
+    foreach ($list as $identifier => $info) {
+      $id = $info['id'];
       $options[$id] = array(
-        $identifier,
+        check_plain($info['name']),
         l(t('Start Tracking'), 'admin/config/system/configuration/start_tracking/' . $id) . ' | ' . l(t('View info'), 'admin/config/configuration/view/' . $id)
       );
     }
@@ -477,15 +478,15 @@ function configuration_ui_export_form($form, &$form_state) {
   $form['#attached']['js'] = array(
     drupal_get_path('module', 'configuration_ui') . '/js/configuration_ui.js'
   );
-  $tracked = ConfigurationManagement::allConfigurations();
+  $all = ConfigurationManagement::allConfigurations();
 
-  foreach ($tracked as $component => $list) {
+  foreach ($all as $component => $list) {
     $options = array();
-    foreach ($list as $identifier => $tracked) {
+    foreach ($list as $identifier => $info) {
       $id = $component . '.' . $identifier;
       $options[$id] = array(
-        $identifier,
-        ($tracked) ? t('Tracked') : t('Not tracked'),
+        check_plain($info['name']),
+        ($info['hash']) ? t('Tracked') : t('Not tracked'),
         l(t('View info'), 'admin/config/configuration/view/' . $id)
       );
     }

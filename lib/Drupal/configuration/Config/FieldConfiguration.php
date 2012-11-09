@@ -37,7 +37,7 @@ class FieldConfiguration extends Configuration {
     foreach (field_info_fields() as $field) {
       foreach ($field['bundles'] as $entity_type => $bundles) {
         foreach ($bundles as $bundle_name) {
-          $identifiers[] = $entity_type . '.' . $field['field_name'] . '.' . $bundle_name;
+          $identifiers[$entity_type . '.' . $field['field_name'] . '.' . $bundle_name] = t('@field used in (@entity.@bundle)', array('@field' => $field['field_name'], '@entity' => $entity_type, '@bundle' => $bundle_name));
         }
       }
     }

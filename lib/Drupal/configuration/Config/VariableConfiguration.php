@@ -49,7 +49,7 @@ class VariableConfiguration extends Configuration {
     $variables = db_query("SELECT name FROM {variable}")->fetchAll();
     $return = array();
     foreach ($variables as $variable) {
-      $return[] = $variable->name;
+      $return[$variable->name] = $variable->name;
     }
     return $return;
   }

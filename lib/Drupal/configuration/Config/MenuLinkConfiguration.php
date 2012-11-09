@@ -49,7 +49,7 @@ class MenuLinkConfiguration extends Configuration {
       list($menu_name, $mlid) = explode(':', $key, 2);
       if ($mlid != 0) {
         $menulink_name = str_replace(' ', '_', trim(str_replace(array('-', "'"), '', $name)));
-        $return[] = $menu_name . '.' . $mlid . '.' . $menulink_name;
+        $return[$menu_name . '.' . $mlid . '.' . $menulink_name] = $menu_name . '.' . $mlid . '.' . $menulink_name;
       }
     }
     $menu_admin = FALSE;

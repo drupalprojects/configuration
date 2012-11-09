@@ -362,20 +362,38 @@ class ConfigurationManagement {
    *   @code
    *     array(
    *       'content_type' => array(
-   *         'article' => 'c08223610b3eb55161d4539c704e40989dcf3e72',
-   *         'page' => '5161d4539c704e40989dcf3e72c08223610b3eb5'
+   *         'article' => array(
+   *           'hash' => 'c08223610b3eb55161d4539c704e40989dcf3e72',
+   *           'name' => 'Article',
+   *         ),
+   *         'page' => array(
+   *           'hash' => '5161d4539c704e40989dcf3e72c08223610b3eb5',
+   *           'name' => 'Page',
+   *         ),
    *       ),
    *       'variable' => array(
-   *         'site_name' =>'539c704e40989dcf35161d4e72c08223610b3eb5'
+   *         'site_name' => array(
+   *           'hash' => '539c704e40989dcf35161d4e72c08223610b3eb5',
+   *           'name' => 'site_name',
+   *         ),
    *       )
    *     );
    *
    *     If $tree is FALSE the returned array is structured in the this way:
    *
    *     array(
-   *       'content_type.article' => 'c08223610b3eb55161d4539c704e40989dcf3e72',
-   *       'content_type.page' => '5161d4539c704e40989dcf3e72c08223610b3eb5',
-   *       'variable.site_name' =>'539c704e40989dcf35161d4e72c08223610b3eb5'
+   *       'content_type.article' => array(
+   *         'hash' => 'c08223610b3eb55161d4539c704e40989dcf3e72',
+   *         'name' => 'Article',
+   *       ),
+   *       'content_type.page' => array(
+   *         'hash' => '5161d4539c704e40989dcf3e72c08223610b3eb5',
+   *         'name' => 'Page',
+   *       ),
+   *       'variable.site_name' => array(
+   *         'hash' =>'539c704e40989dcf35161d4e72c08223610b3eb5',
+   *         'name' => 'site_name'
+   *       )
    *     );
    *   @endcode
    */
@@ -395,15 +413,22 @@ class ConfigurationManagement {
       }
     }
 
-
     foreach ($tracked as $object) {
       // Only return tracked Configurations for supported components.
       if (isset($handlers[$object->component])) {
-        if ($tree) {
-          $return[$object->component][$object->identifier] = $object->hash;
+
+        $all_identifiers = $handlers[$object->component]::getAllIdentifiersCached($object->component);
+        if ($tree && $all_identifiers[$object->identifier]) {
+          $return[$object->component][$object->identifier] = array(
+            'hash' => $object->hash,
+            'name' => $all_identifiers[$object->identifier],
+          );
         }
         else {
-          $return[$object->component . '.' . $object->identifier] = $object->hash;
+          $return[$object->component . '.' . $object->identifier] = array(
+            'hash' => $object->hash,
+            'name' => $all_identifiers[$object->identifier],
+          );
         }
       }
     }
@@ -424,10 +449,13 @@ class ConfigurationManagement {
     foreach (array_keys($handlers) as $component) {
       $handler = static::getConfigurationHandler($component);
       $identifiers = $handler::getAllIdentifiersCached($component);
-      foreach ($identifiers as $identifier) {
+      foreach ($identifiers as $identifier => $identifier_human_name) {
         if (empty($tracked[$component]) || empty($tracked[$component][$identifier])) {
           $id = $component . '.' . $identifier;
-          $non_tracked[$component][$identifier] = $id;
+          $non_tracked[$component][$identifier] = array(
+            'id' => $id,
+            'name' => $identifier_human_name,
+          );
         }
       }
     }
@@ -449,15 +477,21 @@ class ConfigurationManagement {
 
     foreach ($handlers as $component => $handler) {
       $identifiers = $handler::getAllIdentifiersCached($component);
-      foreach ($identifiers as $identifier) {
+      foreach ($identifiers as $identifier => $identifier_human_name) {
         $id = $component . '.' . $identifier;
         if (!empty($tracked[$component][$identifier])) {
           // Set the hash for the tracked configurations
-          $all[$component][$identifier] = $tracked[$component][$identifier];
+          $all[$component][$identifier] = array(
+            'hash' => $tracked[$component][$identifier],
+            'name' => $identifiers[$identifier],
+          );
         }
         else {
           // Set FALSE for the non tracked configurations
-          $all[$component][$identifier] = FALSE;
+          $all[$component][$identifier] = array(
+            'hash' => FALSE,
+            'name' => $identifiers[$identifier],
+          );
         }
       }
     }
@@ -473,8 +507,8 @@ class ConfigurationManagement {
 
     $file = array();
     foreach ($tracked as $component => $list) {
-      foreach ($list as $identifier => $hash) {
-        $file[$component . '.' . $identifier] = $hash;
+      foreach ($list as $identifier => $info) {
+        $file[$component . '.' . $identifier] = $info['hash'];
       }
     }
     $file_content = "<?php\n\n";

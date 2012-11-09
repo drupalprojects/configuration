@@ -45,7 +45,7 @@ class WysiwygConfiguration extends Configuration {
     foreach (array_keys(wysiwyg_profile_load_all()) as $format) {
       // Text format may vanish without deleting the wysiwyg profile.
       if (isset($formats[$format])) {
-        $profiles[] = $format;
+        $profiles[$format] = $format;
       }
     }
     return $profiles;

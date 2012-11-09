@@ -68,7 +68,7 @@ class VocabularyConfiguration extends Configuration {
     $return = array();
     $vocabularies = taxonomy_get_vocabularies();
     foreach ($vocabularies as $vocabulary) {
-      $return[] = $vocabulary->machine_name;
+      $return[$vocabulary->machine_name] = $vocabulary->name;
     }
     return $return;
   }

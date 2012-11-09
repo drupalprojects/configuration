@@ -59,7 +59,7 @@ class ContentTypeConfiguration extends Configuration {
    * Returns all the identifiers available for this component.
    */
   public static function getAllIdentifiers($component) {
-    return array_keys(node_type_get_types());
+    return node_type_get_names();
   }
 
   public function findRequiredModules() {

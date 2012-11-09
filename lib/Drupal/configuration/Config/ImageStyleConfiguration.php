@@ -46,7 +46,11 @@ class ImageStyleConfiguration extends Configuration {
    * Returns all the identifiers available for this component.
    */
   public static function getAllIdentifiers($component) {
-    return array_keys(image_styles());
+    $identifiers = array();
+    foreach (image_styles() as $key => $image_style) {
+      $identifiers[$key] = $image_style['name'];
+    }
+    return $identifiers;
   }
 
   /**

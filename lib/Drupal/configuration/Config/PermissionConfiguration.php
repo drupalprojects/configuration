@@ -53,7 +53,7 @@ class PermissionConfiguration extends Configuration {
    * Returns all the identifiers available for this component.
    */
   public static function getAllIdentifiers($component) {
-    return array_keys(static::getPermissionList());
+    return static::getPermissionList();
   }
 
   public static function alterDependencies(Configuration $config, &$stack) {

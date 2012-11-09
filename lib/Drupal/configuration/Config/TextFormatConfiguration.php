@@ -33,7 +33,11 @@ class TextFormatConfiguration extends Configuration {
    * Returns all the identifiers available for this component.
    */
   public static function getAllIdentifiers($component) {
-    return array_keys(filter_formats());
+    $identifiers = array();
+    foreach (filter_formats() as $format) {
+      $identifiers[$format->format] = $format->name;
+    }
+    return $identifiers;
   }
 
   protected function filter_format_load($name) {
