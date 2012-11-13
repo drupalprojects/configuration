@@ -13,7 +13,7 @@ use Drupal\configuration\Utils\ConfigIteratorSettings;
 class MenuConfiguration extends Configuration {
 
   protected function prepareBuild() {
-    $this->data = menu_load($this->getIdentifier());
+    $this->data = menu_load(str_replace('_', '-', $this->getIdentifier()));
     return $this;
   }
 
@@ -42,10 +42,10 @@ class MenuConfiguration extends Configuration {
    * Returns all the identifiers available for this component.
    */
   public static function getAllIdentifiers($component) {
-    $menus = db_query("SELECT menu_name FROM {menu_custom}")->fetchAll();
+    $menus = db_query("SELECT menu_name, title FROM {menu_custom}")->fetchAll();
     $return = array();
     foreach ($menus as $menu) {
-      $return[$menu->menu_name] = $menu->menu_name;
+      $return[str_replace('-', '_', $menu->menu_name)] = $menu->title;
     }
     return $return;
   }
@@ -54,9 +54,7 @@ class MenuConfiguration extends Configuration {
     if ($config->getComponent() == 'menu_link') {
       $config_data = $config->getData();
       if ($config_data['plid'] == 0) {
-        $identifier = current(explode('.', $config->getIdentifier()));
-        $menuarray = menu_load($identifier);
-        $menu = new MenuConfiguration($identifier);
+        $menu = new MenuConfiguration(str_replace('-', '_', $config_data['menu_name']));
         $menu->build();
         $config->addToDependencies($menu);
       }

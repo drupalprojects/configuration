@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\configuration\Config\Configuration.
+ * Definition of Drupal\configuration\Config\ConfigurationManagement.
  */
 
 namespace Drupal\configuration\Config;

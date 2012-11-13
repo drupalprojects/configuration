@@ -12,6 +12,8 @@ files[] = handlers/text_formats.test
 files[] = handlers/variables.test
 files[] = handlers/views.test
 files[] = handlers/vocabularies.test
+files[] = handlers/menus.test
+files[] = handlers/menu_links.test
 
 dependencies[] = ctools
 dependencies[] = views

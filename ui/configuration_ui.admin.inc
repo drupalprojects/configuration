@@ -57,6 +57,7 @@ function configuration_ui_tracking_form($form, &$form_state) {
         ),
         '#attributes' => array('class' => array('configuration')),
       );
+      asort($options);
       $form[$component]['tracked'] = array(
         '#type' => 'tableselect',
         '#header' => array('Configuration', 'Status', 'Operations'),
@@ -218,6 +219,7 @@ function configuration_ui_config_info($config_id) {
   $config = ConfigurationManagement::createConfigurationInstance($config_id);
 
   $config->loadFromActiveStore();
+  $identifiers = $config->getAllIdentifiers($config->getComponent());
 
   $status = check_plain($config->getStatus());
   if ($diff_exists && $status != t('In Sync')) {
@@ -242,7 +244,8 @@ function configuration_ui_config_info($config_id) {
 
   $page = '';
 
-  $page .= '<h2>' . t('Configuration for: @config', array('@config' => $config->getUniqueID())) . '</h2>';
+  $page .= '<h2>' . t('Configuration for: @config', array('@config' => $identifiers[$config->getIdentifier()])) . '</h2>';
+  $page .= '<p>' . t('Identifier: @hash', array('@hash' => $config->getIdentifier())) . '</p>';
   $page .= '<p>' . t('Hash: @hash', array('@hash' => $config->getHash())) . '</p>';
 
   $page .= '<p>' . t('Status: <strong>!status</strong>', array('!status' => $status)) . '</p>';
