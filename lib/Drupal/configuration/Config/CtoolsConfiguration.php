@@ -56,7 +56,9 @@ class CtoolsConfiguration extends Configuration {
     ctools_include('export');
     foreach (ctools_export_get_schemas_by_module() as $module => $schemas) {
       foreach ($schemas as $table => $schema) {
-        $supported[] = $table;
+        if (isset($schema['export']) && $schema['export']['bulk export']) {
+          $supported[] = $table;
+        }
       }
     }
     return $supported;
