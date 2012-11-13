@@ -55,7 +55,7 @@ class ViewConfiguration extends CtoolsConfiguration {
 
   public static function alterDependencies(Configuration $config, &$stack) {
     // Dependencies for Page Manager Handlers.
-    if ($config->getComponent() == 'page_manager_handler') {
+    if ($config->getComponent() == 'page_manager_handlers') {
 
       // This line seems to be inconsistent when executed from drush or browser.
       $config_data = $config->getData();

@@ -29,7 +29,7 @@ class PageManagerHandlerConfiguration extends CtoolsConfiguration {
 
   public static function alterDependencies(Configuration $config, &$stack) {
     // Dependencies for Page Manager Pages. Each page has a handler.
-    if ($config->getComponent() == 'page_manager') {
+    if ($config->getComponent() == 'page_manager_pages') {
       $config_data = $config->getData();
       $id = 'page_' . $config_data->name . '_panel_context';
       $page_handler = new PageManagerHandlerConfiguration($id);
