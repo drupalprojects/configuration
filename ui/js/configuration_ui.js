@@ -7,7 +7,7 @@
 
         // Check the overridden status of each configuration
         var id = $(this).attr('rel');
-        $(this).load('/admin/config/configuration/view/' + id + '/status');
+        $(this).load(Drupal.settings.basePath + 'admin/config/configuration/view/' + id + '/status');
       });
 
       $("fieldset.configuration .form-checkbox").bind('click', function() {
@@ -24,7 +24,7 @@
           }
           var original_value = current_checkbox.parents('td').next().html();
           current_checkbox.parents('td').next().html(original_value + ' ' + Drupal.t('(Finding dependencies...)'));
-          $.getJSON('/admin/config/configuration/view/' + $(this).val() + '/' + url, function(data) {
+          $.getJSON(Drupal.settings.basePath + 'admin/config/configuration/view/' + $(this).val() + '/' + url, function(data) {
 
             $.each(data, function(index, array) {
               if (current_checkbox.is(':checked')) {
