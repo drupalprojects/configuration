@@ -89,12 +89,14 @@ class Storage {
    *
    * @param $file_content
    *   Optional. The content to load directly.
+   * @param $source
+   *   Optional. An optional path to load the configuration.
    */
-  public function load($file_content = NULL) {
+  public function load($file_content = NULL, $source = NULL) {
     return $this;
   }
 
-  public function reLoad($file_content = NULL) {
+  public function reLoad($file_content = NULL, $source = NULL) {
     $this->reset();
     return $this->load($file_content);
   }

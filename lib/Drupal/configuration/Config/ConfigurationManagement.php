@@ -120,6 +120,7 @@ class ConfigurationManagement {
 
       // Make sure the object is built before start to iterate on its
       // dependencies.
+      $config->setContext($settings);
       $config->loadFromStorage();
       $config->iterate($settings);
     }
@@ -194,6 +195,7 @@ class ConfigurationManagement {
 
         // Make sure the object is built before start to iterate on its
         // dependencies.
+        $config->setContext($settings);
         $config->build();
         $config->iterate($settings);
       }
@@ -226,11 +228,13 @@ class ConfigurationManagement {
    *   be imported too.
    * @param  boolean $start_tracking
    *   If TRUE, after import the configuration, it will be also tracked.
+   * @param $source
+   *   Optional. An optional path to load configurations.
    * @return ConfigIteratorSettings
    *   An ConfigIteratorSettings object that contains the imported
    *   configurations.
    */
-  static public function importToActiveStore($list = array(), $import_dependencies = TRUE, $import_optionals = TRUE, $start_tracking = FALSE) {
+  static public function importToActiveStore($list = array(), $import_dependencies = TRUE, $import_optionals = TRUE, $start_tracking = FALSE, $source = NULL) {
     $settings = new ConfigIteratorSettings(
       array(
         'build_callback' => 'loadFromStorage',
@@ -239,6 +243,7 @@ class ConfigurationManagement {
         'process_optionals' => $import_optionals,
         'settings' => array(
           'start_tracking' => $start_tracking,
+          'source' => $source,
         ),
         'info' => array(
           'imported' => array(),
@@ -251,6 +256,7 @@ class ConfigurationManagement {
 
       // Make sure the object is built before start to iterate on its
       // dependencies.
+      $config->setContext($settings);
       $config->loadFromStorage();
       $config->iterate($settings);
     }
@@ -292,6 +298,7 @@ class ConfigurationManagement {
 
       // Make sure the object is built before start to iterate on its
       // dependencies.
+      $config->setContext($settings);
       $config->loadFromStaging();
       $config->iterate($settings);
     }
@@ -338,6 +345,7 @@ class ConfigurationManagement {
 
       // Make sure the object is built before start to iterate on its
       // dependencies.
+      $config->setContext($settings);
       $config->build();
       $config->iterate($settings);
     }
@@ -611,6 +619,7 @@ class ConfigurationManagement {
 
       // Make sure the object is built before start to iterate on its
       // dependencies.
+      $config->setContext($settings);
       $config->build();
       $config->iterate($settings);
     }
@@ -663,6 +672,7 @@ class ConfigurationManagement {
 
       // Make sure the object is built before start to iterate on its
       // dependencies.
+      $config->setContext($settings);
       $config->build();
       $config->iterate($settings);
     }

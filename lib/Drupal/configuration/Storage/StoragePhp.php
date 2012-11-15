@@ -121,16 +121,19 @@ class StoragePhp extends Storage {
    *
    * @param $file_content
    *   Optional. The content to load directly.
+   * @param $source
+   *   Optional. An optional path to load the configuration.
    */
-  public function load($file_content = NULL) {
+  public function load($file_content = NULL, $source = NULL) {
     if (empty($this->loaded)) {
       $this->loaded = TRUE;
       if (empty($file_content)) {
-        if (!file_exists(ConfigurationManagement::getStream() . $this->filename)) {
+        $dir = $source ? $source : ConfigurationManagement::getStream();
+        if (!file_exists($dir . $this->filename)) {
           $this->data = NULL;
         }
         else {
-          $file_content = drupal_substr(file_get_contents(ConfigurationManagement::getStream() . $this->filename), 6);
+          $file_content = drupal_substr(file_get_contents($dir . $this->filename), 6);
         }
       }
       if (!empty($file_content)) {

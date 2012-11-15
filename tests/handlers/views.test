@@ -46,10 +46,10 @@ class ConfigurationHandlerViewTestCase extends ConfigurationWebTestCase {
 
   public function testImportToActiveStore() {
     // Change the path from where the configurations are loaded.
-    ConfigurationManagement::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+    $source = drupal_get_path('module', 'configuration') . '/tests/test_configs/';
 
     $config = 'views_view.test';
-    $results = ConfigurationManagement::importToActiveStore(array($config), FALSE, FALSE);
+    $results = ConfigurationManagement::importToActiveStore(array($config), FALSE, FALSE, FALSE, $source);
     $imported = $results->getInfo('imported');
     $this->assertTrue(in_array($config, $imported), "Configuration for $config was imported.");
 
@@ -58,12 +58,6 @@ class ConfigurationHandlerViewTestCase extends ConfigurationWebTestCase {
   }
 
   public function testExportToDataStore() {
-    variable_set('configuration_config_path', $this->datastore_path);
-    $config_path = variable_get('configuration_config_path', $this->datastore_path);
-    file_prepare_directory($config_path);
-
-    ConfigurationManagement::setStream($config_path);
-
     $web_user = $this->drupalCreateUser(
       array(
         'administer views',
@@ -85,17 +79,17 @@ class ConfigurationHandlerViewTestCase extends ConfigurationWebTestCase {
     $exported = $results->getInfo('exported');
     $this->assertTrue(in_array($config, $exported), "Configuration for $config was exported.");
 
-    $file_for_config = $config_path . $config . '.inc';
+    $file_for_config = $this->datastore_path . '/' . $config . '.inc';
 
     $this->assertTrue(file_exists($file_for_config), "The file that storages the view was created.");
   }
 
   public function testCheckModifications() {
     // Change the path from where the configurations are loaded.
-    ConfigurationManagement::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+    $source = drupal_get_path('module', 'configuration') . '/tests/test_configs/';
 
     $config = 'views_view.test';
-    $results = ConfigurationManagement::importToActiveStore(array($config), FALSE, FALSE, TRUE);
+    $results = ConfigurationManagement::importToActiveStore(array($config), FALSE, FALSE, TRUE, $source);
     $view = views_get_view('test', TRUE);
 
     $object = db_select('configuration_staging', 'cs')
@@ -121,7 +115,7 @@ class ConfigurationHandlerViewTestCase extends ConfigurationWebTestCase {
 
     $this->assertFalse($original_hash == $modified_hash, 'View hash is not the same after modify the view.');
 
-    $results = ConfigurationManagement::importToActiveStore(array('views_view.test'), FALSE, FALSE);
+    $results = ConfigurationManagement::importToActiveStore(array('views_view.test'), FALSE, FALSE, TRUE, $source);
     $view = views_get_view('test', TRUE);
 
     $view_config_modified = ConfigurationManagement::createConfigurationInstance('views_view.test');

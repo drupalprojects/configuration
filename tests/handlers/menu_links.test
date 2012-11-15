@@ -46,11 +46,11 @@ class ConfigurationHandlerMenuLinksTestCase extends ConfigurationWebTestCase {
 
   public function testImportToActiveStore() {
     // Change the path from where the configurations are loaded.
-    ConfigurationManagement::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+    $source = drupal_get_path('module', 'configuration') . '/tests/test_configs/';
 
     // Import the third level, import dependencies too.
     $config = 'menu_link.f3aa4e71405f1a252d229e24df23187f5c0eef24';
-    $results = ConfigurationManagement::importToActiveStore(array($config), TRUE, FALSE);
+    $results = ConfigurationManagement::importToActiveStore(array($config), TRUE, FALSE, FALSE, $source);
     $imported = $results->getInfo('imported');
     $level_one = 'menu_link.a6d0f08452ba53fd1b8cf291ed73479f86c70552';
     $level_two = 'menu_link.3bd4fee5d9b3477e3f30a17def41c14b99bdd3b8';
@@ -62,12 +62,6 @@ class ConfigurationHandlerMenuLinksTestCase extends ConfigurationWebTestCase {
   }
 
   public function testExportToDataStore() {
-    variable_set('configuration_config_path', $this->datastore_path);
-    $config_path = variable_get('configuration_config_path', $this->datastore_path);
-    file_prepare_directory($config_path);
-
-    ConfigurationManagement::setStream($config_path);
-
     $menu_link = array(
       'link_path' => 'admin',
       'link_title' => 'My link',
@@ -86,18 +80,18 @@ class ConfigurationHandlerMenuLinksTestCase extends ConfigurationWebTestCase {
     $exported = $results->getInfo('exported');
     $this->assertTrue(in_array($config, $exported), "Configuration for $config was exported.");
 
-    $file_for_config = $config_path . $config . '.inc';
+    $file_for_config = $this->datastore_path . '/' . $config . '.inc';
 
     $this->assertTrue(file_exists($file_for_config), "The file that storages the menu was created.");
   }
 
   public function testCheckModifications() {
     // Change the path from where the configurations are loaded.
-    ConfigurationManagement::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+    $source = drupal_get_path('module', 'configuration') . '/tests/test_configs/';
 
     // Import the third level, import dependencies too.
     $config = 'menu_link.f3aa4e71405f1a252d229e24df23187f5c0eef24';
-    $results = ConfigurationManagement::importToActiveStore(array($config), TRUE, FALSE, TRUE);
+    $results = ConfigurationManagement::importToActiveStore(array($config), TRUE, FALSE, TRUE, $source);
 
     drupal_flush_all_caches();
     $imported_menu_links = db_query('SELECT COUNT(*) FROM {menu_links} WHERE menu_name = :menu_name', array(':menu_name' => 'menu-test'))->fetchField();
@@ -124,7 +118,7 @@ class ConfigurationHandlerMenuLinksTestCase extends ConfigurationWebTestCase {
 
     $modified_hash = $menu->loadFromActiveStore()->buildHash()->getHash();
     $this->assertFalse($initial_hash == $modified_hash, 'Menu link hash is not the same after modify the menu link.');
-    $results = ConfigurationManagement::importToActiveStore(array($config), TRUE, FALSE);
+    $results = ConfigurationManagement::importToActiveStore(array($config), TRUE, FALSE, TRUE, $source);
 
     $final_hash = $menu->loadFromActiveStore()->buildHash()->getHash();
     $this->assertTrue($initial_hash == $final_hash, 'Menu link hash is the same after modify the menu link.');

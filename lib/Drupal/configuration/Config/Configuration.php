@@ -67,6 +67,11 @@ abstract class Configuration {
    */
   protected $broken = FALSE;
 
+  /**
+   * The ConfigIteratorSettings instance used by iterate.
+   */
+  protected $context = NULL;
+
   public function __construct($identifier, $component = '') {
     $this->identifier = $identifier;
     $this->storage = static::getStorageInstance($component);
@@ -154,7 +159,12 @@ abstract class Configuration {
    * Load the Configuration data from the disk.
    */
   public function loadFromStorage() {
-    $this->storage->load();
+    $source = NULL;
+    if (isset($this->context)) {
+      $source = $this->context->getSetting('source');
+    }
+
+    $this->storage->load(NULL, $source);
     $this->setData($this->storage->getData());
     $this->setDependencies($this->storage->getDependencies());
     $this->setOptionalConfigurations($this->storage->getOptionalConfigurations());
@@ -763,6 +773,10 @@ abstract class Configuration {
     }
   }
 
+  public function setContext(ConfigIteratorSettings &$settings) {
+    $this->context = $settings;
+  }
+
   /**
    * This function will exectute a callback function over all the configurations
    * objects that it process.
@@ -802,6 +816,7 @@ abstract class Configuration {
             $config = ConfigurationManagement::createConfigurationInstance($dependency);
           }
         }
+        $config->setContext($settings);
         $config->{$build_callback}();
         $config->iterate($settings);
       }
@@ -812,6 +827,7 @@ abstract class Configuration {
     }
 
     // Now, after proccess the dependencies, proccess the current configuration.
+    $this->setContext($settings);
     $this->{$callback}($settings);
     $settings->addToCache($this);
 
@@ -832,6 +848,7 @@ abstract class Configuration {
             $config = ConfigurationManagement::createConfigurationInstance($optional);
           }
         }
+        $config->setContext($settings);
         $config->{$build_callback}();
         $config->iterate($settings);
       }

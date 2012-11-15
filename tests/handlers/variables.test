@@ -43,10 +43,10 @@ class ConfigurationHandlerVariableTestCase extends ConfigurationWebTestCase {
 
   public function testImportToActiveStore() {
     // Change the path from where the configurations are loaded.
-    ConfigurationManagement::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+    $source = drupal_get_path('module', 'configuration') . '/tests/test_configs/';
 
     $config = 'variable.site_name';
-    $results = ConfigurationManagement::importToActiveStore(array($config), FALSE, FALSE);
+    $results = ConfigurationManagement::importToActiveStore(array($config), FALSE, FALSE, FALSE, $source);
     $imported = $results->getInfo('imported');
     $this->assertTrue(in_array($config, $imported), "Configuration for $config was imported.");
 
@@ -55,12 +55,6 @@ class ConfigurationHandlerVariableTestCase extends ConfigurationWebTestCase {
   }
 
   public function testExportToDataStore() {
-    variable_set('configuration_config_path', $this->datastore_path);
-    $config_path = variable_get('configuration_config_path', $this->datastore_path);
-    file_prepare_directory($config_path);
-
-    ConfigurationManagement::setStream($config_path);
-
     $variable_name = drupal_strtolower($this->randomName());
     variable_set($variable_name, $this->randomName());
 
@@ -72,15 +66,17 @@ class ConfigurationHandlerVariableTestCase extends ConfigurationWebTestCase {
     $exported = $results->getInfo('exported');
     $this->assertTrue(in_array($config, $exported), "Configuration for $config was exported.");
 
-    $file_for_config = $config_path . $config . '.inc';
+    $file_for_config = $this->datastore_path . '/' . $config . '.inc';
 
     $this->assertTrue(file_exists($file_for_config), "The file that storages the variable was created.");
   }
 
   public function testCheckModifications() {
     // Change the path from where the configurations are loaded.
-    ConfigurationManagement::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
-    $results = ConfigurationManagement::importToActiveStore(array('variable.site_name'), FALSE, FALSE, TRUE);
+    $source = drupal_get_path('module', 'configuration') . '/tests/test_configs/';
+
+    $config = 'variable.site_name';
+    $results = ConfigurationManagement::importToActiveStore(array($config), FALSE, FALSE, TRUE, $source);
 
     $object = db_select('configuration_staging', 'cs')
                         ->fields('cs')
