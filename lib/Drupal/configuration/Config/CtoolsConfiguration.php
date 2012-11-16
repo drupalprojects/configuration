@@ -93,6 +93,7 @@ class CtoolsConfiguration extends Configuration {
       ctools_export_crud_delete($this->getComponent(), $object);
     }
     $data = $this->getData();
+    $data->export_type = NULL;
     ctools_export_crud_save($this->getComponent(), $data);
     $settings->addInfo('imported', $this->getUniqueId());
   }
