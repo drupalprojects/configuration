@@ -230,9 +230,6 @@ class ConfigurationImportTestCase extends ConfigurationWebTestCase {
       parent::setUp($modules);
     }
 
-    // Change the path from where the configurations are loaded.
-    ConfigurationManagement::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
-
     $this->configurations = array(
       'variable.node_options_article',
       'variable.node_preview_article',
@@ -257,7 +254,10 @@ class ConfigurationImportTestCase extends ConfigurationWebTestCase {
   }
 
   public function testImportToActiveStore() {
-    $results = ConfigurationManagement::importToActiveStore(array('content_type.article'));
+    // Change the path from where the configurations are loaded.
+    $source = drupal_get_path('module', 'configuration') . '/tests/test_configs/';
+
+    $results = ConfigurationManagement::importToActiveStore(array('content_type.article'), TRUE, TRUE, FALSE, $source);
     $imported = $results->getInfo('imported');
 
     foreach ($this->configurations as $config) {
@@ -301,9 +301,9 @@ class ConfigurationDiscoverModulesTestCase extends ConfigurationWebTestCase {
   }
 
   public function testDiscoverRequiredModules() {
-    ConfigurationManagement::setStream(drupal_get_path('module', 'configuration') . '/tests/test_configs/');
+    $source = drupal_get_path('module', 'configuration') . '/tests/test_configs/';
 
-    $results = ConfigurationManagement::discoverRequiredModules(array('content_type.article'));
+    $results = ConfigurationManagement::discoverRequiredModules(array('content_type.article'), TRUE, TRUE, $source);
 
     $modules_to_install = $results->getInfo('modules_to_install');
 

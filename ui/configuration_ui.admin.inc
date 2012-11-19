@@ -666,7 +666,7 @@ function configuration_ui_validate_settings($form, &$form_state) {
 
 function configuration_sync_configurations_submit($form, &$form_state) {
   $to_track = array_keys(ConfigurationManagement::readTrackingFile());
-  $modules_results = ConfigurationManagement::discoverRequiredModules($to_track, FALSE, FALSE, TRUE);
+  $modules_results = ConfigurationManagement::discoverRequiredModules($to_track, FALSE, FALSE);
 
   $missing_modules = $modules_results->getInfo('missing_modules');
 

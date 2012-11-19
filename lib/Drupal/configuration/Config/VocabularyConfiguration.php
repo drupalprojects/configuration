@@ -39,12 +39,11 @@ class VocabularyConfiguration extends Configuration {
   protected function prepareBuild() {
     $vocabularies = taxonomy_get_vocabularies();
     foreach ($vocabularies as $vocabulary) {
-      if ($vocabulary->machine_name == $this->identifier) {
+      if ($vocabulary->machine_name == $this->getIdentifier()) {
         $this->data = $vocabulary;
         break;
       }
     }
-    unset($this->data->vid);
     return $this;
   }
 

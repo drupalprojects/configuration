@@ -51,7 +51,13 @@ class ConfigurationManagement {
   static public function createConfigurationInstance($configuration_id) {
     list($component_name, $identifier) = explode('.', $configuration_id, 2);
     $handler = static::getConfigurationHandler($component_name);
-    return new $handler($identifier, $component_name);
+    if (!empty($handler)) {
+      return new $handler($identifier, $component_name);
+    }
+    else {
+      throw new \Exception('There is no configuration handler for: ' . $configuration_id);
+    }
+
   }
 
   /**
@@ -99,13 +105,16 @@ class ConfigurationManagement {
    *   A ConfigIteratorSettings object that contains the required modules to
    *   install and the modules missing.
    */
-  static public function discoverRequiredModules($list = array(), $include_dependencies = TRUE, $include_optionals = TRUE) {
+  static public function discoverRequiredModules($list = array(), $include_dependencies = TRUE, $include_optionals = TRUE, $source = NULL) {
     $settings = new ConfigIteratorSettings(
       array(
         'build_callback' => 'loadFromStorage',
         'callback' => 'discoverModules',
         'process_dependencies' => $include_dependencies,
         'process_optionals' => $include_optionals,
+        'settings' => array(
+          'source' => $source,
+        ),
         'info' => array(
           'modules' => array(),
           'modules_missing' => array(),
@@ -116,7 +125,7 @@ class ConfigurationManagement {
     foreach ($list as $component) {
       list($component_name, $identifier) = explode('.', $component, 2);
       $handler = static::getConfigurationHandler($component_name, TRUE);
-      $config = new $handler($identifier, $component_name);
+      $config = static::createConfigurationInstance($component);
 
       // Make sure the object is built before start to iterate on its
       // dependencies.
@@ -259,6 +268,11 @@ class ConfigurationManagement {
       $config->setContext($settings);
       $config->loadFromStorage();
       $config->iterate($settings);
+    }
+
+    drupal_flush_all_caches();
+    if ($start_tracking) {
+      static::exportToDataStore($list, $import_dependencies, $import_optionals, TRUE);
     }
 
     return $settings;
@@ -569,12 +583,9 @@ class ConfigurationManagement {
     $file_content = drupal_substr(file_get_contents($config_temp_path . '/configuration/configurations.inc'), 6);
     @eval($file_content);
 
-    $old_stream = static::getStream();
-    static::setStream($config_temp_path . '/configuration/');
+    $source = $config_temp_path . '/configuration/';
 
-    $settings = static::importToActiveStore($configurations, FALSE, FALSE, $start_tracking);
-
-    static::setStream($old_stream);
+    $settings = static::importToActiveStore($configurations, FALSE, FALSE, $start_tracking, $source);
 
     static::deteleTempConfigDir($config_temp_path);
 

@@ -53,7 +53,7 @@ class MenuConfiguration extends Configuration {
   public static function alterDependencies(Configuration $config, &$stack) {
     if ($config->getComponent() == 'menu_link') {
       $config_data = $config->getData();
-      if ($config_data['plid'] == 0) {
+      if (!empty($config_data) && empty($config_data['plid'])) {
         $menu = new MenuConfiguration(str_replace('-', '_', $config_data['menu_name']));
         $menu->build();
         $config->addToDependencies($menu);

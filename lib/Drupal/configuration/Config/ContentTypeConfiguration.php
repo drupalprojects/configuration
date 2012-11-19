@@ -20,6 +20,7 @@ class ContentTypeConfiguration extends Configuration {
       'description',
       'has_title',
       'title_label',
+      'base',
       'help',
     );
     $this->setKeysToExport($keys);
@@ -46,7 +47,12 @@ class ContentTypeConfiguration extends Configuration {
   }
 
   protected function prepareBuild() {
-    $this->data = (object)node_type_get_type($this->identifier);
+    $data = (object)node_type_get_type($this->identifier);
+
+    $this->data = new \StdClass();
+    foreach ($this->getKeysToExport() as $key) {
+      $this->data->$key = $data->$key;
+    }
 
     // Force module name to be 'configuration' if set to 'node. If we leave as
     // 'node' the content type will be assumed to be database-stored by
@@ -79,6 +85,7 @@ class ContentTypeConfiguration extends Configuration {
     $info->modified = 1;
     $info->locked = 0;
     node_type_save($info);
+
     $settings->addInfo('imported', $this->getUniqueId());
   }
 }

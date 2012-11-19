@@ -13,7 +13,7 @@ use Drupal\configuration\Utils\ConfigIteratorSettings;
 class MenuLinkConfiguration extends Configuration {
 
   protected function prepareBuild() {
-    $mlid = static::getMenuLinkByIdenfifier($this->getIdentifier());
+    $mlid = static::getMenuLinkByIdenfifier($this->getIdentifier(), TRUE);
     $this->data = menu_link_load($mlid);
     $this->data['parent_identifier'] = NULL;
 
