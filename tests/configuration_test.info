@@ -7,9 +7,9 @@ hidden = TRUE
 files[] = handlers/ConfigurationHandlerBaseTestCase.test
 files[] = handlers/TestContentTypeConfiguration.test
 files[] = handlers/TestTextFormatConfiguration.test
+files[] = handlers/TestImageStyleConfiguration.test
 
 files[] = handlers/field.test
-files[] = handlers/image_styles.test
 files[] = handlers/permissions.test
 files[] = handlers/variables.test
 files[] = handlers/views.test
