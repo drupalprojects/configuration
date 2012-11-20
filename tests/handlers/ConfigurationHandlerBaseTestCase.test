@@ -23,13 +23,15 @@ abstract class ConfigurationHandlerBaseTestCase extends ConfigurationWebTestCase
     global $base_url;
 
     if (empty($modules)) {
-      parent::setUp(array(
-        'configuration',
-      ));
+      $modules = array('configuration');
     }
-    else {
-      parent::setUp($modules);
+
+    $extra_modules = $this->addModules();
+    if ($extra_modules) {
+      $modules = array_merge($modules, $extra_modules);
     }
+
+    parent::setUp($modules);
   }
 
   /**
@@ -44,6 +46,14 @@ abstract class ConfigurationHandlerBaseTestCase extends ConfigurationWebTestCase
     $configToImport = $this->configToImport();
     $results = ConfigurationManagement::importToActiveStore($configToImport, $this->importDependencies(), $this->importOptionals(), FALSE, $source);
     $imported = $results->getInfo('imported');
+
+    if ($this->importDependencies()) {
+      $dependencies = $this->dependenciesToCheck();
+      if ($dependencies) {
+        $configToImport = array_merge($configToImport, $dependencies);
+      }
+    }
+
     foreach ($configToImport as $config) {
       $this->assertTrue(in_array($config, $imported), "Configuration for $config was imported.");
     }
@@ -146,6 +156,17 @@ abstract class ConfigurationHandlerBaseTestCase extends ConfigurationWebTestCase
    */
 
   protected function importDependencies() {
+    return FALSE;
+  }
+
+  /**
+   * Returns an array of configurations to check if they were imported.
+   */
+  protected function dependenciesToCheck() {
+    return FALSE;
+  }
+
+  protected function addModules() {
     return FALSE;
   }
 
