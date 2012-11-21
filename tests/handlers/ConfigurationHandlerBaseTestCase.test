@@ -127,19 +127,24 @@ abstract class ConfigurationHandlerBaseTestCase extends ConfigurationWebTestCase
     $this->modifyConfiguration();
 
     foreach ($configToModify as $config) {
-      $this->assertTrue($this->isModified($config), "$config was modified in the active store.");
+      if ($this->checkModification($config)) {
+        $this->assertTrue($this->isModified($config), "$config was modified in the active store.");
 
-      $handler = ConfigurationManagement::createConfigurationInstance($config);
-      $current_hash = $handler->loadFromActiveStore()->buildHash()->getHash();
-      $this->verbose('<pre>' . $handler->raw() . '</pre>', 'Modified');
-      $this->assertTrue($current_hash != $original_hash[$config], "The hash for $config is not the same after the modification");
-      unset($handler);
+        $handler = ConfigurationManagement::createConfigurationInstance($config);
+        $current_hash = $handler->loadFromActiveStore()->buildHash()->getHash();
+
+        $this->verbose('<pre>' . $handler->raw() . '</pre>', 'Modified');
+        $this->assertTrue($current_hash != $original_hash[$config], "The hash for $config is not the same after the modification");
+        unset($handler);
+      }
     }
 
     // Finally revert the changes
     $results = ConfigurationManagement::revertActiveStore($configToModify, $this->modifyDependencies(), $this->modifyOptionals(), TRUE);
     foreach ($configToModify as $config) {
-      $this->assertFalse($this->isModified($config), "$config is not modified in the active store.");
+      if ($this->checkModification($config)) {
+        $this->assertFalse($this->isModified($config), "$config is not modified in the active store.");
+      }
 
       $handler = ConfigurationManagement::createConfigurationInstance($config);
       $current_hash = $handler->loadFromActiveStore()->buildHash()->getHash();
@@ -217,6 +222,13 @@ abstract class ConfigurationHandlerBaseTestCase extends ConfigurationWebTestCase
    * Return TRUE if the configuration is modified in the active store.
    */
   abstract protected function isModified($config);
+
+  /**
+   * Determine if isModified($config) should be called for this config.
+   */
+  protected function checkModification($config) {
+    return TRUE;
+  }
 
   /**
    * Return TRUE if all the configurations defined in configToImport were saved
