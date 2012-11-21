@@ -9,8 +9,8 @@ files[] = handlers/TestContentTypeConfiguration.test
 files[] = handlers/TestTextFormatConfiguration.test
 files[] = handlers/TestImageStyleConfiguration.test
 files[] = handlers/TestMenuConfiguration.test
+files[] = handlers/TestFieldConfiguration.test
 
-files[] = handlers/field.test
 files[] = handlers/permissions.test
 files[] = handlers/variables.test
 files[] = handlers/views.test
