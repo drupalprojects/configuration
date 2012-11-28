@@ -11,8 +11,8 @@ files[] = handlers/TestImageStyleConfiguration.test
 files[] = handlers/TestMenuConfiguration.test
 files[] = handlers/TestFieldConfiguration.test
 files[] = handlers/TestVariableConfiguration.test
+files[] = handlers/TestPermissionConfiguration.test
 
-files[] = handlers/permissions.test
 files[] = handlers/views.test
 files[] = handlers/vocabularies.test
 files[] = handlers/menu_links.test
