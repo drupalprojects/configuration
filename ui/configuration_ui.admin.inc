@@ -41,6 +41,9 @@ function configuration_ui_tracking_form($form, &$form_state) {
 
     if (!empty($options)) {
       $handler = ConfigurationManagement::getConfigurationHandler($component);
+      if (empty($handler)) {
+        continue;
+      }
       $component_exists = TRUE;
       $form[$component] = array(
         '#type' => 'fieldset',
@@ -310,7 +313,7 @@ function configuration_ui_activate_form_submit($form, &$form_state) {
   $args = configuration_ui_get_form_components($form, $form_state);
   $revert_dependencies = $form_state['values']['include_dependencies'];
   $revert_optionals = $form_state['values']['include_optionals'];
-  $result = ConfigurationManagement::revertActiveStore($args, $revert_dependencies, $revert_optionals);
+  $result = ConfigurationManagement::importToActiveStore($args, $revert_dependencies, $revert_optionals);
   $configurations = $result->getInfo('imported');
   if (!empty($configurations)) {
     foreach ($configurations as $configuration) {

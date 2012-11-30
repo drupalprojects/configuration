@@ -111,6 +111,7 @@ abstract class ConfigurationHandlerBaseTestCase extends ConfigurationWebTestCase
                           ->fetchObject();
 
       $this->assertTrue(!empty($object), "Config $config was suscessfully tracked.");
+      $this->verbose('<pre>' . print_r(ConfigurationManagement::readTrackingFile(), TRUE) . '</pre>', 'Reverted');
 
       $storaged = ConfigurationManagement::createConfigurationInstance($config);
       $original_hash[$config] = $storaged->loadFromStorage()->buildHash()->getHash();
@@ -140,7 +141,7 @@ abstract class ConfigurationHandlerBaseTestCase extends ConfigurationWebTestCase
     }
 
     // Finally revert the changes
-    $results = ConfigurationManagement::revertActiveStore($configToModify, $this->modifyDependencies(), $this->modifyOptionals(), TRUE);
+    $results = ConfigurationManagement::importToActiveStore($configToModify, $this->modifyDependencies(), $this->modifyOptionals(), TRUE);
     foreach ($configToModify as $config) {
       if ($this->checkModification($config)) {
         $this->assertFalse($this->isModified($config), "$config is not modified in the active store.");
@@ -148,8 +149,10 @@ abstract class ConfigurationHandlerBaseTestCase extends ConfigurationWebTestCase
 
       $handler = ConfigurationManagement::createConfigurationInstance($config);
       $current_hash = $handler->loadFromActiveStore()->buildHash()->getHash();
-      $this->assertTrue($handler->getStatus() == 'In Sync', "$config is In Sync after revert");
-      $this->verbose('<pre>' . $handler->raw() . '</pre>', 'Reverted');
+      $status = $handler->getStatus();
+      $this->assertTrue($status == 'In Sync', "$config is In Sync after revert (Status $status)");
+      $this->verbose('<pre>' . $handler->raw() . "\n" . $handler->getHash() . '</pre>', 'Reverted');
+      $this->verbose('<pre>' . print_r(ConfigurationManagement::readTrackingFile(), TRUE) . '</pre>', 'Reverted');
       $this->assertTrue($current_hash == $original_hash[$config], "The hash for $config is the same after than the original after the revert");
     }
 
