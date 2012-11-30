@@ -21,4 +21,5 @@ dependencies[] = ctools
 dependencies[] = views
 dependencies[] = context
 dependencies[] = features
+dependencies[] = role_export
 

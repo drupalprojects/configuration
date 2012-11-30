@@ -7,5 +7,6 @@ hidden = TRUE
 dependencies[] = ctools
 dependencies[] = views
 dependencies[] = wysiwyg
+dependencies[] = role_export
 
 
