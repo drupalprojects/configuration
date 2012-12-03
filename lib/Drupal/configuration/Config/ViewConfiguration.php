@@ -54,6 +54,11 @@ class ViewConfiguration extends CtoolsConfiguration {
   }
 
   public static function alterDependencies(Configuration $config, &$stack) {
+    static $cache;
+    if (!isset($cache)) {
+      $cache = array();
+    }
+
     // Dependencies for Page Manager Handlers.
     if ($config->getComponent() == 'page_manager_handlers' && !$config->broken) {
 
@@ -62,9 +67,16 @@ class ViewConfiguration extends CtoolsConfiguration {
 
       // This alternative works more consistent althoug it's no so pretty.
 
-      @eval(ctools_export_crud_export($config->getComponent(), $config_data));
-
-      $config_data = $handler;
+      if (!isset($config_data->conf['display'])) {
+        if (!isset($cache[$config->getUniqueId()])) {
+          @eval(ctools_export_crud_export($config->getComponent(), $config_data));
+          $cache[$config->getUniqueId()] = $handler;
+        }
+        else {
+          $handler = $cache[$config->getUniqueId()];
+        }
+        $config_data = $handler;
+      }
 
       foreach ($config_data->conf['display']->content as $object) {
         $type = $object->type;
@@ -74,24 +86,37 @@ class ViewConfiguration extends CtoolsConfiguration {
             switch ($subtype) {
               // Display block from a view.
               case 'views':
-                $view = new ViewConfiguration($id);
-                $view->build();
+                $config_id = 'views_view.' . $id;
+                if (empty($stack[$config_id])) {
+                  $view = ConfigurationManagement::createConfigurationInstance($config_id);
+                  $view->build();
+                  $config->addToDependencies($view);
+                  $stack[$config_id] = TRUE;
+                }
                 $config->addToDependencies($view);
                 break;
             }
             break;
           // A view added directly.
           case 'views':
-            $view = new ViewConfiguration($object->subtype);
-            $view->build();
-            $config->addToDependencies($view);
+            $config_id = 'views_view.' . $object->subtype;
+            if (empty($stack[$config_id])) {
+              $view = ConfigurationManagement::createConfigurationInstance($config_id);
+              $view->build();
+              $config->addToDependencies($view);
+              $stack[$config_id] = TRUE;
+            }
             break;
           // A view added using the Views content panes module.
           case 'views_panes':
             list($subtype, ) = explode('-', $object->subtype);
-            $view = new ViewConfiguration($subtype);
-            $view->build();
-            $config->addToDependencies($view);
+            $config_id = 'views_view.' . $subtype;
+            if (empty($stack[$config_id])) {
+              $view = ConfigurationManagement::createConfigurationInstance($config_id);
+              $view->build();
+              $config->addToDependencies($view);
+            }
+            $stack[$config_id] = TRUE;
             break;
         }
       }

@@ -31,10 +31,13 @@ class PageManagerHandlerConfiguration extends CtoolsConfiguration {
     // Dependencies for Page Manager Pages. Each page has a handler.
     if ($config->getComponent() == 'page_manager_pages' && !$config->broken) {
       $config_data = $config->getData();
-      $id = 'page_' . $config_data->name . '_panel_context';
-      $page_handler = new PageManagerHandlerConfiguration($id);
-      $page_handler->build();
-      $config->addToDependencies($page_handler);
+      $id = 'page_manager_handlers.page_' . $config_data->name . '_panel_context';
+      if (empty($stack[$id])) {
+        $page_handler = ConfigurationManagement::createConfigurationInstace($id);
+        $page_handler->build();
+        $config->addToDependencies($page_handler);
+        $stack[$id] = TRUE;
+      }
     }
   }
 
