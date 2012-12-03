@@ -4,7 +4,6 @@
  * @file
  * Tests for Configuration Management: Base Class
  */
-
 use Drupal\configuration\Config\ConfigurationManagement;
 
 /**
@@ -47,15 +46,22 @@ abstract class ConfigurationHandlerBaseTestCase extends ConfigurationWebTestCase
     $results = ConfigurationManagement::importToActiveStore($configToImport, $this->importDependencies(), $this->importOptionals(), FALSE, $source);
     $imported = $results->getInfo('imported');
 
+    foreach ($configToImport as $config) {
+      $this->assertTrue(in_array($config, $imported), "Configuration for $config was imported.");
+    }
+
     if ($this->importDependencies()) {
-      $dependencies = $this->dependenciesToCheck();
-      if ($dependencies) {
-        $configToImport = array_merge($configToImport, $dependencies);
+      $dependencies = $this->dependenciesToImport();
+      foreach ($dependencies as $config) {
+        $this->assertTrue(in_array($config, $imported), "Dependency configuration $config was imported.");
       }
     }
 
-    foreach ($configToImport as $config) {
-      $this->assertTrue(in_array($config, $imported), "Configuration for $config was imported.");
+    if ($this->importOptionals()) {
+      $optionals = $this->optionalsToImport();
+      foreach ($optionals as $config) {
+        $this->assertTrue(in_array($config, $imported), "Optional configuration $config was imported.");
+      }
     }
 
     $this->assertTrue($this->savedInActiveStore(), "The configuration was saved in the ActiveStore.");
@@ -74,10 +80,29 @@ abstract class ConfigurationHandlerBaseTestCase extends ConfigurationWebTestCase
     $configToExport = $this->configToExport();
     $results = ConfigurationManagement::exportToDataStore($configToExport, $this->exportDependencies(), $this->exportOptionals());
     $exported = $results->getInfo('exported');
+
     foreach ($configToExport as $config) {
       $this->assertTrue(in_array($config, $exported), "Configuration for $config was exported.");
       $file_for_config = $this->datastore_path . '/' . $config . '.inc';
       $this->assertTrue(file_exists($file_for_config), "The file that storages the $config was created.");
+    }
+
+    if ($this->exportDependencies()) {
+      $dependencies = $this->dependenciesToExport();
+      foreach ($dependencies as $config) {
+        $this->assertTrue(in_array($config, $exported), "Dependency configuration for $config was exported.");
+        $file_for_config = $this->datastore_path . '/' . $config . '.inc';
+        $this->assertTrue(file_exists($file_for_config), "The file that storages the dependency $config was created.");
+      }
+    }
+
+    if ($this->exportOptionals()) {
+      $optionals = $this->optionalsToExport();
+      foreach ($optionals as $config) {
+        $this->assertTrue(in_array($config, $exported), "Optional configuration for $config was exported.");
+        $file_for_config = $this->datastore_path . '/' . $config . '.inc';
+        $this->assertTrue(file_exists($file_for_config), "The file that storages the optional $config was created.");
+      }
     }
 
     $this->extraChecksOnExport();
@@ -162,7 +187,6 @@ abstract class ConfigurationHandlerBaseTestCase extends ConfigurationWebTestCase
   /**
    * Helper methods
    */
-
   protected function importDependencies() {
     return FALSE;
   }
@@ -170,8 +194,8 @@ abstract class ConfigurationHandlerBaseTestCase extends ConfigurationWebTestCase
   /**
    * Returns an array of configurations to check if they were imported.
    */
-  protected function dependenciesToCheck() {
-    return FALSE;
+  protected function dependenciesToImport() {
+    return array();
   }
 
   protected function addModules() {
@@ -182,12 +206,33 @@ abstract class ConfigurationHandlerBaseTestCase extends ConfigurationWebTestCase
     return FALSE;
   }
 
+  /**
+   * Returns an array of configurations to check if they were imported.
+   */
+  protected function optionalsToImport() {
+    return array();
+  }
+
   protected function exportDependencies() {
     return FALSE;
   }
 
+  /**
+   * Returns an array of configurations to check if they were exported.
+   */
+  protected function dependenciesToExport() {
+    return array();
+  }
+
   protected function exportOptionals() {
     return FALSE;
+  }
+
+  /**
+   * Returns an array of configurations to check if they were exported.
+   */
+  protected function optionalsToExport() {
+    return array();
   }
 
   protected function modifyDependencies() {
@@ -250,5 +295,4 @@ abstract class ConfigurationHandlerBaseTestCase extends ConfigurationWebTestCase
    * store.
    */
   abstract protected function modifyConfiguration();
-
 }
