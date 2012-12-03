@@ -364,6 +364,9 @@ abstract class Configuration {
   public function build($include_dependencies = TRUE) {
     $this->prepareBuild();
     $this->broken = $this->data === NULL;
+    if ($this->broken) {
+      drupal_set_message(t('Configuration %component is broken.', array('%component' => $this->getUniqueId())), 'error');
+    }
     if ($include_dependencies) {
       $this->findDependencies();
     }
