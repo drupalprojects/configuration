@@ -638,7 +638,11 @@ class ConfigurationManagement {
     $exported = $settings->getInfo('exported');
     $file_content = "<?php\n\n";
     $file_content .= "// This file contains the list of configurations contained in this package.\n\n";
-    $file_content .= '$configurations = ' . var_export($exported, TRUE) . ";\n";
+    $file_content .= "\$configurations = array(\n";
+    foreach ($exported as $config) {
+      $file_content .= "  '$config',\n";
+    }
+    $file_content .= ");\n";
 
     print static::createTarContent("configuration/configurations.inc", $file_content);
 
