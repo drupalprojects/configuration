@@ -33,7 +33,7 @@ class PageManagerHandlerConfiguration extends CtoolsConfiguration {
       $config_data = $config->getData();
       $id = 'page_manager_handlers.page_' . $config_data->name . '_panel_context';
       if (empty($stack[$id])) {
-        $page_handler = ConfigurationManagement::createConfigurationInstace($id);
+        $page_handler = ConfigurationManagement::createConfigurationInstance($id);
         $page_handler->build();
         $config->addToDependencies($page_handler);
         $stack[$id] = TRUE;
