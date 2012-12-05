@@ -86,9 +86,13 @@ function configuration_drush_command() {
     'examples' => array(
       'drush cimp' => 'Loads all the files that have configurations into the ActiveStore',
       'drush cimp content_type.article variable.theme_settings' => 'Loads the configurations for content type Article and the variable theme_settings into the ActiveStore',
+      'drush cimp --dir=%site/myconfig' => 'Loads the configurations from drupal/sites/example.com/myconfig',
+      'drush cimp --dir=myconfig' => 'Loads the configurations from drupal/myconfig',
+      'drush cimp --dir=/path/to/myconfig' => 'Loads the configurations from /path/to/myconfig',
     ),
     'options' => array(
       'all' => 'import all components',
+      'dir' => 'import all the configurations from a given directory.',
       'exclude-dependencies' => 'Export a configuration without export its dependencies.',
       'exclude-optionals' => 'Export a configuration without export its optional configurations.',
       'start-tracking' => 'Export a configuration and automatically start to tracking it.',
@@ -484,13 +488,32 @@ function _configuration_stop_tracking() {
 
 function _configuration_import_configurations() {
   $import_all = drush_get_option('all');
+  $args = array();
   if (!empty($import_all)) {
     $args = _components_indentifier_formater();
+  }
+  elseif ($dir = drush_get_option('dir')) {
+    $options = array();
+    $path = drush_sitealias_evaluate_path($dir, $options);
+    if (is_dir($path['evaluated-path'])) {
+      $handlers = ConfigurationManagement::getConfigurationHandler();
+      foreach ($handlers as $component => $handler) {
+        $args += $handler::scanDataStore($component, $path['evaluated-path']);
+      }
+    }
+    else {
+      drush_die($dir . ' is not a directory or cannot be accessed.');
+    }
   }
   else {
     $args = func_get_args();
   }
-  _configuration_import_load_configurations('import', $args);
+  if (!empty($args)) {
+    _configuration_import_load_configurations('import', $args);
+  }
+  else {
+    drush_die('There are not configurations to import.');
+  }
 }
 
 function _configuration_import_load_configurations($action, $args) {

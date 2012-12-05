@@ -124,10 +124,15 @@ abstract class Configuration {
   /**
    * Returns the list of components available in the DataStore.
    */
-  public static function scanDataStore($component) {
+  public static function scanDataStore($component, $source = FALSE) {
     $list_of_components = array();
 
-    $path = drupal_realpath('config://');
+    if ($source) {
+      $path = $source;
+    }
+    else {
+      $path = drupal_realpath('config://');
+    }
     $storage_system = static::getStorageSystem($component);
     $ext = $storage_system::$file_extension;
     $look_for = '/\A' . $component . '\..*' . $ext . '$/';
