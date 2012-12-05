@@ -103,7 +103,17 @@ class MenuLinkConfiguration extends Configuration {
     // Need to set this to TRUE in order to get menu links that the
     // current user may not have access to (i.e. user/login)
     $menu_admin = TRUE;
+
+    // This is intentionally to get always the same number of menus for each
+    // user that can manage configurations.
+    global $user;
+    $current_user = $user;
+    // Run the next line as administrator.
+    $user = user_load(1);
     $menu_links = menu_parent_options(menu_get_menus(), array('mlid' => 0));
+    // Back to the previous user.
+    $user = $current_user;
+
     $options = array();
     foreach ($menu_links as $key => $name) {
       list($menu_name, $mlid) = explode(':', $key, 2);
