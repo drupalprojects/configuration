@@ -57,9 +57,7 @@ class TestviewConfiguration extends ConfigurationHandlerBaseTestCase {
    * Returns an array of configurations to modify and check for modifications.
    */
   protected function configToModify() {
-    // @TODO Fix this
-    // return array('views_view.test');
-    return array();
+    return array('views_view.test');
   }
 
   /**
@@ -108,8 +106,8 @@ class TestviewConfiguration extends ConfigurationHandlerBaseTestCase {
    */
   protected function modifyConfiguration() {
     // @TODO Fix this
-    // $view = views_get_view('test');
-    // $view->display['default']->display_options['pager']['options']['items_per_page'] = 5;
-    // views_save_view($view);
+    $view = views_get_view('test');
+    $view->display['default']->display_options['pager']['options']['items_per_page'] = 5;
+    views_save_view($view);
   }
 }

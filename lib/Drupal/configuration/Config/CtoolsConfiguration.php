@@ -66,6 +66,7 @@ class CtoolsConfiguration extends Configuration {
 
   public function prepareBuild() {
     ctools_include('export');
+    ctools_export_load_object_reset();
     $this->data = ctools_export_crud_load($this->getComponent(), $this->getIdentifier());
     return $this;
   }

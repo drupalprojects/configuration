@@ -116,10 +116,15 @@ abstract class ConfigurationHandlerBaseTestCase extends ConfigurationWebTestCase
    * 'In Sync' after revert it.
    */
   public function testCheckModifications() {
+    $verbose = '';
+
     // Change the path from where the configurations are loaded.
     $source = drupal_get_path('module', 'configuration') . '/tests/test_configs/';
 
     $configToModify = $this->configToModify();
+
+    $verbose .= 'Configs to modify: ' . implode($configToModify, ', ') . "\n";
+
     $results = ConfigurationManagement::importToActiveStore($configToModify, $this->modifyDependencies(), $this->modifyOptionals(), TRUE, $source);
 
     $original_hash = array();
@@ -136,34 +141,53 @@ abstract class ConfigurationHandlerBaseTestCase extends ConfigurationWebTestCase
                           ->fetchObject();
 
       $this->assertTrue(!empty($object), "Config $config was suscessfully tracked.");
-      $this->verbose('<pre>' . print_r(ConfigurationManagement::readTrackingFile(), TRUE) . '</pre>', 'Reverted');
+      $verbose .= "This is the content of the tracked.inc file: \n";
+      foreach (ConfigurationManagement::readTrackingFile() as $config_id => $tracked_hash) {
+        $verbose .= "\$tracked_hash[$config_id] = $tracked_hash\n";
+      }
 
-      $storaged = ConfigurationManagement::createConfigurationInstance($config);
-      $original_hash[$config] = $storaged->loadFromStorage()->buildHash()->getHash();
-      $this->verbose('<pre>' . $storaged->raw() . '</pre>', 'DataStore');
+      $verbose .= "\n\n\n";
 
       $handler = ConfigurationManagement::createConfigurationInstance($config);
-      $original_hash[$config] = $handler->loadFromActiveStore()->buildHash()->getHash();
-      $this->verbose('<pre>' . $handler->raw() . '</pre>', 'Original');
+
+      $original_hash[$config] = $handler->loadFromActiveStore()->getHash();
+
+      $verbose .= 'The content of ' . $config . ' is ' . $handler->raw() . "\n\n";
       $this->assertTrue($handler->getStatus() == 'In Sync', "$config is In Sync");
+      $verbose .= "\n\n\n";
       unset($handler);
+    }
+
+    $verbose .= "Original Hashes after import: \n";
+    foreach ($original_hash as $config_id => $hash) {
+      $verbose .= "\$original_hash[$config_id] = $hash \n";
     }
 
     // Now modify the configurations
     $this->modifyConfiguration();
+
+    $verbose .= "The configurations were modified \n";
 
     foreach ($configToModify as $config) {
       if ($this->checkModification($config)) {
         $this->assertTrue($this->isModified($config), "$config was modified in the active store.");
 
         $handler = ConfigurationManagement::createConfigurationInstance($config);
-        $current_hash = $handler->loadFromActiveStore()->buildHash()->getHash();
+        $current_hashes[$config] = $current_hash = $handler->loadFromActiveStore()->getHash();
 
-        $this->verbose('<pre>' . $handler->raw() . '</pre>', 'Modified');
+        //$this->verbose('<pre>' . $handler->raw() . '</pre>', 'Modified');
+        $verbose .= 'The content of ' . $config . ' is ' . $handler->raw() . "\n\n";
         $this->assertTrue($current_hash != $original_hash[$config], "The hash for $config is not the same after the modification");
+        $verbose .= "\n\n\n";
         unset($handler);
       }
     }
+
+    $verbose .= "Hashes after modify configs: \n";
+    foreach ($current_hashes as $config_id => $hash) {
+      $verbose .= "\$current_hashes[$config_id] = $hash \n";
+    }
+    $verbose .= "\n\n\n";
 
     // Finally revert the changes
     $results = ConfigurationManagement::importToActiveStore($configToModify, $this->modifyDependencies(), $this->modifyOptionals(), TRUE);
@@ -173,14 +197,26 @@ abstract class ConfigurationHandlerBaseTestCase extends ConfigurationWebTestCase
       }
 
       $handler = ConfigurationManagement::createConfigurationInstance($config);
-      $current_hash = $handler->loadFromActiveStore()->buildHash()->getHash();
+      $final_hashes[$config] = $current_hash = $handler->loadFromActiveStore()->getHash();
       $status = $handler->getStatus();
       $this->assertTrue($status == 'In Sync', "$config is In Sync after revert (Status $status)");
-      $this->verbose('<pre>' . $handler->raw() . "\n" . $handler->getHash() . '</pre>', 'Reverted');
-      $this->verbose('<pre>' . print_r(ConfigurationManagement::readTrackingFile(), TRUE) . '</pre>', 'Reverted');
+
       $this->assertTrue($current_hash == $original_hash[$config], "The hash for $config is the same after than the original after the revert");
     }
 
+    $verbose .= "Hashes after revert configs: \n";
+    foreach ($current_hashes as $config_id => $hash) {
+      $verbose .= "\$final_hashes[$config_id] = $hash \n";
+    }
+
+    $verbose .= "\n\n\n";
+    foreach ($final_hashes as $config => $hash) {
+      if ($this->checkModification($config)) {
+        $verbose .= 'Original: ' . $original_hash[$config] . '   Modified: ' . $current_hashes[$config] . '  Final: ' . $final_hashes[$config] . "\n\n";
+      }
+    }
+
+    $this->verbose('<pre>' . $verbose . '</pre>');
     $this->extraChecksOnModify();
   }
 
