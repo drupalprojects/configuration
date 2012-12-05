@@ -39,6 +39,7 @@ function configuration_configuration_handlers() {
     'views'        => '\Drupal\configuration\Config\ViewConfiguration',
     'page_manager' => '\Drupal\configuration\Config\PageManagerHandlerConfiguration',
     'wysiwyg'      => '\Drupal\configuration\Config\WysiwygConfiguration',
+    'role_export'  => '\Drupal\configuration\Config\RoleConfiguration',
   );
 
   return $handlers;
