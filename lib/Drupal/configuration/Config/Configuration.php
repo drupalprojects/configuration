@@ -12,6 +12,44 @@ use Drupal\configuration\Utils\ConfigIteratorSettings;
 
 abstract class Configuration {
 
+
+  /**
+   * A bit flag used to let us know if a configuration is the same in both the
+   * activestore and the datastore.
+   */
+  const inSync = 0x0000;
+
+  /**
+   * A bit flag used to let us know if a configuration was overridden as a result
+   * of changing the activestore directly. (config changes via the UI)
+  */
+  const overriden = 0x0001;
+
+  /**
+   * A bit flag used to let us know if a configuration is not currently being
+   * tracked.
+   */
+  const notTracked = 0x0200;
+
+  /**
+   * A bit flag used to let us know if a module for the configuration is not
+   * available to install in the site.
+   */
+  const moduleMissing = 0x0100;
+
+  /**
+   * A bit flag used to let us know if a module for the configuration is disabled
+   * but can be enabled.
+   */
+  const moduleToInstall = 0x0101;
+
+  /**
+   * A bit flag used to let us know if a module for the configuration is already
+   * installed.
+   */
+  const moduleInstalled = 0x0102;
+
+
   /**
    * The identifier that identifies to the component, usually the machine name.
    */
@@ -414,14 +452,14 @@ abstract class Configuration {
       $file_hash = $tracked[$this->getUniqueId()];
     }
     if (!isset($file_hash)) {
-      return $human_name ? t('ActiveStore only') : CONFIGURATION_ACTIVESTORE_ONLY;
+      return $human_name ? t('ActiveStore only') : Configuration::notTracked;
     }
     else {
       if ($this->getHash() == $file_hash) {
-        return $human_name ? t('In Sync') : CONFIGURATION_IN_SYNC;
+        return $human_name ? t('In Sync') : Configuration::inSync;
       }
       else {
-        return $human_name ? t('Overriden') : CONFIGURATION_ACTIVESTORE_OVERRIDEN;
+        return $human_name ? t('Overriden') : Configuration::overriden;
       }
     }
 
@@ -686,12 +724,12 @@ abstract class Configuration {
   protected function getDependentModules($module, &$stack) {
     $available_modules = static::getAvailableModules();
     if (!isset($available_modules[$module])) {
-      $stack[$module] = CONFIGURATION_MODULE_MISSING;
+      $stack[$module] = Configuration::moduleMissing;
       return;
     }
     else {
       if (empty($available_modules[$module]->status)) {
-        $stack[$module] = CONFIGURATION_MODULE_TO_INSTALL;
+        $stack[$module] = Configuration::moduleToInstall;
         foreach ($available_modules[$module]->requires as $required_module) {
           if (empty($stack[$required_module['name']])) {
             $this->getDependentModules($required_module['name'], $stack);
@@ -699,7 +737,7 @@ abstract class Configuration {
         }
       }
       else {
-        $stack[$module] = CONFIGURATION_MODULE_INSTALLED;
+        $stack[$module] = Configuration::moduleInstalled;
       }
     }
   }

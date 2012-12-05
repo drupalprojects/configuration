@@ -137,10 +137,10 @@ class ConfigurationManagement {
     $missing = array();
     $to_install = array();
     foreach ($settings->getInfo('modules') as $module_name => $status) {
-      if ($status == CONFIGURATION_MODULE_MISSING) {
+      if ($status == Configuration::moduleMissing) {
         $missing[] = $module_name;
       }
-      elseif ($status == CONFIGURATION_MODULE_TO_INSTALL) {
+      elseif ($status == Configuration::moduleToInstall) {
         $to_install[] = $module_name;
       }
     }
