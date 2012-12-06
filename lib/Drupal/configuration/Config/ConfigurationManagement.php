@@ -152,7 +152,7 @@ class ConfigurationManagement {
 
   /**
    * Includes a record of each configuration tracked in the
-   * configuration_staging table and export the configurations to the DataStore.
+   * configuration_tracked table and export the configurations to the DataStore.
    *
    * @param  array   $list
    *   The list of components that have to will be tracked.
@@ -279,48 +279,6 @@ class ConfigurationManagement {
   }
 
   /**
-   * Revert configurations configurations of the ActiveStore using the data
-   * of the staging area.
-   *
-   * @param  array   $list
-   *   The list of components that have to will be restored.
-   * @param  boolean $import_dependencies
-   *   If TRUE, dependencies of each proccessed configuration will be restored
-   *   too.
-   * @param  boolean $import_optionals
-   *   If TRUE, optionals configurations of each proccessed configuration will
-   *   be restored too.
-   * @return ConfigIteratorSettings
-   *   An ConfigIteratorSettings object that contains the restored
-   *   configurations.
-   */
-  static public function revertActiveStore($list = array(), $revert_dependencies = TRUE, $revert_optionals = TRUE) {
-    $settings = new ConfigIteratorSettings(
-      array(
-        'build_callback' => 'loadFromStaging',
-        'callback' => 'revert',
-        'process_dependencies' => $revert_dependencies,
-        'process_optionals' => $revert_optionals,
-        'info' => array(
-          'imported' => array(),
-        )
-      )
-    );
-
-    foreach ($list as $component) {
-      $config = static::createConfigurationInstance($component);
-
-      // Make sure the object is built before start to iterate on its
-      // dependencies.
-      $config->setContext($settings);
-      $config->loadFromStaging();
-      $config->iterate($settings);
-    }
-
-    return $settings;
-  }
-
-  /**
    * Export the configuration from the ActiveStore to the DataStore.
    *
    * @param  array   $list
@@ -420,8 +378,8 @@ class ConfigurationManagement {
    *   @endcode
    */
   static public function trackedConfigurations($tree = TRUE) {
-    $tracked = db_select('configuration_staging', 'cs')
-                  ->fields('cs', array('component', 'identifier', 'hash'))
+    $tracked = db_select('configuration_tracked', 'ct')
+                  ->fields('ct', array('component', 'identifier', 'hash'))
                   ->execute()
                   ->fetchAll();
 

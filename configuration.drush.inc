@@ -25,8 +25,6 @@ function configuration_drush_help($section) {
       return dt("Import configurations into the ActiveStore.");
     case 'drush:cexp':
       return dt("Export a configuration to the DataStore.");
-    case 'drush:crev':
-      return dt("Restore a configuration from the staging area.");
     case 'drush:csta':
       return dt("Start tracking a configuration changes.");
     case 'drush:csto':
@@ -116,22 +114,6 @@ function configuration_drush_command() {
     ),
     'arguments' => array(),
   );
-  $items['config-revert'] = array(
-    'callback' => '_configuration_revert_activestore',
-    'description' => 'Revert a configuration from the staging area.',
-    'aliases' => array('crev'),
-    'examples' => array(
-      'drush crev --all' => 'Revert all tracked components',
-      'drush crev content_type.article' => 'Revert the content type article using the backup saved in the staging area and its dependencies.',
-      'drush crev content_type.article --exclude-dependencies --exclude-optionals' => 'Revert the content type article using the backup saved in the staging area and its dependencies without include its dependencies and optional configurations.',
-    ),
-    'options' => array(
-      'all' => 'revert all components',
-      'exclude-dependencies' => 'Revert a configuration without export its dependencies.',
-      'exclude-optionals' => 'Revert a configuration without export its optional configurations.',
-    ),
-    'arguments' => array(),
-  );
   $items['config-start-tracking'] = array(
     'callback' => '_configuration_start_tracking',
     'description' => 'Start tracking configuration changes.',
@@ -139,7 +121,6 @@ function configuration_drush_command() {
     'examples' => array(
       'drush csta --all' => 'Start tracking changes in all identifiers',
       'drush csta content_type.article' => 'Start tracking changes in the content type article and in all its dependencies',
-      'drush crev content_type.article --exclude-dependencies --exclude-optionals' => 'Revert the content type article using the backup saved in the staging area and its dependencies without include its dependencies and optional configurations.',
     ),
     'options' => array(
       'all' => 'Start tracking all components',
@@ -163,7 +144,6 @@ function configuration_drush_command() {
     ),
     'arguments' => array(),
   );
-
   $items['config-list'] = array(
     'callback' => '_configuration_list',
     'description' => 'Return the list of components and identifiers',
@@ -368,44 +348,6 @@ function _configuration_export_to_datastore() {
   }
 
   drush_log(dt('The configurations for the following items have been created/updated.'), 'ok');
-  drush_print_table($rows);
-}
-
-function _configuration_revert_activestore() {
-  $revert_all = drush_get_option('all');
-  if (!empty($revert_all)) {
-    $args = _components_indentifier_formater();
-  }
-  else {
-    $args = func_get_args();
-  }
-
-  if (empty($args)) {
-    return drush_set_error('', dt('No configurations were selected to revert'));
-  }
-
-  $handlers = ConfigurationManagement::getConfigurationHandler();
-  foreach ($args as $arg) {
-
-    list($component, $identifier) = explode('.', $arg, 2);
-
-    if (empty($handlers[$component])) {
-      return drush_set_error('', dt('The component @component is not valid or the module to revert the configuration is not installed.', array('@component' => $component)));
-    }
-
-    if (empty($identifier)) {
-      return drush_set_error('', dt('No identifier supplied for @arg.', array('@arg' => $arg)));
-    }
-  }
-  $rows = array();
-  $revert_dependencies = !drush_get_option('exclude-dependencies');
-  $revert_optionals = !drush_get_option('exclude-optionals');
-  $result = ConfigurationManagement::revertActiveStore($args, $revert_dependencies, $revert_optionals);
-  foreach ($result->getInfo('imported') as $exported) {
-    $rows[]['imported'] = $exported;
-  }
-
-  drush_log(dt('The configurations for the following items have been reverted.'), 'ok');
   drush_print_table($rows);
 }
 

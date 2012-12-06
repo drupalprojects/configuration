@@ -232,31 +232,10 @@ abstract class Configuration {
   }
 
   /**
-   * Load the configuration data using the information saved in the
-   * configuration_staging table.
+   * Save a configuration object into the configuration_tracked table.
    */
-  public function loadFromStaging() {
-    $object = db_select('configuration_staging', 'cs')
-                        ->fields('cs')
-                        ->condition('component', $this->getComponent())
-                        ->condition('identifier', $this->getIdentifier())
-                        ->execute()
-                        ->fetchObject();
-
-    $this->setHash($object->hash);
-    $this->setData(unserialize($object->data));
-    $this->setDependencies(drupal_map_assoc(unserialize($object->dependencies)));
-    $this->setOptionalConfigurations(drupal_map_assoc(unserialize($object->optional)));
-    $this->setModules(unserialize($object->modules));
-    $this->built = TRUE;
-    return $this;
-  }
-
-  /**
-   * Save a configuration object into the configuration_staging table.
-   */
-  public function saveToStaging() {
-    db_delete('configuration_staging')
+  public function startTracking() {
+    db_delete('configuration_tracked')
       ->condition('component', $this->getComponent())
       ->condition('identifier', $this->getIdentifier())
       ->execute();
@@ -265,12 +244,9 @@ abstract class Configuration {
       'component' => $this->getComponent(),
       'identifier' => $this->getIdentifier(),
       'hash' => $this->getHash(),
-      'data' => serialize($this->getData()),
-      'dependencies' => serialize(array_keys($this->getDependencies())),
-      'optional' => serialize(array_keys($this->getOptionalConfigurations())),
-      'modules' => serialize($this->getModules()),
+      'file' => $this->storage->getFileName(),
     );
-    db_insert('configuration_staging')->fields($fields)->execute();
+    db_insert('configuration_tracked')->fields($fields)->execute();
   }
 
   /**
@@ -304,20 +280,20 @@ abstract class Configuration {
   }
 
   /**
-   * Removes the configuration record from the configuration_staging table for
+   * Removes the configuration record from the configuration_tracked table for
    * the current configuration.
    */
   public function removeConfiguration(ConfigIteratorSettings &$settings) {
-    $this->removeFromStaging($settings);
+    $this->stopTracking($settings);
     $this->removeFromDataStore($settings);
   }
 
   /**
-   * Removes the configuration record from the configuration_staging table for
+   * Removes the configuration record from the configuration_tracked table for
    * the current configuration.
    */
-  public function removeFromStaging(ConfigIteratorSettings &$settings) {
-    $deleted = db_delete('configuration_staging')
+  public function stopTracking(ConfigIteratorSettings &$settings) {
+    $deleted = db_delete('configuration_tracked')
       ->condition('component', $this->getComponent())
       ->condition('identifier', $this->getIdentifier())
       ->execute();
@@ -345,19 +321,8 @@ abstract class Configuration {
     $this->saveToActiveStore($settings);
 
     if ($settings->getSetting('start_tracking')) {
-      $this->saveToStaging();
+      $this->startTracking();
     }
-  }
-
-  /**
-   * Revert a configuration from the staging area and save it into the
-   * ActiveStore. This function is called from iterator().
-   *
-   * @see iterate()
-   */
-  public function revert(ConfigIteratorSettings &$settings) {
-    $this->loadFromStaging();
-    $this->saveToActiveStore($settings);
   }
 
   /**
@@ -384,20 +349,11 @@ abstract class Configuration {
     if ($settings->getSetting('start_tracking')) {
       $this->buildHash();
       $settings->addInfo('hash', $this->getHash());
-      $this->saveToStaging();
+      $this->startTracking();
     }
 
     // Add the current config as an exported item
     $settings->addInfo('exported', $this->getUniqueId());
-  }
-
-  /**
-   * Backup the configuration into the Staging Area.
-   */
-  public function backupConfiguration(&$already_backuped = array(), $backup_dependencies = TRUE, $backup_optionals = TRUE) {
-    // Basically the same mechanism that backup to the datastore but without
-    // save the object in the storage, only save in the staging area.
-    return $this->exportToDataStore($already_backuped, $backup_dependencies, $backup_optionals, FALSE);
   }
 
   /**
@@ -702,9 +658,9 @@ abstract class Configuration {
       }
     }
     foreach ($this->getDependencies() as $dependency) {
-      // First, look for the dependency in the staging table.
-      $exists = db_select('configuration_staging', 'cs')
-                        ->fields('cs', array('identifier'))
+      // First, look for the dependency in the tracked table.
+      $exists = db_select('configuration_tracked', 'ct')
+                        ->fields('ct', array('identifier'))
                         ->condition('component', $this->getComponent())
                         ->condition('identifier', $this->getIdentifier())
                         ->fetchField();

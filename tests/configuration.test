@@ -121,7 +121,7 @@ class ConfigurationApiTest extends ConfigurationWebTestCase {
       $this->assertTrue(in_array($config, $exported), "Configuration for $config was exported.");
     }
 
-    $count_tracked = db_query("SELECT COUNT(component) FROM {configuration_staging}")->fetchField();
+    $count_tracked = db_query("SELECT COUNT(component) FROM {configuration_tracked}")->fetchField();
     $this->assertTrue(empty($count_tracked), "No configurations have been tracked.");
   }
 
@@ -144,11 +144,11 @@ class ConfigurationApiTest extends ConfigurationWebTestCase {
       $this->assertTrue($handler->loadFromActiveStore()->getStatus() == t('In Sync'), $id . ' is In Sync');
     }
 
-    $count_tracked = db_query("SELECT COUNT(component) FROM {configuration_staging}")->fetchField();
+    $count_tracked = db_query("SELECT COUNT(component) FROM {configuration_tracked}")->fetchField();
     $this->assertTrue($count_tracked == count($exported), t("@num of @total configurations have been tracked.", array('@num' => $count_tracked, '@total' => count($exported))));
 
     $results = ConfigurationManagement::stopTracking(array('content_type.article'));
-    $count_tracked = db_query("SELECT COUNT(component) FROM {configuration_staging}")->fetchField();
+    $count_tracked = db_query("SELECT COUNT(component) FROM {configuration_tracked}")->fetchField();
     $this->assertTrue(empty($count_tracked), "No configurations have been tracked.");
 
     $tracked = ConfigurationManagement::trackedConfigurations();
@@ -163,7 +163,7 @@ class ConfigurationApiTest extends ConfigurationWebTestCase {
     }
   }
 
-  public function testRevertActiveStore() {
+  public function testimportToActiveStore() {
     $results = ConfigurationManagement::startTracking(array('content_type.article'));
     $exported = $results->getInfo('exported');
 
@@ -176,12 +176,12 @@ class ConfigurationApiTest extends ConfigurationWebTestCase {
 
     $modified_config = ConfigurationManagement::createConfigurationInstance('content_type.article');
     $original_config = ConfigurationManagement::createConfigurationInstance('content_type.article');
-    $original_config->loadFromStaging();
+    $original_config->loadFromStorage();
     $modified_config->loadFromActiveStore();
 
     $this->assertTrue($original_config->getHash() != $modified_config->getHash(), "Hash for content type Article has changed after modify the content type.");
 
-    $results = ConfigurationManagement::revertActiveStore(array('content_type.article'));
+    $results = ConfigurationManagement::importToActiveStore(array('content_type.article'));
     $modified_config->loadFromActiveStore();
 
     $this->assertTrue($original_config->getHash() == $modified_config->getHash(), "Configuration for content type Article has been reverted.");

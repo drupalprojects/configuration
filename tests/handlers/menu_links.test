@@ -102,8 +102,8 @@ class ConfigurationHandlerMenuLinksTestCase extends ConfigurationWebTestCase {
     $menu::getMenuLinkByIdenfifier(NULL, TRUE);
     $initial_hash = $menu->loadFromActiveStore()->buildHash()->getHash();
 
-    $object = db_select('configuration_staging', 'cs')
-                        ->fields('cs')
+    $object = db_select('configuration_tracked', 'ct')
+                        ->fields('ct')
                         ->condition('component', 'menu_link')
                         ->condition('identifier', 'f3aa4e71405f1a252d229e24df23187f5c0eef24')
                         ->execute()

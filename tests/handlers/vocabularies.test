@@ -85,8 +85,8 @@ class ConfigurationHandlerVariableTestCase extends ConfigurationWebTestCase {
     $config = 'vocabulary.tags';
     $results = ConfigurationManagement::importToActiveStore(array($config), FALSE, FALSE, TRUE, $source);
 
-    $object = db_select('configuration_staging', 'cs')
-                        ->fields('cs')
+    $object = db_select('configuration_tracked', 'ct')
+                        ->fields('ct')
                         ->condition('component', 'vocabulary')
                         ->condition('identifier', 'tags')
                         ->execute()
@@ -110,7 +110,7 @@ class ConfigurationHandlerVariableTestCase extends ConfigurationWebTestCase {
 
     $this->assertRaw(t('Updated vocabulary %name.', array('%name' => 'Modified')), 'The vocabulary for site name was modified');
 
-    $results = ConfigurationManagement::revertActiveStore(array('vocabulary.tags'), FALSE, FALSE);
+    $results = ConfigurationManagement::importToActiveStore(array('vocabulary.tags'), FALSE, FALSE);
     $current_vocabulary = taxonomy_vocabulary_load($vid);
 
     $this->assertEqual($original_vocabulary->name, $current_vocabulary->name, 'The vocabulary was suscessfully reverted.');

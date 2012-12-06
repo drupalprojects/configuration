@@ -133,8 +133,8 @@ abstract class ConfigurationHandlerBaseTestCase extends ConfigurationWebTestCase
     foreach ($configToModify as $config) {
       list($component, $identifier) = explode('.', $config, 2);
 
-      $object = db_select('configuration_staging', 'cs')
-                          ->fields('cs')
+      $object = db_select('configuration_tracked', 'ct')
+                          ->fields('ct')
                           ->condition('component', $component)
                           ->condition('identifier', $identifier)
                           ->execute()

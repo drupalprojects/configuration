@@ -9,7 +9,7 @@
  * Implements hook_schema().
  */
 function configuration_schema() {
-  $schema['configuration_staging'] = array(
+  $schema['configuration_tracked'] = array(
     'description' => 'Default active store for the configuration system.',
     'fields' => array(
       'component' => array(
@@ -27,36 +27,18 @@ function configuration_schema() {
         'default' => '',
       ),
      'hash' => array(
-        'description' => 'A sha1 hash that respresent the configuration. Used to track differences between the ActiveStore, DataStore and Staging area.',
+        'description' => 'A sha1 hash that respresent the configuration. Used to track differences between the ActiveStore, DataStore and tracked area.',
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
       ),
-      'data' => array(
-        'description' => 'The raw data for this configuration entry.',
-        'type' => 'blob',
+     'file' => array(
+        'description' => 'The name of the file that storage the configuration in the config directory.',
+        'type' => 'varchar',
+        'length' => 255,
         'not null' => TRUE,
-        'size' => 'big',
-        'serialize' => TRUE,
-      ),
-      'dependencies' => array(
-        'description' => 'An array of required configurations to load this configuration',
-        'type' => 'text',
-        'not null' => TRUE,
-        'serialized' => TRUE,
-      ),
-      'optional' => array(
-        'description' => 'An array of optional configurations that work with this configuration',
-        'type' => 'text',
-        'not null' => TRUE,
-        'serialized' => TRUE,
-      ),
-      'modules' => array(
-        'description' => 'An array of modules to load this configuration',
-        'type' => 'text',
-        'not null' => TRUE,
-        'serialized' => TRUE,
+        'default' => '',
       ),
     ),
     'primary key' => array('component' , 'identifier'),

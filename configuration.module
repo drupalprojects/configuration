@@ -46,26 +46,7 @@ function configuration_configuration_handlers() {
 }
 
 /**
- * Backup a configuration into the staging area.
- *
- * @param $component
- *   The name of the component to backup, i.e, 'content_type',
- *   'field', 'variable', 'permission', etc.
- * @param $identifier
- *   The identifier of the configuration. Some examples:
- *   For $component == 'content_type', $identifier = 'article'
- *   For $component == 'field', $identifier 'node.article.field_image'
- *   For $component == 'variable', $identifier = 'comment_controls_article'
- */
-function configuration_backup_to_staging($component, $identifier, $backup_dependencies = TRUE, $backup_optionals = TRUE) {
-  $configuration = ConfigurationManagement::createConfigurationInstance($component . '.' . $identifier);
-  $backuped = array();
-  $configuration->backupConfiguration($backuped, $backup_dependencies, $backup_optionals);
-  return $backuped;
-}
-
-/**
- * Load a list of configurations from config:// into the staging area.
+ * Load a list of configurations from config:// into into the active store.
  */
 function configuration_load_configurations($list = array()) {
   $handlers = ConfigurationManagement::getConfigurationHandler();
@@ -75,7 +56,7 @@ function configuration_load_configurations($list = array()) {
   }
   $to_load = ConfigurationManagement::importConfigurations($components, $list, TRUE, TRUE, FALSE);
   foreach ($to_load as $config) {
-    $config->saveToStaging();
+    $config->startTracking();
   }
 }
 
