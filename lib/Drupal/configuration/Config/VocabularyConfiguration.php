@@ -108,6 +108,9 @@ class VocabularyConfiguration extends Configuration {
    */
   public function saveToActiveStore(ConfigIteratorSettings &$settings) {
     $vocabulary = (object) $this->getData();
+    if (!empty($vocabulary->vid)) {
+      unset($vocabulary->vid);
+    }
     $existing = taxonomy_get_vocabularies();
     foreach ($existing as $existing_vocab) {
       if ($existing_vocab->machine_name === $vocabulary->machine_name) {

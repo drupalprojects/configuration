@@ -22,15 +22,15 @@ function configuration_drush_help($section) {
     case 'drush:cgnt':
       return dt("Return the list of configurations components that are not tracked.");
     case 'drush:cimp':
-      return dt("Import configurations into the ActiveStore.");
+      return dt("Import configurations into the Active Store.");
     case 'drush:cexp':
-      return dt("Export a configuration to the DataStore.");
+      return dt("Export a configuration to the Data Store.");
     case 'drush:csta':
       return dt("Start tracking a configuration changes.");
     case 'drush:csto':
       return dt("Stop tracking a configuration changes.");
     case 'drush:clist':
-      return dt("Return the list of components and identifiers");
+      return dt("Return the list of components and identifiers.");
   }
 }
 
@@ -91,9 +91,9 @@ function configuration_drush_command() {
     'options' => array(
       'all' => 'import all components',
       'dir' => 'import all the configurations from a given directory.',
-      'exclude-dependencies' => 'Export a configuration without export its dependencies.',
-      'exclude-optionals' => 'Export a configuration without export its optional configurations.',
-      'start-tracking' => 'Export a configuration and automatically start to tracking it.',
+      'exclude-dependencies' => 'Import a configuration without import its dependencies.',
+      'exclude-optionals' => 'Import a configuration without import its optional configurations.',
+      'start-tracking' => 'Import a configuration and automatically start to tracking it.',
     ),
     'arguments' => array(),
   );
@@ -119,7 +119,7 @@ function configuration_drush_command() {
     'description' => 'Start tracking configuration changes.',
     'aliases' => array('csta'),
     'examples' => array(
-      'drush csta --all' => 'Start tracking changes in all identifiers',
+      'drush csta --all' => 'Start tracking changes in all configurations',
       'drush csta content_type.article' => 'Start tracking changes in the content type article and in all its dependencies',
     ),
     'options' => array(
@@ -151,15 +151,12 @@ function configuration_drush_command() {
     'examples' => array(
       'drush clist' => 'Return the list of components and identifiers',
     ),
-    'arguments' => array(),
   );
   return $items;
 }
 
 /**
- * Name: _get_component_and_identifier()
- * Input : None
- * Output : List of all components and its identifier
+ * List of all components and its identifiers.
  */
 function _get_component_and_identifier() {
   //get all of the components
@@ -167,7 +164,7 @@ function _get_component_and_identifier() {
   foreach ($handlers as $component => $handler) {
     //get all identifiers from a component
     $identifiers = $handler::getAllIdentifiers($component);
-    foreach ($identifiers as $identifier) {
+    foreach (array_keys($identifiers) as $identifier) {
       $rows[] = array(
         'handler' => $handler::getComponentHumanName($component),
         'machine_name' => $component,
@@ -179,12 +176,9 @@ function _get_component_and_identifier() {
 }
 
 /**
- * Name: _components_indentifier_formater()
- * Input : None
- * Output : List of all components and its identifier in the following format
- *          components.identifier
+ * List of all components and its identifier in the following format
+ * component.identifier.
  */
-
 function _components_indentifier_formater() {
   $formated = array();
   $components = _get_component_and_identifier();
@@ -197,7 +191,7 @@ function _components_indentifier_formater() {
 }
 
 /*
- * Configuration list drush command
+ * Configuration list drush command.
  */
 function _configuration_list() {
   $header = array();
@@ -210,12 +204,10 @@ function _configuration_list() {
   $table = array_merge($header, $content);
   drush_print_table($table, TRUE);
 }
-/*
- * Name: _configuration_get_tracked()
- * Input : None
- * Output : List of all components that are tracked
- */
 
+/*
+ * List of all components that are tracked.
+ */
 function _configuration_get_tracked() {
   $header = array();
   $header[] = array(
@@ -247,9 +239,7 @@ function _configuration_get_tracked() {
 }
 
 /**
- * Name: _configuration_get_not_tracked()
- * Input: None
- * Output: List of all components that are not tracked
+ * List of all components that are not tracked.
  */
 function _configuration_get_not_tracked() {
   $header = array();
@@ -266,7 +256,7 @@ function _configuration_get_not_tracked() {
     foreach ($list as $identifier) {
       $content[] = array(
         'component' => $component,
-        'identifier' => $identifier,
+        'identifier' => $identifier['name'],
       );
     }
   }
@@ -274,6 +264,9 @@ function _configuration_get_not_tracked() {
   drush_print_table($table, TRUE);
 }
 
+/**
+ * List of all components that are not tracked.
+ */
 function _configuration_get_identifiers() {
   if ($args = func_get_args()) {
     if (empty($args)) {
@@ -432,7 +425,7 @@ function _configuration_import_configurations() {
   $import_all = drush_get_option('all');
   $args = array();
   if (!empty($import_all)) {
-    $args = _components_indentifier_formater();
+    $args = array_keys(ConfigurationManagement::trackedConfigurations(FALSE));
   }
   elseif ($dir = drush_get_option('dir')) {
     $options = array();
@@ -459,19 +452,13 @@ function _configuration_import_configurations() {
 }
 
 function _configuration_import_load_configurations($action, $args) {
-  if ($action == 'import') {
-    if (!drush_confirm(dt('Are you sure you want to import this configurations? This will override the configurations of the ActiveStore'))) {
-      drush_die('Aborting.');
-    }
+
+  if (!drush_confirm(dt('Are you sure you want to import this configurations? This will override the configurations of the ActiveStore'))) {
+    drush_die('Aborting.');
   }
 
   if (drush_get_option(array('skip-enable-modules'), FALSE)) {
-    if ($action == 'import') {
-      ConfigurationManagement::importToActiveStore($args);
-    }
-    else {
-      configuration_load_configurations($args);
-    }
+    ConfigurationManagement::importToActiveStore($args);
   }
   else {
     $import_dependencies = !drush_get_option('exclude-dependencies');
@@ -515,9 +502,8 @@ function _configuration_import_load_configurations($action, $args) {
         drush_log(dt('The configurations for the following items have been loaded.'), 'ok');
       }
       drush_print_table($rows);
-      if ($action == 'import') {
-        drupal_flush_all_caches();
-      }
+
+      drupal_flush_all_caches();
     }
   }
 }

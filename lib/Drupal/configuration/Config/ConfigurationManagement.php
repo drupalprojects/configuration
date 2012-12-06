@@ -551,6 +551,23 @@ class ConfigurationManagement {
 
     $source = $config_temp_path . '/configuration/';
 
+    $modules_results = ConfigurationManagement::discoverRequiredModules($configurations, FALSE, FALSE, $source);
+    $missing_modules = $modules_results->getInfo('missing_modules');
+
+    if (!empty($missing_modules)) {
+      drupal_set_message(t('Configurations cannot be syncronized because the following modules are not available to install: %modules', array('%modules' => implode(', ', $missing_modules))), 'error');
+      return;
+    }
+    else {
+      $modules_to_install = $modules_results->getInfo('modules_to_install');
+      drupal_set_message(t('The following will be enabled: %modules', array('%modules' => implode(', ', $modules_to_install))));
+      if (!empty($modules_to_install)) {
+        module_enable($modules_to_install, FALSE);
+        drupal_set_message(t('The following modules have been enabled: %modules', array('%modules' => implode(', ', $modules_to_install))));
+        drupal_flush_all_caches();
+      }
+    }
+
     $settings = static::importToActiveStore($configurations, FALSE, FALSE, $start_tracking, $source);
 
     static::deteleTempConfigDir($config_temp_path);
