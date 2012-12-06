@@ -51,21 +51,6 @@ function configuration_configuration_handlers() {
 }
 
 /**
- * Load a list of configurations from config:// into into the active store.
- */
-function configuration_load_configurations($list = array()) {
-  $handlers = ConfigurationManagement::getConfigurationHandler();
-  $components = array();
-  foreach ($handlers as $component => $handler) {
-    $components = array_merge($components, $handler::scanDataStore());
-  }
-  $to_load = ConfigurationManagement::importConfigurations($components, $list, TRUE, TRUE, FALSE);
-  foreach ($to_load as $config) {
-    $config->startTracking();
-  }
-}
-
-/**
  * Import all configuration files within a directory.
  *
  * @param $path
