@@ -260,6 +260,8 @@ class ConfigurationManagement {
       )
     );
 
+    module_invoke_all('configuration_pre_import', $settings);
+
     foreach ($list as $component) {
       $config = static::createConfigurationInstance($component);
 
@@ -274,6 +276,8 @@ class ConfigurationManagement {
     if ($start_tracking) {
       static::exportToDataStore($list, $import_dependencies, $import_optionals, TRUE);
     }
+
+    module_invoke_all('configuration_post_import', $settings);
 
     return $settings;
   }
@@ -312,6 +316,8 @@ class ConfigurationManagement {
       )
     );
 
+    module_invoke_all('configuration_pre_export', $settings);
+
     foreach ($list as $component) {
       $config = static::createConfigurationInstance($component);
 
@@ -325,6 +331,8 @@ class ConfigurationManagement {
     if ($start_tracking) {
       static::updateTrackingFile();
     }
+
+    module_invoke_all('configuration_post_export', $settings);
 
     return $settings;
   }
@@ -572,6 +580,8 @@ class ConfigurationManagement {
       )
     );
 
+    module_invoke_all('configuration_pre_export', $settings);
+
     $filename = 'configuration.' . time() . '.tar';
 
     // Clear out output buffer to remove any garbage from tar output.
@@ -594,6 +604,9 @@ class ConfigurationManagement {
     }
 
     $exported = $settings->getInfo('exported');
+
+    module_invoke_all('configuration_post_export', $settings);
+
     $file_content = "<?php\n\n";
     $file_content .= "// This file contains the list of configurations contained in this package.\n\n";
     $file_content .= "\$configurations = array(\n";

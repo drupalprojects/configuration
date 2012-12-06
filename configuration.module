@@ -22,7 +22,10 @@ function configuration_stream_wrappers() {
 }
 
 /**
- * Implements hook_configuration_handlers().
+ * Define basic handlers().
+ *
+ * Other modules can modify and alter new this array by implementing
+ * hook_configuration_handlers_alter().
  */
 function configuration_configuration_handlers() {
   $handlers = array(
@@ -41,6 +44,8 @@ function configuration_configuration_handlers() {
     'wysiwyg'      => '\Drupal\configuration\Config\WysiwygConfiguration',
     'role_export'  => '\Drupal\configuration\Config\RoleConfiguration',
   );
+
+  drupal_alter('configuration_handlers', $handlers);
 
   return $handlers;
 }
