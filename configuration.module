@@ -72,17 +72,22 @@ function configuration_load_configurations($list = array()) {
  *   The path to the directory to import.
  * @param $enable_modules
  *   Enable all the required modules before the import process.
+ * @param $include_dependencies
+ *   Process a component and all its dependencies.
+ * @param $include_optionals
+ *   Process a component and all its optionals.
+ * @param $start_tracking
+ *   Start tracking all imported configurations.
  *
  */
-function configuration_import_directory($path, $enable_modules = TRUE) {
-  ConfigurationManagement::setStream($path);
+function configuration_import_directory($path, $enable_modules = TRUE, $include_dependencies = TRUE, $include_optionals = TRUE, $start_tracking = TRUE) {
 
   $file_content = drupal_substr(file_get_contents($path . 'configurations.inc'), 6);
   // this line creates a $configurations array with a list of components.
   @eval($file_content);
 
   if ($enable_modules) {
-    $settings = ConfigurationManagement::discoverRequiredModules($configurations);
+    $settings = ConfigurationManagement::discoverRequiredModules($configurations, $include_dependencies, $include_optionals, $path);
     $missing = $settings->getInfo('modules_missing');
     if (count($missing)) {
       $missing = implode(', ', $missing);
@@ -95,7 +100,7 @@ function configuration_import_directory($path, $enable_modules = TRUE) {
     }
   }
 
-  $result = ConfigurationManagement::importToActiveStore($configurations);
+  $result = ConfigurationManagement::importToActiveStore($configurations, $include_dependencies, $include_optionals, $start_tracking, $path);
   $imported = $result->getInfo('imported');
   if (is_array($imported) && count($imported) > 0) {
     return $imported;
