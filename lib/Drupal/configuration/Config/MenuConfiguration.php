@@ -12,34 +12,36 @@ use Drupal\configuration\Utils\ConfigIteratorSettings;
 
 class MenuConfiguration extends Configuration {
 
-  protected function prepareBuild() {
-    $this->data = menu_load(str_replace('_', '-', $this->getIdentifier()));
-    return $this;
-  }
-
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::isActive().
+   */
   public static function isActive() {
     return module_exists('menu');
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getComponentHumanName().
+   */
   static public function getComponentHumanName($component, $plural = FALSE) {
     return $plural ? t('Menus') : t('Menu');
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getComponent().
+   */
   public function getComponent() {
     return 'menu';
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::supportedComponents().
+   */
   static public function supportedComponents() {
     return array('menu');
   }
 
-  public function saveToActiveStore(ConfigIteratorSettings &$settings) {
-    menu_save($this->getData());
-    $settings->addInfo('imported', $this->getUniqueId());
-  }
-
   /**
-   * Returns all the identifiers available for this component.
+   * Overrides Drupal\configuration\Config\Configuration::getAllIdentifiers().
    */
   public static function getAllIdentifiers($component) {
     $menus = db_query("SELECT menu_name, title FROM {menu_custom}")->fetchAll();
@@ -50,6 +52,9 @@ class MenuConfiguration extends Configuration {
     return $return;
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::alterDependencies().
+   */
   public static function alterDependencies(Configuration $config, &$stack) {
     if ($config->getComponent() == 'menu_link') {
       $config_data = $config->getData();
@@ -60,5 +65,22 @@ class MenuConfiguration extends Configuration {
       }
     }
   }
+
+  /**
+   * Implements Drupal\configuration\Config\Configuration::prepareBuild().
+   */
+  protected function prepareBuild() {
+    $this->data = menu_load(str_replace('_', '-', $this->getIdentifier()));
+    return $this;
+  }
+
+  /**
+   * Implements Drupal\configuration\Config\Configuration::saveToActiveStore().
+   */
+  public function saveToActiveStore(ConfigIteratorSettings &$settings) {
+    menu_save($this->getData());
+    $settings->addInfo('imported', $this->getUniqueId());
+  }
+
 
 }

@@ -12,38 +12,36 @@ use Drupal\configuration\Utils\ConfigIteratorSettings;
 
 class ImageStyleConfiguration extends Configuration {
 
-  protected function prepareBuild() {
-    $style = image_style_load($this->getIdentifier());
-    $this->style_sanitize($style);
-    $this->data = $style;
-
-    // Reset the order of effects, this will help to generate always the same
-    // hash for image styles that have been reverted.
-    $this->data['effects'] = array();
-    foreach ($style['effects'] as $effect) {
-      $this->data['effects'][] = $effect;
-    }
-    return $this;
-  }
-
-  public static function isActive() {
-    return module_exists('image');
-  }
-
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getComponentHumanName().
+   */
   static public function getComponentHumanName($component, $plural = FALSE) {
     return $plural ? t('Image styles') : t('Image style');
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getComponent().
+   */
   public function getComponent() {
     return 'image_style';
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::supportedComponents().
+   */
   static public function supportedComponents() {
     return array('image_style');
   }
 
   /**
-   * Returns all the identifiers available for this component.
+   * Overrides Drupal\configuration\Config\Configuration::isActive().
+   */
+  public static function isActive() {
+    return module_exists('image');
+  }
+
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getAllIdentifiers().
    */
   public static function getAllIdentifiers($component) {
     $identifiers = array();
@@ -70,6 +68,9 @@ class ImageStyleConfiguration extends Configuration {
     }
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::alterDependencies().
+   */
   public static function alterDependencies(Configuration $config, &$stack) {
     if ($config->getComponent() == 'field') {
       // Check if the field is using a image style
@@ -87,15 +88,38 @@ class ImageStyleConfiguration extends Configuration {
           }
         }
       }
-      }
+    }
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::findRequiredModules().
+   */
   public function findRequiredModules() {
     foreach ($this->data['effects'] as $effect) {
       $this->addToModules($effect['module']);
     }
   }
 
+  /**
+   * Implements Drupal\configuration\Config\Configuration::prepareBuild().
+   */
+  protected function prepareBuild() {
+    $style = image_style_load($this->getIdentifier());
+    $this->style_sanitize($style);
+    $this->data = $style;
+
+    // Reset the order of effects, this will help to generate always the same
+    // hash for image styles that have been reverted.
+    $this->data['effects'] = array();
+    foreach ($style['effects'] as $effect) {
+      $this->data['effects'][] = $effect;
+    }
+    return $this;
+  }
+
+  /**
+   * Implements Drupal\configuration\Config\Configuration::saveToActiveStore().
+   */
   public function saveToActiveStore(ConfigIteratorSettings &$settings) {
     if ($style = image_style_load($this->getIdentifier())) {
       if (!empty($style['isid'])) {

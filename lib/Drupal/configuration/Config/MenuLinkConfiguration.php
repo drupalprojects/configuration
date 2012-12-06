@@ -12,26 +12,10 @@ use Drupal\configuration\Utils\ConfigIteratorSettings;
 
 class MenuLinkConfiguration extends Configuration {
 
-  protected function prepareBuild() {
-    $mlid = static::getMenuLinkByIdenfifier($this->getIdentifier(), TRUE);
-    $this->data = menu_link_load($mlid);
-    $this->data['parent_identifier'] = NULL;
-
-    if (!empty($this->data['plid'])) {
-      $parent = db_select('menu_links', 'ml')
-                          ->fields('ml', array('menu_name', 'link_path', 'mlid'))
-                          ->condition('mlid', $this->data['plid'])
-                          ->execute()
-                          ->fetchObject();
-      if (!empty($parent)) {
-        $this->data['parent_identifier'] = sha1(str_replace('-', '_', $parent->menu_name) . ':' . $parent->link_path);
-      }
-    }
-    return $this;
-  }
-
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::__construct().
+   */
   public function __construct($identifier) {
-
     parent::__construct($identifier);
     $keys = array(
       'link_path',
@@ -46,35 +30,45 @@ class MenuLinkConfiguration extends Configuration {
     $this->setKeysToExport($keys);
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::isActive().
+   */
   public static function isActive() {
     return module_exists('menu');
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getComponentHumanName().
+   */
   static public function getComponentHumanName($component, $plural = FALSE) {
     return $plural ? t('Menu links') : t('Menu link');
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getComponent().
+   */
   public function getComponent() {
     return 'menu_link';
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::supportedComponents().
+   */
   static public function supportedComponents() {
     return array('menu_link');
   }
 
-  public function saveToActiveStore(ConfigIteratorSettings &$settings) {
-    $data = $this->getData();
-
-    // Determine if the menu already exists.
-    $data['mlid'] = static::getMenuLinkByIdenfifier($this->getIdentifier());
-
-    if (!empty($data['parent_identifier'])) {
-      $data['plid'] = static::getMenuLinkByIdenfifier($this->data['parent_identifier'], TRUE);
-    }
-    menu_link_save($data);
-    $settings->addInfo('imported', $this->getUniqueId());
-  }
-
+  /**
+   * Helper function to retrive a menu link based on its identifier.
+   *
+   * @param string $identifier
+   *   The identifier of the configuration.
+   * @param boolean $reset
+   *   If TRUE the cache of this function is flushed.
+   *
+   * @return
+   *   A menu link object.
+   */
   static public function getMenuLinkByIdenfifier($identifier, $reset = FALSE) {
     static $menu_links;
 
@@ -96,7 +90,7 @@ class MenuLinkConfiguration extends Configuration {
   }
 
   /**
-   * Returns all the identifiers available for this component.
+   * Overrides Drupal\configuration\Config\Configuration::getAllIdentifiers().
    */
   public static function getAllIdentifiers($component) {
     global $menu_admin;
@@ -127,6 +121,9 @@ class MenuLinkConfiguration extends Configuration {
     return $options;
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::alterDependencies().
+   */
   public static function alterDependencies(Configuration $config, &$stack) {
     if ($config->getComponent() == 'menu_link') {
       $mlid = static::getMenuLinkByIdenfifier($config->getIdentifier());
@@ -145,4 +142,42 @@ class MenuLinkConfiguration extends Configuration {
       }
     }
   }
+
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::prepareBuild().
+   */
+  protected function prepareBuild() {
+    $mlid = static::getMenuLinkByIdenfifier($this->getIdentifier(), TRUE);
+    $this->data = menu_link_load($mlid);
+    $this->data['parent_identifier'] = NULL;
+
+    if (!empty($this->data['plid'])) {
+      $parent = db_select('menu_links', 'ml')
+                          ->fields('ml', array('menu_name', 'link_path', 'mlid'))
+                          ->condition('mlid', $this->data['plid'])
+                          ->execute()
+                          ->fetchObject();
+      if (!empty($parent)) {
+        $this->data['parent_identifier'] = sha1(str_replace('-', '_', $parent->menu_name) . ':' . $parent->link_path);
+      }
+    }
+    return $this;
+  }
+
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::saveToActiveStore().
+   */
+  public function saveToActiveStore(ConfigIteratorSettings &$settings) {
+    $data = $this->getData();
+
+    // Determine if the menu already exists.
+    $data['mlid'] = static::getMenuLinkByIdenfifier($this->getIdentifier());
+
+    if (!empty($data['parent_identifier'])) {
+      $data['plid'] = static::getMenuLinkByIdenfifier($this->data['parent_identifier'], TRUE);
+    }
+    menu_link_save($data);
+    $settings->addInfo('imported', $this->getUniqueId());
+  }
+
 }

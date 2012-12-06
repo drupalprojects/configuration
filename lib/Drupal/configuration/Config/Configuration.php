@@ -110,6 +110,14 @@ abstract class Configuration {
    */
   protected $context = NULL;
 
+  /**
+   * Constructor.
+   * @param string $identifier
+   *   The identifier of the configurations. Usually a machine name.
+   * @param string $component
+   *   The component of this configuration. i.e content_type, field, variable,
+   *   etc.
+   */
   public function __construct($identifier, $component = '') {
     $this->identifier = $identifier;
     $this->storage = static::getStorageInstance($component);
@@ -192,6 +200,9 @@ abstract class Configuration {
     return $list_of_components;
   }
 
+  /**
+   * Load a configurations from the database.
+   */
   public function loadFromActiveStore() {
     $this->build();
     $this->buildHash();
@@ -316,7 +327,6 @@ abstract class Configuration {
     }
   }
 
-
   /**
    * Removes the configuration file from the dataStore folder.
    */
@@ -424,8 +434,6 @@ abstract class Configuration {
    * Create a unique hash for this configuration based on the data,
    * dependencies, optional configurations and modules required to use this
    * configuration. Use getHash() after call this function.
-   *
-   * @return NULL
    */
   public function buildHash() {
     if ($this->broken) {
@@ -443,6 +451,15 @@ abstract class Configuration {
     return $this;
   }
 
+  /**
+   * Return the current status of the configuration.
+   *
+   * @param  boolean $human_name
+   *   If TRUE a human readable name will be return for the status of the
+   *   configuration. If FALSE a numeric code will be returned.
+   * @return string|integer
+   *   The status of the configuration. (ActiveStore only, In Sync, Overriden).
+   */
   public function getStatus($human_name = TRUE) {
     if ($this->broken) {
       return $human_name ? t('Removed from ActiveStore') : 0;
@@ -462,7 +479,6 @@ abstract class Configuration {
         return $human_name ? t('Overriden') : Configuration::overriden;
       }
     }
-
   }
 
   /**
@@ -819,6 +835,15 @@ abstract class Configuration {
     }
   }
 
+  /**
+   * Set the context where a function is executed.
+   *
+   * This function is called before call to the function callback in the iterate
+   * function.
+   *
+   * @param  ConfigIteratorSettings $settings
+   * @see iterate()
+   */
   public function setContext(ConfigIteratorSettings &$settings) {
     $this->context = $settings;
   }
@@ -837,7 +862,7 @@ abstract class Configuration {
    * @see revertActiveStore()
    * @see discoverRequiredModules()
    */
-  function iterate(ConfigIteratorSettings &$settings) {
+  public function iterate(ConfigIteratorSettings &$settings) {
     $callback = $settings->getCallback();
     $build_callback = $settings->getBuildCallback();
 

@@ -12,9 +12,11 @@ use Drupal\configuration\Utils\ConfigIteratorSettings;
 
 class VariableConfiguration extends Configuration {
 
-  static protected $component = 'variable';
   protected $variable_name = '';
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::__construct().
+   */
   public function __construct($identifier, $component = '') {
     $this->variable_name = $identifier;
     parent::__construct(str_replace(' ', '_', $identifier));
@@ -22,28 +24,29 @@ class VariableConfiguration extends Configuration {
     $this->storage->setFileName('variable.' . str_replace(' ', '_', $identifier));
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getComponentHumanName().
+   */
   static public function getComponentHumanName($component, $plural = FALSE) {
     return $plural ? t('Variables') : t('Variable');
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getComponent().
+   */
   public function getComponent() {
     return 'variable';
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::supportedComponents().
+   */
   static public function supportedComponents() {
     return array('variable');
   }
 
-  protected function prepareBuild() {
-    $this->data = array(
-      'name' => $this->variable_name,
-      'content' => variable_get($this->getIdentifier(), NULL),
-    );
-    return $this;
-  }
-
   /**
-   * Returns all the identifiers available for this component.
+   * Overrides Drupal\configuration\Config\Configuration::getAllIdentifiers().
    */
   public static function getAllIdentifiers($component) {
     $variables = db_query("SELECT name FROM {variable}")->fetchAll();
@@ -54,12 +57,9 @@ class VariableConfiguration extends Configuration {
     return $return;
   }
 
-  public function saveToActiveStore(ConfigIteratorSettings &$settings) {
-    $variable = $this->getData();
-    variable_set($variable['name'], $variable['content']);
-    $settings->addInfo('imported', $this->getUniqueId());
-  }
-
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::alterDependencies().
+   */
   public static function alterDependencies(Configuration $config, &$stack) {
     if ($config->getComponent() == 'content_type') {
       $variables = array(
@@ -110,5 +110,25 @@ class VariableConfiguration extends Configuration {
         }
       }
     }
+  }
+
+  /**
+   * Implements Drupal\configuration\Config\Configuration::prepareBuild().
+   */
+  protected function prepareBuild() {
+    $this->data = array(
+      'name' => $this->variable_name,
+      'content' => variable_get($this->getIdentifier(), NULL),
+    );
+    return $this;
+  }
+
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::saveToActiveStore().
+   */
+  public function saveToActiveStore(ConfigIteratorSettings &$settings) {
+    $variable = $this->getData();
+    variable_set($variable['name'], $variable['content']);
+    $settings->addInfo('imported', $this->getUniqueId());
   }
 }

@@ -12,36 +12,48 @@ use Drupal\configuration\Utils\ConfigIteratorSettings;
 
 class PermissionConfiguration extends Configuration {
 
-  protected function prepareBuild() {
-    $permissions_roles = $this->get_permissions();
-    $permission = static::getPermissionById($this->identifier);
-    $this->data = array(
-      'permission' => $permission,
-      'roles' => !empty($permissions_roles[$permission]) ? $permissions_roles[$permission] : array(),
-    );
-    return $this;
-  }
-
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getComponentHumanName().
+   */
   static public function getComponentHumanName($component, $plural = FALSE) {
     return $plural ? t('Permissions') : t('Permission');
   }
-
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getComponent().
+   */
   public function getComponent() {
     return 'permission';
   }
-
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::supportedComponents().
+   */
   static public function supportedComponents() {
     return array('permission');
   }
 
+  /**
+   * Returns the original permission based of the identifier of the
+   * configuration.
+   *
+   * @param  string $identifier
+   *   The configuration identifier.
+   *
+   *
+   * @return string
+   *   The original permissions with spaces.
+   */
   public static function getPermissionById($identifier) {
-    $perms = static::getPermissionList();
+    $perms = static::getAllIdentifiers('permission');
     if (!empty($perms[$identifier])) {
       return $perms[$identifier];
     }
   }
 
-  public static function getPermissionList() {
+  /**
+   * Returns all the identifiers available for this component.
+   */
+  public static function getAllIdentifiers($component) {
+    $return = array();
     $permissions = array_keys(module_invoke_all('permission'));
     foreach ($permissions as $permission) {
       $return[str_replace(' ', '_', $permission)] = $permission;
@@ -50,12 +62,8 @@ class PermissionConfiguration extends Configuration {
   }
 
   /**
-   * Returns all the identifiers available for this component.
+   * Overrides Drupal\configuration\Config\Configuration::alterDependencies().
    */
-  public static function getAllIdentifiers($component) {
-    return static::getPermissionList();
-  }
-
   public static function alterDependencies(Configuration $config, &$stack) {
     if ($config->getComponent() == 'permission') {
 
@@ -114,6 +122,9 @@ class PermissionConfiguration extends Configuration {
     }
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::findRequiredModules().
+   */
   public function findRequiredModules() {
     $perm_modules = user_permission_get_modules();
     $this->addToModules($perm_modules[$this->data['permission']]);
@@ -122,7 +133,7 @@ class PermissionConfiguration extends Configuration {
   /**
    * Generate $rid => $role with role names untranslated.
    */
-  static  protected function get_roles($builtin = TRUE) {
+  static protected function get_roles($builtin = TRUE) {
     $roles = array();
     foreach (user_roles() as $rid => $name) {
       switch ($rid) {
@@ -171,8 +182,23 @@ class PermissionConfiguration extends Configuration {
     return $permissions;
   }
 
-  public function saveToActiveStore(ConfigIteratorSettings &$settings) {
+  /**
+   * Implements Drupal\configuration\Config\Configuration::prepareBuild().
+   */
+  protected function prepareBuild() {
+    $permissions_roles = $this->get_permissions();
+    $permission = static::getPermissionById($this->identifier);
+    $this->data = array(
+      'permission' => $permission,
+      'roles' => !empty($permissions_roles[$permission]) ? $permissions_roles[$permission] : array(),
+    );
+    return $this;
+  }
 
+  /**
+   * Implements Drupal\configuration\Config\Configuration::saveToActiveStore().
+   */
+  public function saveToActiveStore(ConfigIteratorSettings &$settings) {
     node_types_rebuild();
 
     $roles = static::get_roles();

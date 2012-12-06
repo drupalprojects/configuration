@@ -11,22 +11,37 @@ use Drupal\configuration\Config\CtoolsConfiguration;
 
 class ViewConfiguration extends CtoolsConfiguration {
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::isActive().
+   */
   public static function isActive() {
     return module_exists('views');
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getComponentHumanName().
+   */
   static public function getComponentHumanName($component, $plural = FALSE) {
     return $plural ? t('Views') : t('View');
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getComponent().
+   */
   public function getComponent() {
     return 'views_view';
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::supportedComponents().
+   */
   static public function supportedComponents() {
     return array('views_view');
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::findRequiredModules().
+   */
   public function findRequiredModules() {
     $this->addToModules('views');
     $view = $this->getData();
@@ -53,6 +68,9 @@ class ViewConfiguration extends CtoolsConfiguration {
     }
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::alterDependencies().
+   */
   public static function alterDependencies(Configuration $config, &$stack) {
     static $cache;
     if (!isset($cache)) {

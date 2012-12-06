@@ -12,25 +12,29 @@ use Drupal\configuration\Utils\ConfigIteratorSettings;
 
 class FieldConfiguration extends Configuration {
 
-  protected function prepareBuild() {
-    $this->data = $this->field_load($this->identifier);
-    return $this;
-  }
-
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getComponentHumanName().
+   */
   static public function getComponentHumanName($component, $plural = FALSE) {
     return $plural ? t('Fields') : t('Field');
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getComponent().
+   */
   public function getComponent() {
     return 'field';
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::supportedComponents().
+   */
   static public function supportedComponents() {
     return array('field');
   }
 
   /**
-   * Returns all the identifiers available for this component.
+   * Overrides Drupal\configuration\Config\Configuration::getAllIdentifiers().
    */
   public static function getAllIdentifiers($component) {
     $identifiers = array();
@@ -46,7 +50,7 @@ class FieldConfiguration extends Configuration {
 
   /**
    * Load a field's configuration and instance configuration by an
-   * entity_type-bundle-field_name identifier.
+   * entity_type.bundle.field_name identifier.
    */
   protected function field_load($identifier) {
     list($entity_type, $field_name, $bundle) = explode('.', $identifier);
@@ -65,6 +69,9 @@ class FieldConfiguration extends Configuration {
     return FALSE;
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::alterDependencies().
+   */
   public static function alterDependencies(Configuration $config, &$stack) {
     if ($config->configForEntity()) {
       $entity_type = $config->getEntityType();
@@ -84,6 +91,9 @@ class FieldConfiguration extends Configuration {
     }
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::findDependencies().
+   */
   public function findDependencies() {
     list($entity_type, $field_name, $bundle_name) = explode('.', $this->getIdentifier());
 
@@ -99,11 +109,25 @@ class FieldConfiguration extends Configuration {
     parent::findDependencies();
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::findRequiredModules().
+   */
   public function findRequiredModules() {
     $this->addToModules($this->data['field_config']['storage']['module']);
     $this->addToModules($this->data['field_instance']['widget']['module']);
   }
 
+  /**
+   * Implements Drupal\configuration\Config\Configuration::prepareBuild().
+   */
+  protected function prepareBuild() {
+    $this->data = $this->field_load($this->identifier);
+    return $this;
+  }
+
+  /**
+   * Implements Drupal\configuration\Config\Configuration::saveToActiveStore().
+   */
   public function saveToActiveStore(ConfigIteratorSettings &$settings) {
     field_info_cache_clear();
 

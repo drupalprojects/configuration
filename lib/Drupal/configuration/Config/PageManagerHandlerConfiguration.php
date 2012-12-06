@@ -11,22 +11,37 @@ use Drupal\configuration\Config\CtoolsConfiguration;
 
 class PageManagerHandlerConfiguration extends CtoolsConfiguration {
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::isActive().
+   */
   public static function isActive() {
     return module_exists('page_manager');
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getComponentHumanName().
+   */
   static public function getComponentHumanName($component, $plural = FALSE) {
     return $plural ? t('Page Manager Handlers') : t('Page Manage Handler');
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getComponent().
+   */
   public function getComponent() {
     return 'page_manager_handlers';
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::supportedComponents().
+   */
   static public function supportedComponents() {
     return array('page_manager_handlers');
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::alterDependencies().
+   */
   public static function alterDependencies(Configuration $config, &$stack) {
     // Dependencies for Page Manager Pages. Each page has a handler.
     if ($config->getComponent() == 'page_manager_pages' && !$config->broken) {

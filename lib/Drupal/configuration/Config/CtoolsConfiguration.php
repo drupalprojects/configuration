@@ -12,24 +12,46 @@ use Drupal\configuration\Utils\ConfigIteratorSettings;
 
 class CtoolsConfiguration extends Configuration {
 
+  /**
+   * The component of the current configuration.
+   *
+   * Usually this component is the table where the configuration object lives.
+   *
+   * @var string
+   */
   protected $component;
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::__construct().
+   */
   public function __construct($identifier, $component = '') {
     $this->identifier = $identifier;
+    // Because CTools can handle multiple types of configurations we need to
+    // know what is the current handled configuration. Usually this component is
+    // the main table where the ctools object lives.
     $this->component = $component;
     $this->storage = static::getStorageInstance($component);
     $this->storage->setFileName($this->getUniqueId());
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getStorageInstance().
+   */
   static protected function getStorageInstance($component) {
     $storage = static::getStorageSystem($component);
     return new $storage($component);
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::isActive().
+   */
   public static function isActive() {
     return module_exists('ctools');
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getComponentHumanName().
+   */
   static public function getComponentHumanName($component, $plural = FALSE) {
     ctools_include('export');
     foreach (ctools_export_get_schemas_by_module() as $module => $schemas) {
@@ -43,10 +65,16 @@ class CtoolsConfiguration extends Configuration {
     return '';
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getComponent().
+   */
   public function getComponent() {
     return $this->component;
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::supportedComponents().
+   */
   static public function supportedComponents() {
     if (!static::isActive()) {
       return array();
@@ -64,15 +92,8 @@ class CtoolsConfiguration extends Configuration {
     return $supported;
   }
 
-  public function prepareBuild() {
-    ctools_include('export');
-    ctools_export_load_object_reset();
-    $this->data = ctools_export_crud_load($this->getComponent(), $this->getIdentifier());
-    return $this;
-  }
-
   /**
-   * Returns all the identifiers available for the given component.
+   * Overrides Drupal\configuration\Config\Configuration::getAllIdentifiers().
    */
   public static function getAllIdentifiers($component) {
     ctools_include('export');
@@ -81,12 +102,39 @@ class CtoolsConfiguration extends Configuration {
   }
 
   /**
-   * Returns a class with its namespace to save data to the disk.
+   * Overrides Drupal\configuration\Config\Configuration::getStorageSystem().
    */
   static protected function getStorageSystem($component) {
     return '\Drupal\configuration\Storage\StorageCtools';
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::findRequiredModules().
+   */
+  public function findRequiredModules() {
+    $this->addToModules('ctools');
+    foreach (ctools_export_get_schemas_by_module() as $module => $schemas) {
+      foreach ($schemas as $table => $schema) {
+        if ($table == $this->getComponent()) {
+          $this->addToModules($module);
+        }
+      }
+    }
+  }
+
+  /**
+   * Implements Drupal\configuration\Config\Configuration::prepareBuild().
+   */
+  public function prepareBuild() {
+    ctools_include('export');
+    ctools_export_load_object_reset();
+    $this->data = ctools_export_crud_load($this->getComponent(), $this->getIdentifier());
+    return $this;
+  }
+
+  /**
+   * Implements Drupal\configuration\Config\Configuration::saveToActiveStore().
+   */
   public function saveToActiveStore(ConfigIteratorSettings &$settings) {
     ctools_include('export');
     $object = ctools_export_crud_load($this->getComponent(), $this->getIdentifier());
@@ -97,16 +145,5 @@ class CtoolsConfiguration extends Configuration {
     $data->export_type = NULL;
     ctools_export_crud_save($this->getComponent(), $data);
     $settings->addInfo('imported', $this->getUniqueId());
-  }
-
-  public function findRequiredModules() {
-    $this->addToModules('ctools');
-    foreach (ctools_export_get_schemas_by_module() as $module => $schemas) {
-      foreach ($schemas as $table => $schema) {
-        if ($table == $this->getComponent()) {
-          $this->addToModules($module);
-        }
-      }
-    }
   }
 }

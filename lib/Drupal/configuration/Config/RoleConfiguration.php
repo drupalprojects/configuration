@@ -12,28 +12,43 @@ use Drupal\configuration\Utils\ConfigIteratorSettings;
 
 class RoleConfiguration extends Configuration {
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::isActive().
+   */
   public static function isActive() {
     return module_exists('role_export');
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getComponentHumanName().
+   */
   static public function getComponentHumanName($component, $plural = FALSE) {
     return $plural ? t('Roles') : t('Role');
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getComponent().
+   */
   public function getComponent() {
     return 'role';
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::supportedComponents().
+   */
   static public function supportedComponents() {
     return array('role');
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::findRequiredModules().
+   */
   public function findRequiredModules() {
     $this->addToModules('role_export');
   }
 
   /**
-   * Returns all the identifiers available for this component.
+   * Overrides Drupal\configuration\Config\Configuration::getAllIdentifiers().
    */
   public static function getAllIdentifiers($component) {
     $identifiers = array();
@@ -45,26 +60,9 @@ class RoleConfiguration extends Configuration {
     return $identifiers;
   }
 
-  protected function prepareBuild() {
-    foreach (role_export_roles() as $role) {
-      if ($role->machine_name == $this->getIdentifier()) {
-        $this->data = $role;
-        unset($role->rid);
-        break;
-      }
-    }
-    return $this;
-  }
-
-  public function saveToActiveStore(ConfigIteratorSettings &$settings) {
-    $role = $this->getData();
-    if (!empty($role->machine_name) && $existing = db_query("SELECT rid FROM {role} WHERE machine_name = :machine_name", array(':machine_name' => $role->machine_name))->fetchField()) {
-      $role->rid = $existing;
-    }
-    user_role_save($role);
-    $settings->addInfo('imported', $this->getUniqueId());
-  }
-
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::saveToActiveStore().
+   */
   public static function alterDependencies(Configuration $config, &$stack) {
     if ($config->getComponent() == 'permission') {
       $data = $config->getData();
@@ -84,5 +82,31 @@ class RoleConfiguration extends Configuration {
         }
       }
     }
+  }
+
+  /**
+   * Implements Drupal\configuration\Config\Configuration::getAllIdentifiers().
+   */
+  protected function prepareBuild() {
+    foreach (role_export_roles() as $role) {
+      if ($role->machine_name == $this->getIdentifier()) {
+        $this->data = $role;
+        unset($role->rid);
+        break;
+      }
+    }
+    return $this;
+  }
+
+  /**
+   * Implements Drupal\configuration\Config\Configuration::saveToActiveStore().
+   */
+  public function saveToActiveStore(ConfigIteratorSettings &$settings) {
+    $role = $this->getData();
+    if (!empty($role->machine_name) && $existing = db_query("SELECT rid FROM {role} WHERE machine_name = :machine_name", array(':machine_name' => $role->machine_name))->fetchField()) {
+      $role->rid = $existing;
+    }
+    user_role_save($role);
+    $settings->addInfo('imported', $this->getUniqueId());
   }
 }

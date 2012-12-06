@@ -12,25 +12,30 @@ use Drupal\configuration\Utils\ConfigIteratorSettings;
 
 class TextFormatConfiguration extends Configuration {
 
-  protected function prepareBuild() {
-    $this->data = $this->filter_format_load($this->getIdentifier());
-    return $this;
-  }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getComponentHumanName().
+   */
   static public function getComponentHumanName($component, $plural = FALSE) {
     return $plural ? t('Text formats') : t('Text format');
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getComponent().
+   */
   public function getComponent() {
     return 'text_format';
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::supportedComponents().
+   */
   static public function supportedComponents() {
     return array('text_format');
   }
 
   /**
-   * Returns all the identifiers available for this component.
+   * Overrides Drupal\configuration\Config\Configuration::getAllIdentifiers().
    */
   public static function getAllIdentifiers($component) {
     $identifiers = array();
@@ -40,7 +45,24 @@ class TextFormatConfiguration extends Configuration {
     return $identifiers;
   }
 
-  protected function filter_format_load($name) {
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::findRequiredModules().
+   */
+  public function findRequiredModules() {
+    $filter_info = filter_get_filters();
+    foreach (array_keys($this->data->filters) as $filter) {
+      if (!empty($filter_info[$filter]) && $filter_info[$filter]['module']) {
+        $this->addToModules($filter_info[$filter]['module']);
+      }
+    }
+  }
+
+  /**
+   * Implements Drupal\configuration\Config\Configuration::prepareBuild().
+   */
+  protected function prepareBuild() {
+    $name = $this->getIdentifier();
+
     // Use machine name for retrieving the format if available.
     $query = db_select('filter_format');
     $query->fields('filter_format');
@@ -56,22 +78,20 @@ class TextFormatConfiguration extends Configuration {
           $format->filters[$filter->name]['settings'] = $filter->settings;
         }
       }
-      return $format;
+      $this->data = $format;
+      return $this;
     }
-    return FALSE;
+    else {
+      $this->data = FALSE;
+    }
+    return $this;
   }
 
+  /**
+   * Implements Drupal\configuration\Config\Configuration::saveToActiveStore().
+   */
   public function saveToActiveStore(ConfigIteratorSettings &$settings) {
     filter_format_save($this->getData());
     $settings->addInfo('imported', $this->getUniqueId());
-  }
-
-  public function findRequiredModules() {
-    $filter_info = filter_get_filters();
-    foreach (array_keys($this->data->filters) as $filter) {
-      if (!empty($filter_info[$filter]) && $filter_info[$filter]['module']) {
-        $this->addToModules($filter_info[$filter]['module']);
-      }
-    }
   }
 }

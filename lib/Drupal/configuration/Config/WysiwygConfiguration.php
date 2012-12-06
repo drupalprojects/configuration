@@ -13,29 +13,36 @@ use Drupal\configuration\Utils\ConfigIteratorSettings;
 
 class WysiwygConfiguration extends Configuration {
 
-  protected function prepareBuild() {
-    $this->data = wysiwyg_get_profile($this->getIdentifier());
-    return $this;
-  }
-
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getComponentHumanName().
+   */
   static public function getComponentHumanName($component, $plural = FALSE) {
     return $plural ? t('Wyswyg Profiles') : t('Wyswyg Profile');
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::isActive().
+   */
   public static function isActive() {
     return module_exists('wysiwyg');
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getComponent().
+   */
   public function getComponent() {
     return 'wysiwyg';
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::supportedComponents().
+   */
   static public function supportedComponents() {
     return array('wysiwyg');
   }
 
   /**
-   * Returns all the identifiers available for this component.
+   * Overrides Drupal\configuration\Config\Configuration::getAllIdentifiers().
    */
   public static function getAllIdentifiers($component) {
     $profiles = array();
@@ -51,6 +58,9 @@ class WysiwygConfiguration extends Configuration {
     return $profiles;
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::alterDependencies().
+   */
   public static function alterDependencies(Configuration $config, &$stack) {
     if ($config->getComponent() == 'text_format') {
       $formats = filter_formats();
@@ -72,6 +82,9 @@ class WysiwygConfiguration extends Configuration {
     }
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::findDependencies().
+   */
   public function findDependencies() {
     $format = $this->getIdentifier();
 
@@ -84,12 +97,26 @@ class WysiwygConfiguration extends Configuration {
     parent::findDependencies();
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::findRequiredModules().
+   */
   public function findRequiredModules() {
     $this->addToModules('wysiwyg');
     // @todo figure out if there is a way to add modules that provides plugins
     // for this wysiwyg
   }
 
+  /**
+   * Implements Drupal\configuration\Config\Configuration::prepareBuild().
+   */
+  protected function prepareBuild() {
+    $this->data = wysiwyg_get_profile($this->getIdentifier());
+    return $this;
+  }
+
+  /**
+   * Implements Drupal\configuration\Config\Configuration::saveToActiveStore().
+   */
   public function saveToActiveStore(ConfigIteratorSettings &$settings) {
     $profile = $this->getData();
 

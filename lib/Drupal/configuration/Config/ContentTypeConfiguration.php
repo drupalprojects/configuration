@@ -12,6 +12,9 @@ use Drupal\configuration\Utils\ConfigIteratorSettings;
 
 class ContentTypeConfiguration extends Configuration {
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::__construct().
+   */
   function __construct($identifier, $component = '') {
     parent::__construct($identifier);
     $keys = array(
@@ -26,26 +29,63 @@ class ContentTypeConfiguration extends Configuration {
     $this->setKeysToExport($keys);
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getComponent().
+   */
   public function getComponent() {
     return 'content_type';
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::supportedComponents().
+   */
   static public function supportedComponents() {
     return array('content_type');
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getComponentHumanName().
+   */
   static public function getComponentHumanName($component, $plural = FALSE) {
     return $plural ? t('Content types') : t('Content type');
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::configForEntity().
+   */
   public function configForEntity() {
     return TRUE;
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getEntityType().
+   */
   public function getEntityType() {
     return 'node';
   }
 
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::getAllIdentifiers().
+   */
+  public static function getAllIdentifiers($component) {
+    return node_type_get_names();
+  }
+
+  /**
+   * Overrides Drupal\configuration\Config\Configuration::findRequiredModules().
+   */
+  public function findRequiredModules() {
+    if ($this->data->base == 'node_content' || $this->data->base == 'configuration') {
+      $this->addToModules('node');
+    }
+    else {
+      $this->addToModules($this->data->base);
+    }
+  }
+
+  /**
+   * Implements Drupal\configuration\Config\Configuration::prepareBuild().
+   */
   protected function prepareBuild() {
     $data = (object)node_type_get_type($this->identifier);
 
@@ -62,21 +102,8 @@ class ContentTypeConfiguration extends Configuration {
   }
 
   /**
-   * Returns all the identifiers available for this component.
+   * Implements Drupal\configuration\Config\Configuration::saveToActiveStore().
    */
-  public static function getAllIdentifiers($component) {
-    return node_type_get_names();
-  }
-
-  public function findRequiredModules() {
-    if ($this->data->base == 'node_content' || $this->data->base == 'configuration') {
-      $this->addToModules('node');
-    }
-    else {
-      $this->addToModules($this->data->base);
-    }
-  }
-
   public function saveToActiveStore(ConfigIteratorSettings &$settings) {
     $info = (object)$this->getData();
     $info->base = 'node_content';
