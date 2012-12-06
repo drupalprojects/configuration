@@ -14,6 +14,7 @@ files[] = handlers/TestVariableConfiguration.test
 files[] = handlers/TestPermissionConfiguration.test
 files[] = handlers/TestRoleConfiguration.test
 files[] = handlers/TestViewConfiguration.test
+files[] = handlers/TestPageManagerConfiguration.test
 
 files[] = handlers/vocabularies.test
 files[] = handlers/menu_links.test
