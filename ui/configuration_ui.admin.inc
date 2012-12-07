@@ -604,14 +604,14 @@ function configuration_ui_import_form_submit($form, &$form_state) {
 /**
  * Menu Callback Form.
  */
-function configuration_ui_settings_form($form, &$form_state) {
+function configuration_ui_sync_form($form, &$form_state) {
 
   $form['configuration_ops'] = array(
     '#type' => 'fieldset',
     '#title' => t('Configuration Operations'),
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
-    '#description' => '<p>' . t('Updates the tracked configurations using the configurations defined in configuration.inc file. You should click on this button every time you update the DataStore and want to see the changes materialized in your site.') . '<p>',
+    '#description' => '<p>' . t('Updates the tracked configurations using the configurations defined in tracked.inc file. You should click on this button every time you update the DataStore and want to see the changes materialized in your site.') . '<p>',
   );
   $form['configuration_ops']['sync_configurations'] = array(
     '#type' => 'submit',
@@ -621,8 +621,17 @@ function configuration_ui_settings_form($form, &$form_state) {
   $form['configuration_ops']['preserve_tracked'] = array(
     '#type' => 'checkbox',
     '#title' => t('Preserve tracked configurations.'),
-    '#description' => '<p>' . t('If checked, all the configurations current being tracked will still be tracked even if they are not in listed in the configuration.inc file of your DataStore. If not checked, those configurations that are not listed in the configuration.inc file and are currently being tracked will be automatically untracked.') . '<p>',
+    '#description' => '<p>' . t('If checked, all the configurations current being tracked will still be tracked even if they are not in listed in the tracked.inc file of your DataStore. If not checked, those configurations that are not listed in the configuration.inc file and are currently being tracked will be automatically untracked.') . '<p>',
+    '#default_value' => TRUE,
   );
+
+  return $form;
+}
+
+/**
+ * Menu Callback Form.
+ */
+function configuration_ui_settings_form($form, &$form_state) {
 
   $form['general_settings'] = array(
     '#type' => 'fieldset',

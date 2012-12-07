@@ -34,7 +34,7 @@ function configuration_ui_menu() {
 
   $items['admin/config/system/configuration/tracking'] = array(
     'title' => 'Tracking',
-    'weight' => -1,
+    'weight' => -3,
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
 
@@ -44,7 +44,18 @@ function configuration_ui_menu() {
     'page arguments' => array('configuration_ui_notracking_form'),
     'access arguments' => array('administer configuration management'),
     'file' => 'configuration_ui.admin.inc',
+    'weight' => -2,
     'type' => MENU_LOCAL_TASK,
+  );
+
+  $items['admin/config/system/configuration/sync'] = array(
+    'title' => 'Syncronize',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('configuration_ui_sync_form'),
+    'access arguments' => array('administer configuration management'),
+    'file' => 'configuration_ui.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => -1,
   );
 
   $items['admin/config/system/configuration/stop_tracking/%'] = array(
