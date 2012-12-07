@@ -49,7 +49,7 @@ function configuration_ui_tracking_form($form, &$form_state) {
         '#type' => 'fieldset',
         '#group' => 'packages',
         '#title' => check_plain($handler::getComponentHumanName($component)),
-        '#description' => t('Currenly tracked configurations for: @component', array('@component' => $handler::getComponentHumanName($component, TRUE))),
+        '#description' => t('Currently tracked configurations for: @component', array('@component' => $handler::getComponentHumanName($component, TRUE))),
         '#collapsible' => TRUE,
         '#collapsed' => TRUE,
         '#tree' => TRUE,
