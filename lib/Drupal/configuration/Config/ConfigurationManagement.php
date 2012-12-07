@@ -406,16 +406,24 @@ class ConfigurationManagement {
       if (isset($handlers[$object->component])) {
 
         $all_identifiers = $handlers[$object->component]::getAllIdentifiersCached($object->component);
-        if ($tree && $all_identifiers[$object->identifier]) {
+
+        if (empty($all_identifiers[$object->identifier])) {
+          $name = $object->identifier;
+        }
+        else {
+          $name = $all_identifiers[$object->identifier];
+        }
+
+        if ($tree) {
           $return[$object->component][$object->identifier] = array(
             'hash' => $object->hash,
-            'name' => $all_identifiers[$object->identifier],
+            'name' => $name,
           );
         }
         else {
           $return[$object->component . '.' . $object->identifier] = array(
             'hash' => $object->hash,
-            'name' => $all_identifiers[$object->identifier],
+            'name' => $name,
           );
         }
       }

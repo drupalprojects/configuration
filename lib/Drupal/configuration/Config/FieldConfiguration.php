@@ -122,6 +122,9 @@ class FieldConfiguration extends Configuration {
    */
   protected function prepareBuild() {
     $this->data = $this->field_load($this->identifier);
+    if (empty($this->data)) {
+      $this->data = NULL;
+    }
     return $this;
   }
 
