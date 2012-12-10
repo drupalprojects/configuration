@@ -85,8 +85,11 @@ function configuration_import_directory($path, $enable_modules = TRUE, $include_
     }
   }
 
-  $result = ConfigurationManagement::importToActiveStore($configurations, $include_dependencies, $include_optionals, $start_tracking, $path);
+  $result = ConfigurationManagement::importToActiveStore($configurations, $include_dependencies, $include_optionals, FALSE, $path);
   $imported = $result->getInfo('imported');
+  if ($start_tracking) {
+    $tracked = ConfigurationManagement::startTracking($configurations, $include_dependencies, $include_optionals);
+  }
   if (is_array($imported) && count($imported) > 0) {
     return $imported;
   }

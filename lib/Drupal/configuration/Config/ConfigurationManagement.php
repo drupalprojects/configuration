@@ -28,7 +28,13 @@ class ConfigurationManagement {
    * @return string
    */
   public static function getStream() {
-    return static::$stream;
+    $temp_stream = static::$stream;
+    // During the install process strema wrappers are to available so this is
+    // a work around.
+    if (!file_stream_wrapper_get_instance_by_uri($temp_stream)) {
+      $temp_stream = variable_get('configuration_config_path', conf_path() . '/files/config/');
+    }
+    return $temp_stream;
   }
 
   /**
