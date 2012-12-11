@@ -13,6 +13,7 @@ function configuration_ui_permission() {
     'administer configuration management' => array(
       'title' => t('Administer Configuration Management'),
       'description' => t('Allow to export, import, start and stop tracking configurations.'),
+      'restrict access' => TRUE,
     ),
   );
 }
