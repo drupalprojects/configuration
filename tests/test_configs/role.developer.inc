@@ -4,6 +4,8 @@
  * role.developer.inc
  */
 
+$api = '2.0.0';
+
 $data = (object) array(
   'name' => 'Developer',
   'weight' => '4',

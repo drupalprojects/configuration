@@ -4,6 +4,8 @@
  * vocabulary.tags.inc
  */
 
+$api = '2.0.0';
+
 $data = (object) array(
   'name' => 'Tags',
   'machine_name' => 'tags',

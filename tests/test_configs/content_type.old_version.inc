@@ -1,13 +1,13 @@
 <?php
 /**
  * @file
- * content_type.test.inc
+ * content_type.old_version.inc
  */
 
-$api = '2.0.0';
+$api = '1.0.0';
 
 $data = (object) array(
-  'type' => 'test',
+  'type' => 'old_version',
   'name' => 'Test',
   'description' => 'Content type description.',
   'has_title' => '1',

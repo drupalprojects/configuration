@@ -25,7 +25,8 @@ class StorageCtools extends StoragePHP {
   public function getDataToSave() {
     $filename = $this->filename;
     ctools_include('export');
-    $export = '$data = ' . ctools_export_crud_export($this->table, $this->data) . "\n\n";
+    $export = '$api = ' . $this->export($this->api_version) . ";\n\n";
+    $export .= '$data = ' . ctools_export_crud_export($this->table, $this->data) . "\n\n";
     $export .= '$dependencies = ' . $this->export($this->dependencies) . ";\n\n";
     $export .= '$optional = ' . $this->export($this->optional_configurations) . ";\n\n";
     $export .= '$modules = ' . $this->export($this->required_modules) . ";";

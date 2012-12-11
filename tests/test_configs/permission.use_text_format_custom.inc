@@ -4,6 +4,8 @@
  * permission.use_text_format_custom.inc
  */
 
+$api = '2.0.0';
+
 $data = array(
   'permission' => 'use text format custom',
   'roles' => array(

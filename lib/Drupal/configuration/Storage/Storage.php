@@ -18,6 +18,8 @@ class Storage {
 
   protected $required_modules;
 
+  protected $api_version;
+
   protected $filename;
 
   protected $loaded;
@@ -73,6 +75,7 @@ class Storage {
     $this->dependencies = array();
     $this->optional_configurations = array();
     $this->data = NULL;
+    $this->api_version = '0.0.0';
   }
 
   public function export($var, $prefix = '') { }
@@ -157,6 +160,15 @@ class Storage {
   public function setModules($modules) {
     $this->required_modules = $modules;
     return $this;
+  }
+
+  public function setApiVersion($api_version) {
+    $this->api_version = $api_version;
+    return $this;
+  }
+
+  public function getApiVersion() {
+    return $this->api_version;
   }
 
   public function checkForChanges($object) {

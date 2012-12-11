@@ -314,10 +314,16 @@ function configuration_ui_activate_form_submit($form, &$form_state) {
   $revert_dependencies = $form_state['values']['include_dependencies'];
   $revert_optionals = $form_state['values']['include_optionals'];
   $result = ConfigurationManagement::importToActiveStore($args, $revert_dependencies, $revert_optionals);
-  $configurations = $result->getInfo('imported');
-  if (!empty($configurations)) {
-    foreach ($configurations as $configuration) {
+  $imported_configurations = $result->getInfo('imported');
+  if (!empty($imported_configurations)) {
+    foreach ($imported_configurations as $configuration) {
       drupal_set_message(t('Reverted @configuration.', array('@configuration' => $configuration)));
+    }
+  }
+  $non_imported_configurations =  $result->getInfo('fail');
+  if (!empty($non_imported_configurations)) {
+    foreach ($non_imported_configurations as $configuration) {
+      drupal_set_message(t('@configuration could not be imported.', array('@configuration' => $configuration)), 'error');
     }
   }
 }
@@ -334,7 +340,7 @@ function configuration_ui_stop_tracking_form_submit($form, &$form_state) {
   $configurations = $result->getInfo('untracked');
   if (!empty($configurations)) {
     foreach ($configurations as $configuration) {
-      drupal_set_message(t('Untracked @configuration.', array('@configuration' => $configuration)));
+      drupal_set_message(t('Untracked @configuration', array('@configuration' => $configuration)));
     }
   }
 }

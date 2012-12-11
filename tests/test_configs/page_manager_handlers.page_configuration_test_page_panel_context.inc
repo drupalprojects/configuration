@@ -4,6 +4,8 @@
  * page_manager_handlers.page_configuration_test_page_panel_context.inc
  */
 
+$api = '2.0.0';
+
 $data = $handler = new stdClass();
 $handler->disabled = FALSE; /* Edit this to true to make a default handler disabled initially */
 $handler->api_version = 1;

@@ -4,6 +4,8 @@
  * variable.comment_preview_article.inc
  */
 
+$api = '2.0.0';
+
 $data = array(
   'name' => 'comment_preview_article',
   'content' => '1',

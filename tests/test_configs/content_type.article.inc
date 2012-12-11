@@ -4,6 +4,8 @@
  * content_type.article.inc
  */
 
+$api = '2.0.0';
+
 $data = (object) array(
   'type' => 'article',
   'name' => 'Article',

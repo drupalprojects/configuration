@@ -4,6 +4,8 @@
  * field.node.body.article.inc
  */
 
+$api = '2.0.0';
+
 $data = array(
   'field_config' => array(
     'entity_types' => array(

@@ -4,6 +4,8 @@
  * field.node.field_tags.article.inc
  */
 
+$api = '2.0.0';
+
 $data = array(
   'field_config' => array(
     'settings' => array(

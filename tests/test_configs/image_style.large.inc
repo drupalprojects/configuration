@@ -4,6 +4,8 @@
  * image_style.large.inc
  */
 
+$api = '2.0.0';
+
 $data = array(
   'effects' => array(
     0 => array(

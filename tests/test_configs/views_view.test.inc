@@ -4,6 +4,8 @@
  * views_view.test.inc
  */
 
+$api = '2.0.0';
+
 $data = $view = new view();
 $view->name = 'test';
 $view->description = '';

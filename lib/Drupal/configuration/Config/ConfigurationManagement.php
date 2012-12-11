@@ -15,11 +15,30 @@ use Drupal\configuration\Storage\Storage;
 class ConfigurationManagement {
 
   /**
+   * Constant used to indicate the api version of Configuration Management.
+   */
+  const api = '2.0.0';
+
+  /**
    * The stream to use while importing and exporting configurations.
    *
    * @var string
    */
   static protected $stream = 'config://';
+
+  /**
+   * Returns TRUE if the minimun
+   *
+   * @param $minimum
+   *   The version of the api of the current configuration.
+   *
+   * @return  boolean
+   *   Rerturns TRUE if the current version of Configuration Management
+   *   installed can handle the configuration.
+   */
+  static public function validApiVersion($config_version) {
+    return (version_compare($config_version, ConfigurationManagement::api) >= 0);
+  }
 
   /**
    * Returns the current stream used to import and export configurations.
@@ -262,6 +281,7 @@ class ConfigurationManagement {
         ),
         'info' => array(
           'imported' => array(),
+          'fail' => array(),
         )
       )
     );

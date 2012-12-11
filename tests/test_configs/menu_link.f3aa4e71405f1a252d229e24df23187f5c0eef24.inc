@@ -4,6 +4,8 @@
  * menu_link.f3aa4e71405f1a252d229e24df23187f5c0eef24.inc
  */
 
+$api = '2.0.0';
+
 $data = array(
   'link_path' => 'admin/config',
   'link_title' => 'Level three',

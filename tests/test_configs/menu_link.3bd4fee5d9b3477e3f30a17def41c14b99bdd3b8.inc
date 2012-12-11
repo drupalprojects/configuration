@@ -4,6 +4,8 @@
  * menu_link.3bd4fee5d9b3477e3f30a17def41c14b99bdd3b8.inc
  */
 
+$api = '2.0.0';
+
 $data = array(
   'link_path' => 'admin/content',
   'link_title' => 'Level two',

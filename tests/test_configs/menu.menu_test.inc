@@ -4,6 +4,8 @@
  * menu.menu_test.inc
  */
 
+$api = '2.0.0';
+
 $data = array(
   'menu_name' => 'menu-test',
   'title' => 'Test',

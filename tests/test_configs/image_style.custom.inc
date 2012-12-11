@@ -4,6 +4,8 @@
  * image_style.custom.inc
  */
 
+$api = '2.0.0';
+
 $data = array(
   'name' => 'custom',
   'effects' => array(

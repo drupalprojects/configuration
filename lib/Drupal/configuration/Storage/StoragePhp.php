@@ -54,10 +54,11 @@ class StoragePhp extends Storage {
 
   public function import($file_content) {
     @eval($file_content);
-    $this->data = $data;
-    $this->dependencies = $dependencies;
-    $this->optional_configurations = $optional;
-    $this->required_modules = $modules;
+    $this->data = isset($data) ? $data : NULL;
+    $this->dependencies = isset($dependencies) ? $dependencies : array();
+    $this->optional_configurations = isset($optional) ? $optional : array();
+    $this->required_modules = isset($modules) ? $modules : array();
+    $this->api_version = isset($api) ? $api : '0';
     return $this;
   }
 
@@ -89,7 +90,8 @@ class StoragePhp extends Storage {
       $data_to_export = $this->data;
     }
 
-    $export = '$data = ' . $this->export($data_to_export) . ";\n\n";
+    $export = '$api = ' . $this->export($this->api_version) . ";\n\n";
+    $export .= '$data = ' . $this->export($data_to_export) . ";\n\n";
     $export .= '$dependencies = ' . $this->export($this->dependencies) . ";\n\n";
     $export .= '$optional = ' . $this->export($this->optional_configurations) . ";\n\n";
     $export .= '$modules = ' . $this->export($this->required_modules) . ";";

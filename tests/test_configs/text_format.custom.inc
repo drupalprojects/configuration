@@ -4,6 +4,8 @@
  * text_format.custom.inc
  */
 
+$api = '2.0.0';
+
 $data = (object) array(
   'format' => 'custom',
   'name' => 'Custom',

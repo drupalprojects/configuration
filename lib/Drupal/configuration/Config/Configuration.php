@@ -49,7 +49,6 @@ abstract class Configuration {
    */
   const moduleInstalled = 0x0102;
 
-
   /**
    * The identifier that identifies to the component, usually the machine name.
    */
@@ -219,6 +218,15 @@ abstract class Configuration {
     }
 
     $this->storage->load(NULL, $source);
+
+    // Check if thereis a context defined, then we are iterating.
+    if (isset($this->context)) {
+      // Check that this configuration is supported by Configuration Management
+      if (!ConfigurationManagement::validApiVersion($this->storage->getApiVersion())) {
+        $this->broken = TRUE;
+        return $this;
+      }
+    }
     $this->setData($this->storage->getData());
     $this->setDependencies($this->storage->getDependencies());
     $this->setOptionalConfigurations($this->storage->getOptionalConfigurations());
@@ -318,10 +326,15 @@ abstract class Configuration {
    */
   public function import(ConfigIteratorSettings &$settings) {
     $this->loadFromStorage();
-    $this->saveToActiveStore($settings);
+    if ($this->isBroken()) {
+      $settings->addInfo('fail', $this->getUniqueId());
+    }
+    else {
+      $this->saveToActiveStore($settings);
 
-    if ($settings->getSetting('start_tracking')) {
-      $this->startTracking();
+      if ($settings->getSetting('start_tracking')) {
+        $this->startTracking();
+      }
     }
   }
 
@@ -339,6 +352,7 @@ abstract class Configuration {
 
     // Save the configuration into a file.
     $this->storage
+            ->setApiVersion(ConfigurationManagement::api)
             ->setData($this->data)
             ->setKeysToExport($this->getKeysToExport())
             ->setDependencies(drupal_map_assoc(array_keys($this->getDependencies())))
@@ -361,6 +375,13 @@ abstract class Configuration {
    * it into the $data attribute.
    */
   abstract protected function prepareBuild();
+
+  /**
+   * Return TRUE if something went wrong with the load of the configuration.
+   */
+  public function isBroken() {
+    return $this->broken;
+  }
 
   /**
    * Build the configuration object based on the component name and
@@ -397,6 +418,7 @@ abstract class Configuration {
       return $this;
     }
     $this->storage
+        ->setApiVersion(ConfigurationManagement::api)
         ->setData($this->data)
         ->setKeysToExport($this->getKeysToExport())
         ->setDependencies(drupal_map_assoc(array_keys($this->getDependencies())))
@@ -744,6 +766,7 @@ abstract class Configuration {
   public function raw() {
     // Save the configuration into a file.
     $file_content = $this->storage
+                      ->setApiVersion(ConfigurationManagement::api)
                       ->setData($this->data)
                       ->setKeysToExport($this->getKeysToExport())
                       ->setDependencies(drupal_map_assoc(array_keys($this->getDependencies())))
