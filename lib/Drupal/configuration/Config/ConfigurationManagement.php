@@ -118,28 +118,13 @@ class ConfigurationManagement {
    * Returns a list of modules required to import the configurations indicated
    * in $list.
    *
-   * @param  array   $list
-   *   The list of components that have to will be imported.
-   * @param  boolean $include_dependencies
-   *   If TRUE, modules required to load the dependencies of each configuration
-   *   dependency will be returned too.
-   * @param  boolean $include_optionals
-   *   If TRUE, modules required to load the optionals configurations of each
-   *   configuration will be returned too.
-   * @return ConfigIteratorSettings
-   *   A ConfigIteratorSettings object that contains the required modules to
-   *   install and the modules missing.
+   * @param  array  $modules
+   *   The list of modules that are listed in the tracked.inc file.
    */
-  static public function discoverRequiredModules($list = array(), $include_dependencies = TRUE, $include_optionals = TRUE, $source = NULL) {
+  static public function discoverRequiredModules($modules) {
+
     $settings = new ConfigIteratorSettings(
       array(
-        'build_callback' => 'loadFromStorage',
-        'callback' => 'discoverModules',
-        'process_dependencies' => $include_dependencies,
-        'process_optionals' => $include_optionals,
-        'settings' => array(
-          'source' => $source,
-        ),
         'info' => array(
           'modules' => array(),
           'modules_missing' => array(),
@@ -147,21 +132,15 @@ class ConfigurationManagement {
         )
       )
     );
-    foreach ($list as $component) {
-      list($component_name, $identifier) = explode('.', $component, 2);
-      $handler = static::getConfigurationHandler($component_name, TRUE);
-      $config = static::createConfigurationInstance($component);
 
-      // Make sure the object is built before start to iterate on its
-      // dependencies.
-      $config->setContext($settings);
-      $config->loadFromStorage();
-      $config->iterate($settings);
+    $stack = array();
+    foreach ($modules as $module) {
+      Configuration::getDependentModules($module, $stack);
     }
 
     $missing = array();
     $to_install = array();
-    foreach ($settings->getInfo('modules') as $module_name => $status) {
+    foreach ($stack as $module_name => $status) {
       if ($status == Configuration::moduleMissing) {
         $missing[] = $module_name;
       }
@@ -282,20 +261,29 @@ class ConfigurationManagement {
         'info' => array(
           'imported' => array(),
           'fail' => array(),
+          'no_handler' => array(),
         )
       )
     );
 
     module_invoke_all('configuration_pre_import', $settings);
 
-    foreach ($list as $component) {
-      $config = static::createConfigurationInstance($component);
+    $handlers = static::getConfigurationHandler();
 
-      // Make sure the object is built before start to iterate on its
-      // dependencies.
-      $config->setContext($settings);
-      $config->loadFromStorage();
-      $config->iterate($settings);
+    foreach ($list as $component) {
+      $part = explode('.', $component, 2);
+      if (empty($handlers[$part[0]])) {
+        $settings->addInfo('no_handler', $part[0]);
+      }
+      else {
+        $config = static::createConfigurationInstance($component);
+
+        // Make sure the object is built before start to iterate on its
+        // dependencies.
+        $config->setContext($settings);
+        $config->loadFromStorage();
+        $config->iterate($settings);
+      }
     }
 
     drupal_flush_all_caches();
@@ -336,6 +324,7 @@ class ConfigurationManagement {
           'start_tracking' => $start_tracking,
         ),
         'info' => array(
+          'modules' => array(),
           'exported' => array(),
           'hash' => array(),
         )
@@ -355,7 +344,7 @@ class ConfigurationManagement {
     }
 
     if ($start_tracking) {
-      static::updateTrackingFile();
+      static::updateTrackingFile($settings->getInfo('modules'));
     }
 
     module_invoke_all('configuration_post_export', $settings);
@@ -524,7 +513,7 @@ class ConfigurationManagement {
    * This function save into config://tracked.inc file the configurations that
    * are currently tracked.
    */
-  static public function updateTrackingFile() {
+  static public function updateTrackingFile($modules = array()) {
     $tracked = static::trackedConfigurations();
 
     $file = array();
@@ -536,6 +525,12 @@ class ConfigurationManagement {
     $file_content = "<?php\n\n";
     $file_content .= "// This file contains the current being tracked configurations.\n\n";
     $file_content .= '$tracked = ' . var_export($file, TRUE) . ";\n";
+    $file_content .= "\n\n// The following modules are required to run the configurations of this file.\n\n";
+    $file_content .= "\$modules = array(\n";
+    foreach (array_unique($modules) as $module) {
+      $file_content .= "  '$module',\n";
+    }
+    $file_content .= ");\n";
     if (Storage::checkFilePermissions('tracked.inc')) {
       file_put_contents(static::getStream() . 'tracked.inc', $file_content);
     }
@@ -548,7 +543,10 @@ class ConfigurationManagement {
     if (file_exists(static::getStream() . 'tracked.inc')) {
       $file_content = drupal_substr(file_get_contents(static::getStream() . 'tracked.inc'), 6);
       @eval($file_content);
-      return $tracked;
+      return array(
+        'tracked' => $tracked,
+        'modules' => $modules,
+      );
     }
     return array();
   }
@@ -581,11 +579,13 @@ class ConfigurationManagement {
     $archive->extract(drupal_realpath($config_temp_path));
 
     $file_content = drupal_substr(file_get_contents($config_temp_path . '/configuration/configurations.inc'), 6);
+
     @eval($file_content);
 
     $source = $config_temp_path . '/configuration/';
 
-    $modules_results = ConfigurationManagement::discoverRequiredModules($configurations, FALSE, FALSE, $source);
+    $modules_results = ConfigurationManagement::discoverRequiredModules($modules);
+
     $missing_modules = $modules_results->getInfo('missing_modules');
 
     if (!empty($missing_modules)) {
@@ -594,9 +594,8 @@ class ConfigurationManagement {
     }
     else {
       $modules_to_install = $modules_results->getInfo('modules_to_install');
-      drupal_set_message(t('The following will be enabled: %modules', array('%modules' => implode(', ', $modules_to_install))));
       if (!empty($modules_to_install)) {
-        module_enable($modules_to_install, FALSE);
+        module_enable($modules_to_install, TRUE);
         drupal_set_message(t('The following modules have been enabled: %modules', array('%modules' => implode(', ', $modules_to_install))));
         drupal_flush_all_caches();
       }
@@ -624,6 +623,7 @@ class ConfigurationManagement {
           'exported' => array(),
           'exported_files' => array(),
           'hash' => array(),
+          'modules' => array(),
         ),
         'settings' => array(
           'format' => 'tar',
@@ -663,6 +663,11 @@ class ConfigurationManagement {
     $file_content .= "\$configurations = array(\n";
     foreach ($exported as $config) {
       $file_content .= "  '$config',\n";
+    }
+    $file_content .= ");\n\n";
+    $file_content .= "\$modules = array(\n";
+    foreach (array_unique($settings->getInfo('modules')) as $module) {
+      $file_content .= "  '$module',\n";
     }
     $file_content .= ");\n";
 

@@ -142,7 +142,8 @@ abstract class ConfigurationHandlerBaseTestCase extends ConfigurationWebTestCase
 
       $this->assertTrue(!empty($object), "Config $config was suscessfully tracked.");
       $verbose .= "This is the content of the tracked.inc file: \n";
-      foreach (ConfigurationManagement::readTrackingFile() as $config_id => $tracked_hash) {
+      $traking_file = ConfigurationManagement::readTrackingFile();
+      foreach ($traking_file as $config_id => $tracked_hash) {
         $verbose .= "\$tracked_hash[$config_id] = $tracked_hash\n";
       }
 

@@ -281,7 +281,6 @@ abstract class Configuration {
    * @see iterate()
    */
   protected function discoverModules(ConfigIteratorSettings &$settings) {
-    $this->loadFromStorage();
     $modules = $settings->getInfo('modules');
     $modules = array_merge($modules, $this->getRequiredModules());
     $settings->setInfo('modules', $modules);
@@ -350,6 +349,8 @@ abstract class Configuration {
   public function export(ConfigIteratorSettings &$settings) {
     $this->build();
 
+    $modules = array_keys($this->getRequiredModules());
+
     // Save the configuration into a file.
     $this->storage
             ->setApiVersion(ConfigurationManagement::api)
@@ -357,7 +358,7 @@ abstract class Configuration {
             ->setKeysToExport($this->getKeysToExport())
             ->setDependencies(drupal_map_assoc(array_keys($this->getDependencies())))
             ->setOptionalConfigurations(drupal_map_assoc(array_keys($this->getOptionalConfigurations())))
-            ->setModules(array_keys($this->getRequiredModules()))
+            ->setModules($modules)
             ->save();
 
     if ($settings->getSetting('start_tracking')) {
@@ -366,6 +367,9 @@ abstract class Configuration {
       $this->startTracking();
     }
 
+    foreach ($modules as $module) {
+      $settings->addInfo('modules', $module);
+    }
     // Add the current config as an exported item
     $settings->addInfo('exported', $this->getUniqueId());
   }
@@ -442,7 +446,8 @@ abstract class Configuration {
     if ($this->broken) {
       return $human_name ? t('Removed from ActiveStore') : 0;
     }
-    $tracked = ConfigurationManagement::readTrackingFile();
+    $tracking_file = ConfigurationManagement::readTrackingFile();
+    $tracked = $tracking_file['tracked'];
     if (isset($tracked[$this->getUniqueId()])) {
       $file_hash = $tracked[$this->getUniqueId()];
     }
@@ -707,7 +712,7 @@ abstract class Configuration {
   public function getRequiredModules() {
     $stack = array();
     foreach ($this->getModules() as $module) {
-      $this->getDependentModules($module, $stack);
+      static::getDependentModules($module, $stack);
     }
     return $stack;
   }
@@ -715,7 +720,7 @@ abstract class Configuration {
   /**
    * Determine the status of the given module and of its dependencies.
    */
-  protected function getDependentModules($module, &$stack) {
+  static public function getDependentModules($module, &$stack) {
     $available_modules = static::getAvailableModules();
     if (!isset($available_modules[$module])) {
       $stack[$module] = Configuration::moduleMissing;
@@ -726,7 +731,7 @@ abstract class Configuration {
         $stack[$module] = Configuration::moduleToInstall;
         foreach ($available_modules[$module]->requires as $required_module) {
           if (empty($stack[$required_module['name']])) {
-            $this->getDependentModules($required_module['name'], $stack);
+            static::getDependentModules($required_module['name'], $stack);
           }
         }
       }
@@ -739,7 +744,7 @@ abstract class Configuration {
   /**
    * Helper for retrieving info from system table.
    */
-  protected function getAvailableModules($reset = FALSE) {
+  static protected function getAvailableModules($reset = FALSE) {
     static $modules;
 
     if (!isset($modules)) {
@@ -785,12 +790,14 @@ abstract class Configuration {
   protected function printRaw(ConfigIteratorSettings &$settings) {
     $this->build();
 
-
     $this->buildHash();
     $settings->addInfo('hash', $this->getHash());
 
     $file_name = $this->storage->getFileName() ;
     $settings->addInfo('exported', $this->getUniqueId());
+    foreach ($this->getRequiredModules() as $module => $status) {
+      $settings->addInfo('modules', $module);
+    }
     $settings->addInfo('exported_files', $file_name);
 
     if ($settings->getSetting('format') == 'tar') {

@@ -297,19 +297,4 @@ class ConfigurationDiscoverModulesTestCase extends ConfigurationWebTestCase {
     );
   }
 
-  public function testDiscoverRequiredModules() {
-    $source = drupal_get_path('module', 'configuration') . '/tests/test_configs/';
-
-    $results = ConfigurationManagement::discoverRequiredModules(array('content_type.article'), TRUE, TRUE, $source);
-
-    $modules_to_install = $results->getInfo('modules_to_install');
-
-    $this->assertTrue(in_array('taxonomy', $modules_to_install), 'Taxonomy module have to be installed');
-    $this->assertTrue(in_array('file', $modules_to_install), 'File module have to be installed');
-    $this->assertTrue(in_array('image', $modules_to_install), 'Image module have to be installed');
-    $this->assertTrue(in_array('options', $modules_to_install), 'Options module have to be installed');
-
-    $missing_modules = $results->getInfo('missing_modules');
-    $this->assertTrue(empty($missing_modules), 'There are not missing modules');
-  }
 }

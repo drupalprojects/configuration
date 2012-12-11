@@ -683,8 +683,9 @@ function configuration_ui_validate_settings($form, &$form_state) {
 }
 
 function configuration_sync_configurations_submit($form, &$form_state) {
-  $to_track = array_keys(ConfigurationManagement::readTrackingFile());
-  $modules_results = ConfigurationManagement::discoverRequiredModules($to_track, FALSE, FALSE);
+  $tracking_file = ConfigurationManagement::readTrackingFile();
+  $to_track = array_keys($tracking_file['tracked']);
+  $modules_results = ConfigurationManagement::discoverRequiredModules($tracking_file['modules']);
 
   $missing_modules = $modules_results->getInfo('missing_modules');
 
@@ -722,5 +723,8 @@ function configuration_sync_configurations_submit($form, &$form_state) {
   $results = ConfigurationManagement::importToActiveStore($to_track, FALSE, FALSE, TRUE);
   foreach ($results->getInfo('imported') as $imported) {
     drupal_set_message(t('Imported %config', array('%config' => $imported)));
+  }
+  foreach ($results->getInfo('no_handler') as $failed) {
+    drupal_set_message(t('%config could be imported because there is no module that can handle that configuration.', array('%config' => $failed)));
   }
 }

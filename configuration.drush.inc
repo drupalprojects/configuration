@@ -21,10 +21,10 @@ function configuration_drush_help($section) {
       return dt("Return the list of configurations components that are tracked.");
     case 'drush:cgnt':
       return dt("Return the list of configurations components that are not tracked.");
-    case 'drush:cimp':
-      return dt("Import configurations into the Active Store.");
     case 'drush:cexp':
       return dt("Export a configuration to the Data Store.");
+    case 'drush:csyn':
+      return dt("Syncronize configurations based on config://tracked.inc.");
     case 'drush:csta':
       return dt("Start tracking a configuration changes.");
     case 'drush:csto':
@@ -74,26 +74,6 @@ function configuration_drush_command() {
     'aliases' => array('cgnt'),
     'examples' => array(
       'drush cgnt' => 'Return the list of configurations components that are not tracked.',
-    ),
-    'arguments' => array(),
-  );
-  $items['config-import'] = array(
-    'callback' => '_configuration_import_configurations',
-    'description' => 'Import a configuration to the active store.',
-    'aliases' => array('cimp'),
-    'examples' => array(
-      'drush cimp' => 'Loads all the files that have configurations into the ActiveStore',
-      'drush cimp content_type.article variable.theme_settings' => 'Loads the configurations for content type Article and the variable theme_settings into the ActiveStore',
-      'drush cimp --dir=%site/myconfig' => 'Loads the configurations from drupal/sites/example.com/myconfig',
-      'drush cimp --dir=myconfig' => 'Loads the configurations from drupal/myconfig',
-      'drush cimp --dir=/path/to/myconfig' => 'Loads the configurations from /path/to/myconfig',
-    ),
-    'options' => array(
-      'all' => 'import all components',
-      'dir' => 'import all the configurations from a given directory.',
-      'exclude-dependencies' => 'Import a configuration without import its dependencies.',
-      'exclude-optionals' => 'Import a configuration without import its optional configurations.',
-      'start-tracking' => 'Import a configuration and automatically start to tracking it.',
     ),
     'arguments' => array(),
   );
@@ -150,6 +130,22 @@ function configuration_drush_command() {
     'aliases' => array('clist'),
     'examples' => array(
       'drush clist' => 'Return the list of components and identifiers',
+    ),
+  );
+  $items['config-sync'] = array(
+    'callback' => '_configuration_sync',
+    'description' => 'Syncronize configurations',
+    'aliases' => array('csyn'),
+    'examples' => array(
+      'drush config-sync' => 'Enable all the required modules and the configurations defined in tracked.inc',
+      'drush config-sync --preserve-tracked' => 'Will keep tracking the previous configurations even if they are not listed in the tracked.inc',
+      'drush csyn --source=%site/myconfig' => 'Syncronize configurations from drupal/sites/example.com/myconfig/tracked.inc',
+      'drush csyn --source=myconfig' => 'Syncronize configurations from drupal/myconfig/tracked.inc',
+      'drush csyn --source=/path/to/myconfig' => 'Syncronize configurations from /path/to/myconfig/tracked.inc',
+    ),
+    'options' => array(
+      'source' => 'import all the configurations from a given directory.',
+      'preserve-tracked' => 'By default, all configurations that are not listed on the tracked.inc file are automatically untracked. Using this options avoid remove the already being tracked configurations.',
     ),
   );
   return $items;
@@ -421,89 +417,49 @@ function _configuration_stop_tracking() {
   }
 }
 
-function _configuration_import_configurations() {
-  $import_all = drush_get_option('all');
-  $args = array();
-  if (!empty($import_all)) {
-    $args = array_keys(ConfigurationManagement::trackedConfigurations(FALSE));
-  }
-  elseif ($dir = drush_get_option('dir')) {
-    $options = array();
-    $path = drush_sitealias_evaluate_path($dir, $options);
-    if (is_dir($path['evaluated-path'])) {
-      $handlers = ConfigurationManagement::getConfigurationHandler();
-      foreach ($handlers as $component => $handler) {
-        $args += $handler::scanDataStore($component, $path['evaluated-path']);
-      }
-    }
-    else {
-      drush_die($dir . ' is not a directory or cannot be accessed.');
-    }
+function _configuration_sync() {
+  $tracking_file = ConfigurationManagement::readTrackingFile();
+  $to_track = array_keys($tracking_file['tracked']);
+  $modules_results = ConfigurationManagement::discoverRequiredModules($tracking_file['modules']);
+
+  $missing_modules = $modules_results->getInfo('missing_modules');
+
+  if (!empty($missing_modules)) {
+    drush_log(dt('Configurations cannot be syncronized because the following modules are not available to install: %modules', array('%modules' => implode(', ', $missing_modules))), 'error');
+    $error = TRUE;
   }
   else {
-    $args = func_get_args();
-  }
-  if (!empty($args)) {
-    _configuration_import_load_configurations('import', $args);
-  }
-  else {
-    drush_die('There are not configurations to import.');
-  }
-}
-
-function _configuration_import_load_configurations($action, $args) {
-
-  if (!drush_confirm(dt('Are you sure you want to import this configurations? This will override the configurations of the ActiveStore'))) {
-    drush_die('Aborting.');
-  }
-
-  if (drush_get_option(array('skip-enable-modules'), FALSE)) {
-    ConfigurationManagement::importToActiveStore($args);
-  }
-  else {
-    $import_dependencies = !drush_get_option('exclude-dependencies');
-    $import_optionals = !drush_get_option('exclude-optionals');
-    $start_tracking = drush_get_option('start-tracking');
-    $settings = ConfigurationManagement::discoverRequiredModules($args, $import_dependencies, $import_optionals);
-
-    $missing = $settings->getInfo('modules_missing');
-    $to_install = $settings->getInfo('modules_to_install');
-
-    if (count($missing)) {
-      drush_set_error('', dt('Missing required modules. None configuration was processed.'));
-      drush_set_error('', dt('The following modules are required to @action the configurations but are not available to install: !modules', array('@action' => $action, '!modules' => implode(', ', $missing))));
-      drush_die('Aborting.');
+    $modules_to_install = $modules_results->getInfo('modules_to_install');
+    drush_log(dt('The following will be enabled: %modules', array('%modules' => implode(', ', $modules_to_install))));
+    if (!empty($modules_to_install)) {
+      module_enable($modules_to_install, FALSE);
+      drush_log(dt('The following modules have been enabled: %modules', array('%modules' => implode(', ', $modules_to_install))));
     }
-    else {
-      if (count($to_install)) {
-        drush_print(dt('The following modules will be installed in order to @action the configurations:', array('@action' => $action)));
-        drush_print(implode(', ', $to_install));
-        if (!drush_confirm(dt('Do you really want to continue?'))) {
-          drush_die('Aborting.');
-        }
 
-        module_enable($to_install);
-        foreach ($to_install as $module) {
-          drush_log(dt('Installed @module.', array('@module' => $module)), 'ok');
-        }
-        drupal_flush_all_caches();
-      }
+  }
 
-      $import_results = ConfigurationManagement::importToActiveStore($args, $import_dependencies, $import_optionals, $start_tracking);
-      $rows = array();
-      foreach ($import_results->getInfo('imported') as $imported) {
-        $rows[]['identifier'] = $imported;
-      }
+  // If we have to stop stracking some configurations, figure out which
+  // configurations have to be untracked.
+  if (drush_get_option('preserve-tracked')) {
 
-      if ($action == 'import') {
-        drush_log(dt('The configurations for the following items have been imported.'), 'ok');
-      }
-      else {
-        drush_log(dt('The configurations for the following items have been loaded.'), 'ok');
-      }
-      drush_print_table($rows);
+    $being_tracked = array_keys(ConfigurationManagement::trackedConfigurations(FALSE));
 
-      drupal_flush_all_caches();
+    $to_untrack = array_diff($being_tracked, $to_track);
+
+    $un_track_results = ConfigurationManagement::stopTracking($to_untrack, TRUE, TRUE);
+
+    if (count($un_track_results->getInfo('untracked'))) {
+      foreach ($un_track_results->getInfo('untracked') as $untracked_config) {
+        drush_log(dt('Untracked %config', array('%config' => $untracked_config)));
+      }
     }
+  }
+
+  $results = ConfigurationManagement::importToActiveStore($to_track, FALSE, FALSE, TRUE);
+  foreach ($results->getInfo('imported') as $imported) {
+    drush_log(dt('Imported !config', array('!config' => $imported)), 'ok');
+  }
+  foreach ($results->getInfo('no_handler') as $failed) {
+    drush_log(dt('!config could be imported because there is no module that can handle that configuration.', array('!config' => $failed)), 'error');
   }
 }
