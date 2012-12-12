@@ -72,7 +72,7 @@ function configuration_import_directory($path, $enable_modules = TRUE, $include_
   @eval($file_content);
 
   if ($enable_modules) {
-    $settings = ConfigurationManagement::discoverRequiredModules($configurations, $include_dependencies, $include_optionals, $path);
+    $settings = ConfigurationManagement::discoverRequiredModules($modules);
     $missing = $settings->getInfo('modules_missing');
     if (count($missing)) {
       $missing = implode(', ', $missing);
