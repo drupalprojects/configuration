@@ -148,8 +148,8 @@ class ConfigurationManagement {
         $to_install[] = $module_name;
       }
     }
-    $settings->setInfo('modules_to_install', array_unique($to_install));
-    $settings->setInfo('modules_missing', array_unique($missing));
+    $settings->setInfo('modules_to_install', array_filter(array_unique($to_install)));
+    $settings->setInfo('modules_missing', array_filter(array_unique($missing)));
 
     return $settings;
   }
@@ -586,11 +586,12 @@ class ConfigurationManagement {
 
     $modules_results = ConfigurationManagement::discoverRequiredModules($modules);
 
-    $missing_modules = $modules_results->getInfo('missing_modules');
+    $missing_modules = $modules_results->getInfo('modules_missing');
 
+    $error = FALSE;
     if (!empty($missing_modules)) {
       drupal_set_message(t('Configurations cannot be syncronized because the following modules are not available to install: %modules', array('%modules' => implode(', ', $missing_modules))), 'error');
-      return;
+      return $modules_results;
     }
     else {
       $modules_to_install = $modules_results->getInfo('modules_to_install');

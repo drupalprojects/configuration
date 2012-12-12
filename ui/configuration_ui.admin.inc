@@ -601,9 +601,12 @@ function configuration_ui_import_form_submit($form, &$form_state) {
     $settings = ConfigurationManagement::importToActiveStoreFromTar($file->uri);
 
     file_delete($file);
-    drupal_set_message(t('The following configurations have been migrated into the ActiveStore:'));
-    $imported = $optionals = array('items' => $settings->getInfo('imported'));
-    drupal_set_message(filter_xss(theme('item_list', $imported), array('ul', 'li')));
+    $imported = $settings->getInfo('imported');
+    if (!empty($imported)) {
+      drupal_set_message(t('The following configurations have been migrated into the ActiveStore:'));
+      $imported = $optionals = array('items' => $imported);
+      drupal_set_message(filter_xss(theme('item_list', $imported), array('ul', 'li')));
+    }
   }
 }
 
