@@ -8,6 +8,7 @@
 namespace Drupal\configuration\Config;
 
 use Drupal\configuration\Config\CtoolsConfiguration;
+use Drupal\configuration\Utils\ConfigIteratorSettings;
 
 class PageManagerHandlerConfiguration extends CtoolsConfiguration {
 
@@ -54,6 +55,24 @@ class PageManagerHandlerConfiguration extends CtoolsConfiguration {
         $stack[$id] = TRUE;
       }
     }
+  }
+
+  /**
+   * Implements Drupal\configuration\Config\Configuration::saveToActiveStore().
+   */
+  public function saveToActiveStore(ConfigIteratorSettings &$settings) {
+    ctools_include('export');
+    $object = ctools_export_crud_load($this->getComponent(), $this->getIdentifier());
+    if ($object) {
+      ctools_export_crud_delete($this->getComponent(), $object);
+    }
+    $data = $this->getData();
+    $data->export_type = NULL;
+    panels_save_display($data->conf['display']);
+    $data->conf['did'] = $data->conf['display']->did;
+    unset($data->conf['display']);
+    ctools_export_crud_save($this->getComponent(), $data);
+    $settings->addInfo('imported', $this->getUniqueId());
   }
 
 }
