@@ -1,15 +1,39 @@
 (function ($) {
   Drupal.behaviors.configuration_ui = {
     attach: function(context, settings) {
-      // Configuration management form
-      $('#configuration-ui-tracking-form span.config-status:not(.processed)').each(function() {
-        $(this).addClass('processed');
 
-        // Check the overridden status of each configuration
-        var id = $(this).attr('rel');
-        $(this).load(Drupal.settings.basePath + 'admin/config/configuration/view/' + id + '/status', updateCheckedCount);
+      var components = $("#configuration-ui-tracking-form span.component:not(.processed)").length;
+
+      // Configuration management form
+      var in_sync = Drupal.t('In Sync');
+      $('#configuration-ui-tracking-form span.component:not(.processed)').each(function() {
+        $(this).addClass('processed');
+        var component = $(this).attr('rel');
+
+        $.getJSON(Drupal.settings.basePath + 'admin/config/system/configuration/status/' + component, function(data) {
+          var items = [];
+
+          $.each(data['status'], function(key, val) {
+            var span = $("span[rel=" + key + "]")
+
+            span.addClass('processed').html(val);
+            if (val != in_sync) {
+              span.addClass('not_in_sync');
+            }
+            if (data['diff']) {
+              span.addClass('processed').html('<a href ="' + Drupal.settings.basePath + 'admin/config/system/configuration/diff/' + key + '">' + val + '</a>');
+            }
+          });
+
+          if (!--components) {
+            $('#configuration-ui-tracking-form').addClass('status-check-completed');
+            updateCheckedCount(context);
+          }
+
+        });
       });
-      $('#configuration-ui-tracking-form').addClass('status-check-completed');
+
+
 
       $("fieldset.configuration .form-checkbox").bind('click', function() {
         var current_checkbox = $(this);
@@ -25,7 +49,7 @@
           }
           var original_value = current_checkbox.parents('td').next().html();
           current_checkbox.parents('td').next().html(original_value + ' ' + Drupal.t('(Finding dependencies...)'));
-          $.getJSON(Drupal.settings.basePath + 'admin/config/configuration/view/' + $(this).val() + '/' + url, function(data) {
+          $.getJSON(Drupal.settings.basePath + 'admin/config/system/configuration/view/' + $(this).val() + '/' + url, function(data) {
 
             $.each(data, function(index, array) {
               if (current_checkbox.is(':checked')) {
@@ -52,19 +76,12 @@
 
   function updateCheckedCount(context) {
     var needs_attention = 0;
-    var in_sync = Drupal.t('In Sync');
-    var processing = Drupal.t('Processing...');
     $("fieldset.configuration").each(function(){
       var id = '#' + this.id;
       $(this, context).drupalSetSummary(function (context) {
         var count = $(id + ' table .form-item :input[type="checkbox"]:checked').length;
 
-        needs_attention = 0;
-        $('.status-check-completed #' + id + ' table span.processed').each(function(){
-          if (this.innerHTML != in_sync && this.innerHTML != processing) {
-            needs_attention++;
-          }
-        });
+        needs_attention = $(id + ' span.not_in_sync').length;
 
         if (needs_attention > 0) {
           return Drupal.t('@count selected <strong>(@attention needs attention)</strong>', {'@count': count, '@attention': needs_attention});
@@ -75,5 +92,4 @@
       });
     });
   }
-
 })(jQuery);

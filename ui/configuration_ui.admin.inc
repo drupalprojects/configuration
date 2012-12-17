@@ -49,7 +49,7 @@ function configuration_ui_tracking_form($form, &$form_state) {
         '#type' => 'fieldset',
         '#group' => 'packages',
         '#title' => check_plain($handler::getComponentHumanName($component)),
-        '#description' => t('Currently tracked configurations for: @component', array('@component' => $handler::getComponentHumanName($component, TRUE))),
+        '#description' => '<span class= "component" rel="' . check_plain($component) . '">' .  t('Currently tracked configurations for: @component', array('@component' => $handler::getComponentHumanName($component, TRUE))) . '</span>',
         '#collapsible' => TRUE,
         '#collapsed' => TRUE,
         '#tree' => TRUE,
@@ -226,21 +226,21 @@ function configuration_ui_config_info($config_id) {
 
   $status = check_plain($config->getStatus());
   if ($diff_exists && $status != t('In Sync')) {
-    $status = l(check_plain($status), 'admin/config/configuration/diff/' . arg(4), array('attributes' => array('title' => t('View differences'))));
+    $status = l(check_plain($status), 'admin/config/system/configuration/diff/' . arg(5), array('attributes' => array('title' => t('View differences'))));
   }
-  if (arg(5) == 'status') {
+  if (arg(6) == 'status') {
     print $status;
     exit();
   }
-  if (arg(5) == 'dependencies') {
+  if (arg(6) == 'dependencies') {
     ConfigurationManagement::rawDepdendencyInfo(array($config_id), TRUE, FALSE);
     exit();
   }
-  if (arg(5) == 'optionals') {
+  if (arg(6) == 'optionals') {
     ConfigurationManagement::rawDepdendencyInfo(array($config_id), FALSE, TRUE);
     exit();
   }
-  if (arg(5) == 'dependencies_optionals') {
+  if (arg(6) == 'dependencies_optionals') {
     ConfigurationManagement::rawDepdendencyInfo(array($config_id), TRUE, TRUE);
     exit();
   }
@@ -272,6 +272,60 @@ function configuration_ui_config_info($config_id) {
   }
 
   return $page;
+}
+
+/**
+ * Menu Callback: Return the status for each tracked configuration.
+ */
+function configuration_ui_config_status($component) {
+  $components = ConfigurationManagement::getConfigurationHandler();
+  if (empty($components[$component])) {
+    print '';
+    exit();
+  }
+
+  $tracked_in_file = ConfigurationManagement::readTrackingFile();
+
+  $tracked = ConfigurationManagement::trackedConfigurations();
+  $status = array();
+  $needs_attention = 0;
+  foreach ($tracked as $component_id => $info) {
+    if ($component_id == $component) {
+      foreach ($info as $identifier => $item) {
+        $id = $component . '.' . $identifier;
+        $config = ConfigurationManagement::createConfigurationInstance($id);
+        $hash = $config->loadFromActiveStore()->getHash();
+        if ($config->isBroken()) {
+          $status[$id] = t('Removed from Active Store');
+        }
+        elseif (empty($tracked_in_file['tracked'][$id])) {
+          $status[$id] = t('Active Store Only');
+        }
+        elseif ($hash != $item['hash']) {
+          $status[$id] = t('Overriden');
+        }
+        else {
+          $status[$id] = t('In Sync');
+        }
+
+        if ($status[$id] != t('In Sync')) {
+          $needs_attention++;
+        }
+
+        unset($config);
+      }
+      break;
+    }
+  }
+
+  $return = array(
+    'status' => $status,
+    'diff' => module_exists('diff'),
+    'needs_attention' => $needs_attention,
+  );
+
+  print drupal_json_encode($return);
+  exit();
 }
 
 /**

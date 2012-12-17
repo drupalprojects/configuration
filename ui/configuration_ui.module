@@ -77,19 +77,28 @@ function configuration_ui_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  $items['admin/config/configuration/view/%'] = array(
+  $items['admin/config/system/configuration/view/%'] = array(
     'title' => 'Configuration Management',
     'page callback' => 'configuration_ui_config_info',
-    'page arguments' => array(4),
+    'page arguments' => array(5),
     'file' => 'configuration_ui.admin.inc',
     'access arguments' => array('administer configuration management'),
   );
 
+  $items['admin/config/system/configuration/status/%'] = array(
+    'title' => 'Configuration Management',
+    'page callback' => 'configuration_ui_config_status',
+    'page arguments' => array(5),
+    'file' => 'configuration_ui.admin.inc',
+    'access arguments' => array('administer configuration management'),
+    'type' => MENU_CALLBACK,
+  );
+
   if (module_exists('diff')) {
-    $items['admin/config/configuration/diff/%'] = array(
+    $items['admin/config/system/configuration/diff/%'] = array(
       'title' => 'Configuration Management',
       'page callback' => 'configuration_ui_config_diff',
-      'page arguments' => array(4),
+      'page arguments' => array(5),
       'file' => 'configuration_ui.admin.inc',
       'access arguments' => array('administer configuration management'),
     );
