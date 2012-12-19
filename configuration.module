@@ -43,6 +43,7 @@ function configuration_configuration_handlers() {
     'page_manager' => '\Drupal\configuration\Config\PageManagerHandlerConfiguration',
     'wysiwyg'      => '\Drupal\configuration\Config\WysiwygConfiguration',
     'role_export'  => '\Drupal\configuration\Config\RoleConfiguration',
+    'field_group'  => '\Drupal\configuration\Config\FieldGroupConfiguration',
   );
 
   drupal_alter('configuration_handlers', $handlers);
