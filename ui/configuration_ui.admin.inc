@@ -35,7 +35,7 @@ function configuration_ui_tracking_form($form, &$form_state) {
       $options[$id] = array(
         check_plain($info['name']),
         $status,
-        l(t('Stop Tracking'), 'admin/config/system/configuration/stop_tracking/' . $id) . ' | ' . l(t('View info'), 'admin/config/configuration/view/' . $id)
+        l(t('Stop Tracking'), 'admin/config/system/configuration/stop_tracking/' . $id) . ' | ' . l(t('View info'), 'admin/config/system/configuration/view/' . $id)
       );
     }
 
@@ -145,7 +145,7 @@ function configuration_ui_notracking_form($form, &$form_state) {
       $id = $info['id'];
       $options[$id] = array(
         check_plain($info['name']),
-        l(t('Start Tracking'), 'admin/config/system/configuration/start_tracking/' . $id) . ' | ' . l(t('View info'), 'admin/config/configuration/view/' . $id)
+        l(t('Start Tracking'), 'admin/config/system/configuration/start_tracking/' . $id) . ' | ' . l(t('View info'), 'admin/config/system/configuration/view/' . $id)
       );
     }
 
@@ -553,7 +553,7 @@ function configuration_ui_export_form($form, &$form_state) {
       $options[$id] = array(
         check_plain($info['name']),
         ($info['hash']) ? t('Tracked') : t('Not tracked'),
-        l(t('View info'), 'admin/config/configuration/view/' . $id)
+        l(t('View info'), 'admin/config/system/configuration/view/' . $id)
       );
     }
 
