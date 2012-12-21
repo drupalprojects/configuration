@@ -53,6 +53,10 @@ function configuration_configuration_handlers() {
 
 /**
  * Import all configuration files within a directory.
+ * 
+ * The configurations files in the directory have to match the migration
+ * estructure of configurations. See http://drupal.org/node/1872288 for
+ * clarification of migration vs sync process.
  *
  * @param $path
  *   The path to the directory to import.
@@ -67,9 +71,11 @@ function configuration_configuration_handlers() {
  *
  */
 function configuration_import_directory($path, $enable_modules = TRUE, $include_dependencies = TRUE, $include_optionals = TRUE, $start_tracking = TRUE) {
-
-  $file_content = drupal_substr(file_get_contents($path . 'configurations.inc'), 6);
-  // this line creates a $configurations array with a list of components.
+  $path = rtrim($path, '/');
+  $file_content = drupal_substr(file_get_contents($path . '/configurations.inc'), 6);
+  
+  // this line creates a $configurations array with a list of components and a
+  // $modules array with a list of required modules to be enabled.
   @eval($file_content);
 
   if ($enable_modules) {
