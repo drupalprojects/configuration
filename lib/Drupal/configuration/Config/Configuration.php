@@ -447,7 +447,11 @@ abstract class Configuration {
       return $human_name ? t('Removed from ActiveStore') : 0;
     }
     $tracking_file = ConfigurationManagement::readTrackingFile();
-    $tracked = $tracking_file['tracked'];
+    $tracked = array();
+    if (isset($tracking_file['tracked'])) {
+      $tracked = $tracking_file['tracked'];
+    }
+
     if (isset($tracked[$this->getUniqueId()])) {
       $file_hash = $tracked[$this->getUniqueId()];
     }
