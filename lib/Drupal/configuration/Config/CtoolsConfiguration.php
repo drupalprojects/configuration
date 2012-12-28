@@ -25,13 +25,11 @@ class CtoolsConfiguration extends Configuration {
    * Overrides Drupal\configuration\Config\Configuration::__construct().
    */
   public function __construct($identifier, $component = '') {
-    $this->identifier = $identifier;
     // Because CTools can handle multiple types of configurations we need to
     // know what is the current handled configuration. Usually this component is
     // the main table where the ctools object lives.
     $this->component = $component;
-    $this->storage = static::getStorageInstance($component);
-    $this->storage->setFileName($this->getUniqueId());
+    parent::__construct($identifier, $component);
   }
 
   /**
