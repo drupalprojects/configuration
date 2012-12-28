@@ -116,7 +116,7 @@ class ConfigurationUITest extends ConfigurationUIWebTestCase {
 
     foreach ($this->configurations as $id) {
       list($component, $identifier) = explode('.', $id, 2);
-      $this->assertFieldByName($component . '[tracked][' . $id . ']', $id, t("Checkbox for @identifier found", array('@identifier' => $id)));
+      $this->assertFieldByName('items[' . $id . ']', $id, t("Checkbox for @identifier found", array('@identifier' => $id)));
     }
   }
 
@@ -125,7 +125,7 @@ class ConfigurationUITest extends ConfigurationUIWebTestCase {
     $this->assertRaw('No Configurations were found');
 
     $edit = array();
-    $edit['content_type[tracked][content_type.article]'] = TRUE;
+    $edit['items[content_type.article]'] = TRUE;
     $this->drupalPost('admin/config/system/configuration/notracking', $edit, t('Start Tracking'));
     foreach ($this->configurations as $id) {
       $this->assertRaw('Tracking ' .  $id);
@@ -134,7 +134,7 @@ class ConfigurationUITest extends ConfigurationUIWebTestCase {
     $this->drupalGet('admin/config/system/configuration/notracking');
     foreach ($this->configurations as $id) {
       list($component, $identifier) = explode('.', $id, 2);
-      $this->assertNoFieldByName($component . '[tracked][' . $id . ']', $id, t("Checkbox for @identifier not found", array('@identifier' => $id)));
+      $this->assertNoFieldByName('items[' . $id . ']', $id, t("Checkbox for @identifier not found", array('@identifier' => $id)));
     }
 
     $this->drupalGet('admin/config/system/configuration/tracking');
@@ -144,11 +144,11 @@ class ConfigurationUITest extends ConfigurationUIWebTestCase {
 
     foreach ($this->configurations as $id) {
       list($component, $identifier) = explode('.', $id, 2);
-      $this->assertFieldByName($component . '[tracked][' . $id . ']', $id, t("Checkbox for @identifier found", array('@identifier' => $id)));
+      $this->assertFieldByName('items[' . $id . ']', $id, t("Checkbox for @identifier found", array('@identifier' => $id)));
     }
 
     $edit = array();
-    $edit['content_type[tracked][content_type.article]'] = TRUE;
+    $edit['items[content_type.article]'] = TRUE;
     $this->drupalPost('admin/config/system/configuration/tracking', $edit, t('Stop Tracking'));
     foreach ($this->configurations as $id) {
       $this->assertRaw('Untracked ' .  $id);
@@ -158,7 +158,7 @@ class ConfigurationUITest extends ConfigurationUIWebTestCase {
     $this->drupalGet('admin/config/system/configuration/notracking');
     foreach ($this->configurations as $id) {
       list($component, $identifier) = explode('.', $id, 2);
-      $this->assertFieldByName($component . '[tracked][' . $id . ']', $id, t("Checkbox for @identifier found", array('@identifier' => $id)));
+      $this->assertFieldByName('items[' . $id . ']', $id, t("Checkbox for @identifier found", array('@identifier' => $id)));
     }
 
   }

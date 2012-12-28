@@ -139,20 +139,3 @@ function configuration_ui_menu() {
 
   return $items;
 }
-
-/**
- * Get a list of components to be processed.
- */
-function configuration_ui_get_form_components($form, &$form_state) {
-  $component_list = array();
-  foreach ($form_state['values'] as $component) {
-    if (is_array($component) && isset($component['tracked'])) {
-      foreach ($component['tracked'] as $key => $value) {
-        if ($key === $value) {
-          $component_list[] = $key;
-        }
-      }
-    }
-  }
-  return $component_list;
-}

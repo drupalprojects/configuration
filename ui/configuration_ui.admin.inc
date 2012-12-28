@@ -8,10 +8,115 @@
 use Drupal\configuration\Config\ConfigurationManagement;
 use Drupal\configuration\Utils\ConfigIteratorSettings;
 
+function configuration_ui_tracking_form($form, &$form_state) {
+  $configurations = ConfigurationManagement::trackedConfigurations();
+
+  $form_state['table_header'] = array(
+    'names' => t('Configuration'),
+    'status' => t('Status'),
+    'operations' => t('Operations'),
+  );
+
+  configuration_ui_configuration_list('tracking', $configurations, $form, $form_state);
+
+  if (!empty($form_state['component_exists'])) {
+    $form['buttons'] = array('#theme' => 'configuration_ui_form_buttons', '#tree' => FALSE);
+    // Do not allow writing to datastore if on remote server.
+    if (variable_get('configuration_remote_server', 0) < 1) {
+      $form['buttons']['submit'] = array(
+        '#type' => 'submit',
+        '#value' => t('Write Activestore to Datastore'),
+        '#submit' => array('configuration_ui_export_to_datastore_form_submit'),
+      );
+    }
+    else {
+      $form['buttons']['export'] = array(
+        '#type' => 'submit',
+        '#value' => t('Export All Tracked Configurations'),
+        '#submit' => array('configuration_ui_export_traked_to_tar_file_form_submit'),
+      );
+    }
+    $form['buttons']['stop_tracking'] = array(
+      '#type' => 'submit',
+      '#value' => t('Stop Tracking'),
+      '#submit' => array('configuration_ui_stop_tracking_form_submit'),
+    );
+    $form['buttons']['import'] = array(
+      '#type' => 'submit',
+      '#value' => t('Import Datastore to Activestore'),
+      '#submit' => array('configuration_ui_activate_form_submit'),
+    );
+  }
+  else {
+    $form['no_configs'] = array(
+      '#markup' => t('No Configurations were found. Please use the
+      !export_link page to begin tracking new Configurations.',
+          array('!export_link' => l(t('Not Tracking'), 'admin/config/system/configuration/notracking'))),
+    );
+  }
+  return $form;
+}
+
+function configurations_ui_operations_helper($ui, $id) {
+  switch ($ui) {
+    case 'tracking':
+      return l(t('Stop Tracking'), 'admin/config/system/configuration/stop_tracking/' . $id) . ' | ' . l(t('View info'), 'admin/config/system/configuration/view/' . $id);
+      break;
+
+    case 'no_tracking':
+      return l(t('Start Tracking'), 'admin/config/system/configuration/start_tracking/' . $id) . ' | ' . l(t('View info'), 'admin/config/system/configuration/view/' . $id);
+
+      break;
+
+    case 'export':
+      return l(t('View info'), 'admin/config/system/configuration/view/' . $id);
+      break;
+  }
+}
+
 /**
  * Menu Callback Form.
  */
-function configuration_ui_tracking_form($form, &$form_state) {
+function configuration_ui_notracking_form($form, &$form_state) {
+  $configurations = ConfigurationManagement::nonTrackedConfigurations();
+
+  $form_state['table_header'] = array(
+    'names' => t('Configuration'),
+    'operations' => t('Operations'),
+  );
+  configuration_ui_configuration_list('no_tracking', $configurations, $form, $form_state);
+
+  $form['buttons'] = array('#theme' => 'configuration_ui_form_buttons', '#tree' => FALSE);
+  $form['buttons']['start_tracking'] = array(
+    '#type' => 'submit',
+    '#value' => t('Start Tracking'),
+    '#submit' => array('configuration_ui_start_tracking_form_submit'),
+  );
+  return $form;
+}
+
+function configuration_ui_export_form($form, &$form_state) {
+  $configurations = ConfigurationManagement::allConfigurations();
+
+  $form_state['table_header'] = array(
+    'names' => t('Configuration'),
+    'status' => t('Tracked'),
+    'operations' => t('Operations'),
+  );
+  configuration_ui_configuration_list('export', $configurations, $form, $form_state);
+
+  $form['buttons'] = array('#theme' => 'configuration_ui_form_buttons', '#tree' => FALSE);
+  $form['buttons']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Export to Tar File'),
+    '#submit' => array('configuration_ui_export_to_tar_file_form_submit'),
+  );
+  return $form;
+}
+/**
+ * Helper function for configuration lists.
+ */
+function configuration_ui_configuration_list($ui, $configurations, &$form, &$form_state) {
   $component_exists = FALSE;
   $handlers = configuration_configuration_handlers();
 
@@ -23,190 +128,100 @@ function configuration_ui_tracking_form($form, &$form_state) {
     drupal_get_path('module', 'configuration_ui') . '/js/configuration_ui.js'
   );
 
-  $tracked = ConfigurationManagement::trackedConfigurations();
+  $form_state['component_exists'] = FALSE;
+  foreach ($configurations as $component => $list) {
+    $handler = ConfigurationManagement::getConfigurationHandler($component);
+    if (empty($handler) || count($list) < 1) {
+      continue;
+    }
+    $form[$component] = array(
+      '#type' => 'fieldset',
+      '#group' => 'packages',
+      '#title' => check_plain($handler::getComponentHumanName($component)),
+      '#description' => '<span class= "component" rel="' . check_plain($component) . '">' .  t('Configurations for: @component', array('@component' => $handler::getComponentHumanName($component, TRUE))) . '</span>',
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#tree' => TRUE,
+      '#attached' => array(
+        'js' => array(
+          'vertical-tabs' => drupal_get_path('module', 'configuration_ui') . '/theme/vertical-tabs.js',
+        ),
+      ),
+      '#attributes' => array('class' => array('configuration')),
+    );
 
-  foreach ($tracked as $component => $list) {
+    $form[$component]['configurations'] = array(
+      '#tree' => FALSE,
+      '#theme' => 'configuration_table',
+      'items' => array(
+        '#tree' => TRUE,
+      ),
+      'name' => array(
+        '#tree' => TRUE,
+      ),
+      'status' => array(
+        '#tree' => TRUE,
+      ),
+      'operations' => array(
+        '#tree' => TRUE,
+      ),
+    );
 
-    $options = array();
+    $form[$component]['configurations']['#header'] = $form_state['table_header'];
+
     foreach ($list as $identifier => $info) {
+      $form_state['component_exists'] = TRUE;
       $id = $component . '.' . $identifier;
-      $status = '<span class ="config-status" rel="' . $id . '">' . t('Processing...') . '</span>';
 
-      $options[$id] = array(
-        check_plain($info['name']),
-        $status,
-        l(t('Stop Tracking'), 'admin/config/system/configuration/stop_tracking/' . $id) . ' | ' . l(t('View info'), 'admin/config/system/configuration/view/' . $id)
+      $form[$component]['configurations']['items'][$id] = array(
+        '#type' => 'checkbox',
+        '#title' => check_plain($info['name']),
+        '#title_display' => 'invisible',
+        '#return_value' => $id,
       );
-    }
 
-    if (!empty($options)) {
-      $handler = ConfigurationManagement::getConfigurationHandler($component);
-      if (empty($handler)) {
-        continue;
+      $form[$component]['configurations']['names'][$id] = array(
+        '#markup' => check_plain($info['name']),
+      );
+
+      if ($ui == 'tracking') {
+        $form[$component]['configurations']['status'][$id] = array(
+          '#markup' => '<span class ="config-status" rel="' . $id . '">' . t('Processing...') . '</span>',
+        );
       }
-      $component_exists = TRUE;
-      $form[$component] = array(
-        '#type' => 'fieldset',
-        '#group' => 'packages',
-        '#title' => check_plain($handler::getComponentHumanName($component)),
-        '#description' => '<span class= "component" rel="' . check_plain($component) . '">' .  t('Currently tracked configurations for: @component', array('@component' => $handler::getComponentHumanName($component, TRUE))) . '</span>',
-        '#collapsible' => TRUE,
-        '#collapsed' => TRUE,
-        '#tree' => TRUE,
-        '#attached' => array(
-          'js' => array(
-            'vertical-tabs' => drupal_get_path('module', 'configuration_ui') . '/theme/vertical-tabs.js',
-          ),
-        ),
-        '#attributes' => array('class' => array('configuration')),
-      );
-      asort($options);
-      $form[$component]['tracked'] = array(
-        '#type' => 'tableselect',
-        '#header' => array('Configuration', 'Status', 'Operations'),
-        '#options' => $options,
-      );
-      $form['dependencies_option'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('Dependencies and Optionals'),
-        '#description' => t('Choose if you want to process dependent and optional components.'),
-        '#collapsible' => TRUE,
-        '#collapsed' => FALSE,
-      );
-      $form['dependencies_option']['include_dependencies'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Process component dependencies.'),
-        '#default_value' => TRUE,
-      );
-      $form['dependencies_option']['include_optionals'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Process component optionals.'),
-        '#default_value' => TRUE,
+      elseif ($ui == 'export') {
+        $form[$component]['configurations']['status'][$id] = array(
+          '#markup' => $info['hash'] ? t('Tracked') : t('Not tracked'),
+        );
+      }
+
+      $form[$component]['configurations']['operations'][$id] = array(
+        '#markup' => configurations_ui_operations_helper($ui, $id),
       );
     }
+    asort($form[$component]['configurations']['items']);
   }
-  $form['buttons'] = array('#theme' => 'configuration_ui_form_buttons', '#tree' => FALSE);
 
-  // Do not allow writing to datastore if on remote server.
-  if (variable_get('configuration_remote_server', 0) < 1) {
-    $form['buttons']['submit'] = array(
-      '#type' => 'submit',
-      '#value' => t('Write Activestore to Datastore'),
-      '#submit' => array('configuration_ui_export_to_datastore_form_submit'),
+  if (!empty($form_state['component_exists'])) {
+    $form['dependencies_option'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Dependencies and Optionals'),
+      '#description' => t('Choose if you want to process dependent and optional components.'),
+      '#collapsible' => TRUE,
+      '#collapsed' => FALSE,
+    );
+    $form['dependencies_option']['include_dependencies'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Process component dependencies.'),
+      '#default_value' => TRUE,
+    );
+    $form['dependencies_option']['include_optionals'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Process component optionals.'),
+      '#default_value' => TRUE,
     );
   }
-  else {
-    $form['buttons']['submit'] = array(
-      '#type' => 'submit',
-      '#value' => t('Export All Tracked Configurations'),
-      '#submit' => array('configuration_ui_export_traked_to_tar_file_form_submit'),
-    );
-  }
-  $form['buttons']['stop_tracking'] = array(
-    '#type' => 'submit',
-    '#value' => t('Stop Tracking'),
-    '#submit' => array('configuration_ui_stop_tracking_form_submit'),
-  );
-  $form['buttons']['revert'] = array(
-    '#type' => 'submit',
-    '#value' => t('Import Datastore to Activestore'),
-    '#submit' => array('configuration_ui_activate_form_submit'),
-  );
-  if (!$component_exists) {
-    $form['no_configs'] = array(
-      '#markup' => t('No Configurations were found. Please use the
-      !export_link page to begin tracking new Configurations.',
-          array('!export_link' => l(t('Not Tracking'), 'admin/config/system/configuration/notracking'))),
-    );
-    unset($form['buttons']);
-  }
-  $form['#validate'][] = 'configuration_ui_tracking_form_validate';
-  return $form;
-}
 
-/**
- * Menu Callback Form.
- */
-function configuration_ui_notracking_form($form, &$form_state) {
-  $component_exists = FALSE;
-
-  $form['packages'] = array('#type' => 'vertical_tabs');
-  $form['#attached']['css'] = array(
-    drupal_get_path('module', 'configuration_ui') . '/theme/configuration.css'
-  );
-  $form['#attached']['js'] = array(
-    drupal_get_path('module', 'configuration_ui') . '/js/configuration_ui.js'
-  );
-  $non_tracked = ConfigurationManagement::nonTrackedConfigurations();
-
-  foreach ($non_tracked as $component => $list) {
-    $options = array();
-    foreach ($list as $identifier => $info) {
-      $id = $info['id'];
-      $options[$id] = array(
-        check_plain($info['name']),
-        l(t('Start Tracking'), 'admin/config/system/configuration/start_tracking/' . $id) . ' | ' . l(t('View info'), 'admin/config/system/configuration/view/' . $id)
-      );
-    }
-
-    if (!empty($options)) {
-      $handler = ConfigurationManagement::getConfigurationHandler($component);
-      $component_exists = TRUE;
-      $form[$component] = array(
-        '#type' => 'fieldset',
-        '#group' => 'packages',
-        '#title' => check_plain($handler::getComponentHumanName($component)),
-        '#description' => t('Available configurations for: @component', array('@component' => $handler::getComponentHumanName($component, TRUE))),
-        '#collapsible' => TRUE,
-        '#collapsed' => TRUE,
-        '#tree' => TRUE,
-        '#attached' => array(
-          'js' => array(
-            'vertical-tabs' => drupal_get_path('module', 'configuration_ui') . '/theme/vertical-tabs.js',
-          ),
-        ),
-        '#attributes' => array('class' => array('configuration')),
-      );
-      $form[$component]['tracked'] = array(
-        '#type' => 'tableselect',
-        '#header' => array('Configuration', 'Operations'),
-        '#options' => $options,
-      );
-      $form['dependencies_option'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('Dependencies and Optionals'),
-        '#description' => t('Choose if you want to process dependent and optional components.'),
-        '#collapsible' => TRUE,
-        '#collapsed' => FALSE,
-      );
-      $form['dependencies_option']['include_dependencies'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Process component dependencies.'),
-        '#default_value' => TRUE,
-      );
-      $form['dependencies_option']['include_optionals'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Process component optionals.'),
-        '#default_value' => TRUE,
-      );
-    }
-  }
-  $form['buttons'] = array('#theme' => 'configuration_ui_form_buttons', '#tree' => FALSE);
-  $form['buttons']['start_tracking'] = array(
-    '#type' => 'submit',
-    '#value' => t('Start Tracking'),
-    '#submit' => array('configuration_ui_start_tracking_form_submit'),
-  );
-  if (!$component_exists) {
-    $form['no_configs'] = array(
-      '#markup' => t('No Configurations were found. Please use the
-      !export_link page to check Configurations you are tracking right now.',
-          array('!export_link' => l(t('Tracking'), 'admin/config/system/configuration/tracking'))),
-    );
-    unset($form['buttons']);
-  }
-  $form['#validate'][] = 'configuration_ui_tracking_form_validate';
-  return $form;
 }
 
 /**
@@ -485,10 +500,6 @@ function configuration_ui_start_tracking_form_submit($form, &$form_state) {
   }
 }
 
-function configuration_ui_tracking_form_validate() {
-  return TRUE;
-}
-
 /**
  * Implements hook_theme().
  */
@@ -500,11 +511,14 @@ function configuration_ui_theme($existing, $type, $theme, $path) {
   $items = array();
   $items['configuration_ui_form_buttons'] = array(
     'render element' => 'element',
-      ) + $base;
+  ) + $base;
+
+  $items['configuration_table'] = array(
+    'render element' => 'form',
+  ) + $base;
 
   return $items;
 }
-
 
 /**
  * Menu Callback Form.
@@ -528,92 +542,6 @@ function configuration_ui_import_form($form, &$form_state) {
     '#value' => t('Import'),
   );
 
-  return $form;
-}
-
-/**
- * Menu Callback Form.
- */
-function configuration_ui_export_form($form, &$form_state) {
-  $component_exists = FALSE;
-
-  $form['packages'] = array('#type' => 'vertical_tabs');
-  $form['#attached']['css'] = array(
-    drupal_get_path('module', 'configuration_ui') . '/theme/configuration.css'
-  );
-  $form['#attached']['js'] = array(
-    drupal_get_path('module', 'configuration_ui') . '/js/configuration_ui.js'
-  );
-  $all = ConfigurationManagement::allConfigurations();
-
-  foreach ($all as $component => $list) {
-    $options = array();
-    foreach ($list as $identifier => $info) {
-      $id = $component . '.' . $identifier;
-      $options[$id] = array(
-        check_plain($info['name']),
-        ($info['hash']) ? t('Tracked') : t('Not tracked'),
-        l(t('View info'), 'admin/config/system/configuration/view/' . $id)
-      );
-    }
-
-    if (!empty($options)) {
-      $component_exists = TRUE;
-      $handler = ConfigurationManagement::getConfigurationHandler($component);
-      $form[$component] = array(
-        '#type' => 'fieldset',
-        '#group' => 'packages',
-        '#title' => check_plain($handler::getComponentHumanName($component)),
-        '#description' => t('Available configurations for: @component', array('@component' => $handler::getComponentHumanName($component, TRUE))),
-        '#collapsible' => TRUE,
-        '#collapsed' => TRUE,
-        '#tree' => TRUE,
-        '#attached' => array(
-          'js' => array(
-            'vertical-tabs' => drupal_get_path('module', 'configuration_ui') . '/theme/vertical-tabs.js',
-          ),
-        ),
-        '#attributes' => array('class' => array('configuration')),
-      );
-      $form[$component]['tracked'] = array(
-        '#type' => 'tableselect',
-        '#header' => array(t('Configuration'), t('Tracking') , t('Operations')),
-        '#options' => $options,
-      );
-      $form['dependencies_option'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('Dependencies and Optionals'),
-        '#description' => t('Choose if you want to process dependent and optional components.'),
-        '#collapsible' => TRUE,
-        '#collapsed' => FALSE,
-      );
-      $form['dependencies_option']['include_dependencies'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Process component dependencies.'),
-        '#default_value' => TRUE,
-      );
-      $form['dependencies_option']['include_optionals'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Process component optionals.'),
-        '#default_value' => TRUE,
-      );
-    }
-  }
-  $form['buttons'] = array('#theme' => 'configuration_ui_form_buttons', '#tree' => FALSE);
-  $form['buttons']['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Export to Tar File'),
-    '#submit' => array('configuration_ui_export_to_tar_file_form_submit'),
-  );
-  if (!$component_exists) {
-    $form['no_configs'] = array(
-      '#markup' => t('No Configurations were found. Please use the
-      !export_link page to begin tracking new Configurations.',
-          array('!export_link' => l(t('Not Tracking'), 'admin/config/system/configuration/notracking'))),
-    );
-    unset($form['buttons']);
-  }
-  $form['#validate'][] = 'configuration_ui_tracking_form_validate';
   return $form;
 }
 
@@ -719,6 +647,22 @@ function configuration_ui_settings_form($form, &$form_state) {
     '#default_value' => variable_get('configuration_remote_server', -1),
   );
 
+  $form['configuration_sets'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Configuration Sets'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+    '#description' => t('You can use configurations sets to organize your tracked configurations into folders.'),
+  );
+
+  $form['configuration_sets']['configuration_sets'] = array(
+    '#type' => 'textarea',
+    '#title' => t('List of sets'),
+    '#description' => t('One set per line, no spaces allowed. Only alpha-numeric and underscores allowed.'),
+    '#size' => 6,
+    '#default_value' => variable_get('configuration_sets', ''),
+  );
+
   $form['#validate'][] = 'configuration_ui_validate_settings';
   return system_settings_form($form);
 }
@@ -738,6 +682,18 @@ function configuration_ui_validate_settings($form, &$form_state) {
     }
   }
 }
+
+/**
+ * Get a list of components to be processed.
+ */
+function configuration_ui_get_form_components($form, &$form_state) {
+  $component_list = array();
+  foreach (array_filter($form_state['values']['items']) as $component) {
+    $component_list[] = $component;
+  }
+  return $component_list;
+}
+
 
 function configuration_sync_configurations_submit($form, &$form_state) {
   $tracking_file = ConfigurationManagement::readTrackingFile();
