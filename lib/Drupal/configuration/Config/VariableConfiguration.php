@@ -20,8 +20,6 @@ class VariableConfiguration extends Configuration {
   public function __construct($identifier, $component = '') {
     $this->variable_name = $identifier;
     parent::__construct(str_replace(' ', '_', $identifier));
-
-    $this->storage->setFileName('variable.' . str_replace(' ', '_', $identifier));
   }
 
   /**

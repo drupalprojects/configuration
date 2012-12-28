@@ -34,8 +34,8 @@ class Storage {
    * Returns TRUE if the file for a configuration exists
    * in the config:// directory.
    */
-  static public function configFileExists($component, $identifier) {
-    return file_exists(ConfigurationManagement::getStream() . $component . '.' . $identifier . '.' . static::$file_extension);
+  static public function configFileExists($filename) {
+    return file_exists(ConfigurationManagement::getStream() . $filename);
   }
 
   /**
@@ -105,7 +105,7 @@ class Storage {
   }
 
   public function setFileName($filename) {
-    $this->filename = $filename . static::$file_extension;
+    $this->filename = $filename;
     return $this;
   }
 
@@ -179,6 +179,10 @@ class Storage {
 
   public function getHash() {
     return $this->hash;
+  }
+
+  static public function getFileExtension() {
+    return static::$file_extension;
   }
 
 }

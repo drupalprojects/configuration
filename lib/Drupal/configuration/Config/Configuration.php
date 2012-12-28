@@ -120,7 +120,7 @@ abstract class Configuration {
   public function __construct($identifier, $component = '') {
     $this->identifier = $identifier;
     $this->storage = static::getStorageInstance($component);
-    $this->storage->setFileName($this->getUniqueId());
+    $this->storage->setFileName($this->getFileName());
   }
 
   /**
@@ -252,7 +252,7 @@ abstract class Configuration {
       'component' => $this->getComponent(),
       'identifier' => $this->getIdentifier(),
       'hash' => $this->getHash(),
-      'file' => $this->storage->getFileName(),
+      'file' => $this->getFileName(),
     );
     db_insert('configuration_tracked')->fields($fields)->execute();
   }
@@ -698,13 +698,33 @@ abstract class Configuration {
 
       if (!$exists) {
         // If not exists in the database, look into the config:// directory.
-        $storage_system = static::getStorageSystem();
-        $file_exists = $storage_system::configFileExists($this->getComponent(), $this->getIdentifier());
-        if (!$file_exists) {
+        if (!$this->configFileExists()) {
           return FALSE;
         }
       }
     }
+  }
+
+  /**
+   * Returns TRUE if the file that represents this configuration exists in the
+   * datastore.
+   *
+   * @return boolean
+   */
+  public function configFileExists() {
+    $storage_system = static::getStorageSystem($this->getComponent());
+    return $storage_system::configFileExists($this->getFileName());
+  }
+
+  /**
+   * Returns the filename that contains the content of the current
+   * configuration.
+   *
+   * @return string
+   */
+  public function getFileName() {
+    $storage_system = static::getStorageSystem($this->getComponent());
+    return $this->getUniqueId() . $storage_system::getFileExtension();
   }
 
   /**
