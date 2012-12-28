@@ -200,19 +200,26 @@ class PermissionConfiguration extends Configuration {
    */
   public function saveToActiveStore(ConfigIteratorSettings &$settings) {
     node_types_rebuild();
-
+    $exist = FALSE;
     $roles = static::get_roles();
     $permissions_by_role = static::get_permissions(FALSE);
-
+    $map = user_permission_get_modules();
     $permission = $this->getData();
     $perm = $permission['permission'];
     foreach ($roles as $role) {
-      if (in_array($role, $permission['roles'])) {
-        $permissions_by_role[$role][$perm] = TRUE;
+      if (isset($map[$perm])) {
+        $exist = TRUE;
+        if (in_array($role, $permission['roles'])) {
+          $permissions_by_role[$role][$perm] = TRUE;
+        }
+        else {
+          $permissions_by_role[$role][$perm] = FALSE;
+        }
       }
-      else {
-        $permissions_by_role[$role][$perm] = FALSE;
-      }
+    }
+
+    if (!$exist) {
+      drupal_set_message(t('Configuration Management: Permission %permission does not exist and can not be set.', array('%permission' => $perm)), 'error');
     }
 
     // Write the updated permissions.
