@@ -501,26 +501,6 @@ function configuration_ui_start_tracking_form_submit($form, &$form_state) {
 }
 
 /**
- * Implements hook_theme().
- */
-function configuration_ui_theme($existing, $type, $theme, $path) {
-  $base = array(
-    'path' => drupal_get_path('module', 'configuration_ui') . '/theme',
-    'file' => 'theme.inc',
-  );
-  $items = array();
-  $items['configuration_ui_form_buttons'] = array(
-    'render element' => 'element',
-  ) + $base;
-
-  $items['configuration_table'] = array(
-    'render element' => 'form',
-  ) + $base;
-
-  return $items;
-}
-
-/**
  * Menu Callback Form.
  */
 function configuration_ui_import_form($form, &$form_state) {

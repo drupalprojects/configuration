@@ -139,3 +139,23 @@ function configuration_ui_menu() {
 
   return $items;
 }
+
+/**
+ * Implements hook_theme().
+ */
+function configuration_ui_theme($existing, $type, $theme, $path) {
+  $base = array(
+    'path' => drupal_get_path('module', 'configuration_ui') . '/theme',
+    'file' => 'theme.inc',
+  );
+  $items = array();
+  $items['configuration_ui_form_buttons'] = array(
+    'render element' => 'element',
+  ) + $base;
+
+  $items['configuration_table'] = array(
+    'render element' => 'form',
+  ) + $base;
+
+  return $items;
+}
