@@ -35,7 +35,7 @@ class Storage {
    * in the config:// directory.
    */
   static public function configFileExists($filename) {
-    return file_exists(ConfigurationManagement::getStream() . $filename);
+    return file_exists(ConfigurationManagement::getStream() . '/' . $filename);
   }
 
   /**
@@ -44,7 +44,7 @@ class Storage {
    */
   static public function checkFilePermissions($filename) {
     $dir_path = ConfigurationManagement::getStream();
-    $full_path = $dir_path . $filename;
+    $full_path = $dir_path . '/' . $filename;
     if (is_writable($dir_path) || drupal_chmod($dir_path)) {
       if (file_exists($full_path)) {
         if (is_writable($full_path) || drupal_chmod($full_path)) {

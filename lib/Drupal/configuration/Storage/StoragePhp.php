@@ -106,14 +106,14 @@ class StoragePhp extends Storage {
 
   public function save() {
     if ($this->checkFilePermissions($this->filename)) {
-      file_put_contents(ConfigurationManagement::getStream() . $this->filename, $this->getDataToSave());
+      file_put_contents(ConfigurationManagement::getStream() . '/' . $this->filename, $this->getDataToSave());
     }
     return $this;
   }
 
   public function delete() {
     if ($this->checkFilePermissions($this->filename)) {
-      file_unmanaged_delete(ConfigurationManagement::getStream() . $this->filename);
+      file_unmanaged_delete(ConfigurationManagement::getStream() . '/' . $this->filename);
     }
     return $this;
   }
@@ -131,11 +131,11 @@ class StoragePhp extends Storage {
       $this->loaded = TRUE;
       if (empty($file_content)) {
         $dir = $source ? $source : ConfigurationManagement::getStream();
-        if (!file_exists($dir . $this->filename)) {
+        if (!file_exists($dir . '/' . $this->filename)) {
           $this->data = NULL;
         }
         else {
-          $file_content = drupal_substr(file_get_contents($dir . $this->filename), 6);
+          $file_content = drupal_substr(file_get_contents($dir . '/' . $this->filename), 6);
         }
       }
       if (!empty($file_content)) {
