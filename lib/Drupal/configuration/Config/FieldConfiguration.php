@@ -114,6 +114,7 @@ class FieldConfiguration extends Configuration {
    */
   public function findRequiredModules() {
     $this->addToModules($this->data['field_config']['storage']['module']);
+    $this->addToModules($this->data['field_config']['module']);
     $this->addToModules($this->data['field_instance']['widget']['module']);
   }
 
