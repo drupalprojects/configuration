@@ -677,6 +677,11 @@ function configuration_ui_get_form_components($form, &$form_state) {
 
 function configuration_sync_configurations_submit($form, &$form_state) {
   $tracking_file = ConfigurationManagement::readTrackingFile();
+  if (empty($tracking_file)) {
+    $path = drupal_realpath(ConfigurationManagement::getStream());
+    drupal_set_message(t('The Tracking file is not present. The synchronization can not be performed.'), 'error');
+    return FALSE;
+  }
   $to_track = array_keys($tracking_file['tracked']);
   $modules_results = ConfigurationManagement::discoverRequiredModules($tracking_file['modules']);
 
