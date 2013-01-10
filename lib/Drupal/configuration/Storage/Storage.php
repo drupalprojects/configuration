@@ -45,7 +45,7 @@ class Storage {
   static public function checkFilePermissions($filename) {
     $dir_path = ConfigurationManagement::getStream();
     $full_path = $dir_path . '/' . $filename;
-    if (is_writable($dir_path) || drupal_chmod($dir_path)) {
+    if (static::checkDirectory($dir_path)) {
       if (file_exists($full_path)) {
         if (is_writable($full_path) || drupal_chmod($full_path)) {
           return TRUE;
@@ -58,7 +58,28 @@ class Storage {
         return TRUE;
       }
     }
+    return FALSE;
+  }
+
+  /**
+   * Returns TRUE if the path is a directory or we can create one in that path.
+   */
+  static public function checkDirectory($dir_path) {
+    if (!is_dir($dir_path)) {
+      if (drupal_mkdir($dir_path, NULL, TRUE)) {
+        return TRUE;
+      }
+      else {
+        // If the directory does not exists and cannot be created.
+        drupal_set_message(st('The directory %directory does not exist and could not be created.', array('%directory' => $dir_path)), 'error');
+        watchdog('file system', 'The directory %directory does not exist and could not be created.', array('%directory' => $dir_path), WATCHDOG_ERROR);
+        return FALSE;
+      }
+    }
     else {
+      if (is_writable($dir_path) || drupal_chmod($dir_path)) {
+        return TRUE;
+      }
       watchdog('configuration', 'The current user do not have write permissions in the directory %dir.', array('%dir' => $dir_path), WATCHDOG_ERROR);
       drupal_set_message(t('The current user do not have write permissions in the directory %dir.', array('%dir' => $dir_path)), 'error', FALSE);
     }
