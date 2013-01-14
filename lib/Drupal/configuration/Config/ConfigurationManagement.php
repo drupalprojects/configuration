@@ -532,7 +532,7 @@ class ConfigurationManagement {
     }
     $file_content .= ");\n";
     if (Storage::checkFilePermissions('tracked.inc')) {
-      file_put_contents(static::getStream() . 'tracked.inc', $file_content);
+      file_put_contents(static::getStream() . '/tracked.inc', $file_content);
     }
   }
 
@@ -540,8 +540,8 @@ class ConfigurationManagement {
    * Returns a list of files that are listed in the config://tracked.inc file.
    */
   static public function readTrackingFile() {
-    if (file_exists(static::getStream() . 'tracked.inc')) {
-      $file_content = drupal_substr(file_get_contents(static::getStream() . 'tracked.inc'), 6);
+    if (file_exists(static::getStream() . '/tracked.inc')) {
+      $file_content = drupal_substr(file_get_contents(static::getStream() . '/tracked.inc'), 6);
       @eval($file_content);
       return array(
         'tracked' => $tracked,
