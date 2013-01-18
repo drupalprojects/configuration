@@ -19,9 +19,9 @@
             span.addClass('processed').html(val);
             if (val != in_sync) {
               span.addClass('not_in_sync');
-            }
-            if (data['diff']) {
-              span.addClass('processed').html('<a href ="' + Drupal.settings.basePath + 'admin/config/system/configuration/diff/' + key + '">' + val + '</a>');
+              if (data['diff']) {
+                span.addClass('processed').html('<a href ="' + Drupal.settings.basePath + 'admin/config/system/configuration/diff/' + key + '">' + val + '</a>');
+              }
             }
           });
 
