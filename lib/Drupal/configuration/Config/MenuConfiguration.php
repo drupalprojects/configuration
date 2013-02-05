@@ -55,7 +55,7 @@ class MenuConfiguration extends Configuration {
   /**
    * Overrides Drupal\configuration\Config\Configuration::alterDependencies().
    */
-  public static function alterDependencies(Configuration $config, &$stack) {
+  public static function alterDependencies(Configuration $config) {
     if ($config->getComponent() == 'menu_link') {
       $config_data = $config->getData();
       if (!empty($config_data) && empty($config_data['plid'])) {

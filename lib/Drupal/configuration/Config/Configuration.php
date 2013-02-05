@@ -654,13 +654,9 @@ abstract class Configuration {
    */
   public function findDependencies() {
     $handlers = ConfigurationManagement::getConfigurationHandler();
-    $stack = array();
-    // Include this configuration to the stack to avoid add it again
-    // in a circular dependency cycle
-    $stack[$this->getUniqueId()] = TRUE;
 
     foreach ($handlers as $component => $handler) {
-      $handler::alterDependencies($this, $stack);
+      $handler::alterDependencies($this);
     }
   }
 
@@ -670,10 +666,8 @@ abstract class Configuration {
    *
    * @param $config
    *   The object that requires all the dependencies.
-   * @param $stack
-   *   A list of already added dependencies, to avoid duplicates.
    */
-  public static function alterDependencies(Configuration $config, &$stack) {
+  public static function alterDependencies(Configuration $config) {
     // Override
   }
 

@@ -124,7 +124,7 @@ class MenuLinkConfiguration extends Configuration {
   /**
    * Overrides Drupal\configuration\Config\Configuration::alterDependencies().
    */
-  public static function alterDependencies(Configuration $config, &$stack) {
+  public static function alterDependencies(Configuration $config) {
     if ($config->getComponent() == 'menu_link') {
       $mlid = static::getMenuLinkByIdenfifier($config->getIdentifier());
       $menulink = menu_link_load($mlid);
@@ -132,12 +132,9 @@ class MenuLinkConfiguration extends Configuration {
         $parent_menulink = menu_link_load($menulink['plid']);
         if ($parent_menulink) {
           $identifier = sha1(str_replace('-', '_', $parent_menulink['menu_name']) . ':' . $parent_menulink['link_path']);
-          if (empty($stack['menu_link.' . $identifier])) {
-            $menulink_config = new MenuLinkConfiguration($identifier);
-            $menulink_config->build();
-            $config->addToDependencies($menulink_config);
-            $stack['menu_link.' . $identifier] = TRUE;
-          }
+          $menulink_config = new MenuLinkConfiguration($identifier);
+          $menulink_config->build();
+          $config->addToDependencies($menulink_config);
         }
       }
     }

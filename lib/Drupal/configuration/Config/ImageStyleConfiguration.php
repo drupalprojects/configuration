@@ -71,7 +71,7 @@ class ImageStyleConfiguration extends Configuration {
   /**
    * Overrides Drupal\configuration\Config\Configuration::alterDependencies().
    */
-  public static function alterDependencies(Configuration $config, &$stack) {
+  public static function alterDependencies(Configuration $config) {
     if ($config->getComponent() == 'field') {
       // Check if the field is using a image style
       $field = $config->data['field_instance'];
@@ -79,12 +79,10 @@ class ImageStyleConfiguration extends Configuration {
         foreach ($field['display'] as $display) {
           if (!empty($display['settings']) && !empty($display['settings']['image_style'])) {
             $identifier = $display['settings']['image_style'];
-            if (empty($stack['image_style.' . $identifier])) {
-              $image_style = new ImageStyleConfiguration($identifier);
-              $image_style->build();
-              $config->addToDependencies($image_style);
-              $stack['image_style.' . $identifier] = TRUE;
-            }
+
+            $image_style = new ImageStyleConfiguration($identifier);
+            $image_style->build();
+            $config->addToDependencies($image_style);
           }
         }
       }

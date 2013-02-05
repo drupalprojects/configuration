@@ -61,22 +61,17 @@ class WysiwygConfiguration extends Configuration {
   /**
    * Overrides Drupal\configuration\Config\Configuration::alterDependencies().
    */
-  public static function alterDependencies(Configuration $config, &$stack) {
+  public static function alterDependencies(Configuration $config) {
     if ($config->getComponent() == 'text_format') {
       $formats = filter_formats();
       foreach (array_keys(wysiwyg_profile_load_all()) as $format) {
         // Text format may vanish without deleting the wysiwyg profile.
         if (isset($formats[$format]) && $format == $config->getIdentifier()) {
           $identifier = $format;
-          if (empty($stack['wysiwyg.' . $identifier])) {
-            $wysiwig_profile = new WysiwygConfiguration($identifier);
-            $wysiwig_profile->build();
-
-            $config->addToOptionalConfigurations($wysiwig_profile);
-
-            $wysiwig_profile->addToDependencies($config);
-            $stack['wysiwyg.' . $identifier] = TRUE;
-          }
+          $wysiwig_profile = new WysiwygConfiguration($identifier);
+          $wysiwig_profile->build();
+          $config->addToOptionalConfigurations($wysiwig_profile);
+          $wysiwig_profile->addToDependencies($config);
         }
       }
     }

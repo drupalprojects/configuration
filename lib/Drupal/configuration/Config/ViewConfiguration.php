@@ -71,7 +71,7 @@ class ViewConfiguration extends CtoolsConfiguration {
   /**
    * Overrides Drupal\configuration\Config\Configuration::alterDependencies().
    */
-  public static function alterDependencies(Configuration $config, &$stack) {
+  public static function alterDependencies(Configuration $config) {
     static $cache;
     if (!isset($cache)) {
       $cache = array();
@@ -105,12 +105,11 @@ class ViewConfiguration extends CtoolsConfiguration {
               // Display block from a view.
               case 'views':
                 $config_id = 'views_view.' . $id;
-                if (empty($stack[$config_id])) {
-                  $view = ConfigurationManagement::createConfigurationInstance($config_id);
-                  $view->build();
-                  $config->addToDependencies($view);
-                  $stack[$config_id] = TRUE;
-                }
+
+                $view = ConfigurationManagement::createConfigurationInstance($config_id);
+                $view->build();
+                $config->addToDependencies($view);
+
                 $config->addToDependencies($view);
                 break;
             }
@@ -118,23 +117,19 @@ class ViewConfiguration extends CtoolsConfiguration {
           // A view added directly.
           case 'views':
             $config_id = 'views_view.' . $object->subtype;
-            if (empty($stack[$config_id])) {
-              $view = ConfigurationManagement::createConfigurationInstance($config_id);
-              $view->build();
-              $config->addToDependencies($view);
-              $stack[$config_id] = TRUE;
-            }
+
+            $view = ConfigurationManagement::createConfigurationInstance($config_id);
+            $view->build();
+            $config->addToDependencies($view);
             break;
           // A view added using the Views content panes module.
           case 'views_panes':
             list($subtype, ) = explode('-', $object->subtype);
             $config_id = 'views_view.' . $subtype;
-            if (empty($stack[$config_id])) {
-              $view = ConfigurationManagement::createConfigurationInstance($config_id);
-              $view->build();
-              $config->addToDependencies($view);
-            }
-            $stack[$config_id] = TRUE;
+
+            $view = ConfigurationManagement::createConfigurationInstance($config_id);
+            $view->build();
+            $config->addToDependencies($view);
             break;
         }
       }

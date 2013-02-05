@@ -65,18 +65,17 @@ class VocabularyConfiguration extends Configuration {
   /**
    * Overrides Drupal\configuration\Config\Configuration::alterDependencies().
    */
-  public static function alterDependencies(Configuration $config, &$stack) {
+  public static function alterDependencies(Configuration $config) {
     if ($config->getComponent() == 'field') {
       // Check if the field is using a image style
       $field = $config->data['field_config'];
       if ($field['type'] == 'taxonomy_term_reference' && $field['settings']['allowed_values']) {
         foreach ($field['settings']['allowed_values'] as $vocabulary) {
-          if (empty($stack['vocabulary.' . $vocabulary['vocabulary']])) {
-            $vocabulary_conf = new VocabularyConfiguration($vocabulary['vocabulary']);
-            $vocabulary_conf->build();
-            $config->addToDependencies($vocabulary_conf);
-            $stack['vocabulary.' . $vocabulary['vocabulary']] = TRUE;
-          }
+
+          $vocabulary_conf = new VocabularyConfiguration($vocabulary['vocabulary']);
+          $vocabulary_conf->build();
+          $config->addToDependencies($vocabulary_conf);
+
         }
       }
     }

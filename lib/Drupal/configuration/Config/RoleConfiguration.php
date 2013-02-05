@@ -63,7 +63,7 @@ class RoleConfiguration extends Configuration {
   /**
    * Overrides Drupal\configuration\Config\Configuration::saveToActiveStore().
    */
-  public static function alterDependencies(Configuration $config, &$stack) {
+  public static function alterDependencies(Configuration $config) {
     if ($config->getComponent() == 'permission') {
       $data = $config->getData();
       if (!empty($data['roles'])) {

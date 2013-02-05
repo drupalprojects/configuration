@@ -58,7 +58,7 @@ class VariableConfiguration extends Configuration {
   /**
    * Overrides Drupal\configuration\Config\Configuration::alterDependencies().
    */
-  public static function alterDependencies(Configuration $config, &$stack) {
+  public static function alterDependencies(Configuration $config) {
     if ($config->getComponent() == 'content_type') {
       $variables = array(
         'field_bundle_settings_node_',
@@ -93,18 +93,15 @@ class VariableConfiguration extends Configuration {
       $fields = field_info_instances($entity_type, $config->getIdentifier());
       foreach ($variables as $variable) {
         $identifier = $variable . '_' . $config->getIdentifier();
-        // Avoid include multiple times the same dependency.
-        if (empty($stack['variable.' . $identifier])) {
-          $in_db = db_query("SELECT 1 FROM {variable} WHERE name = :name", array(':name' => $identifier))->fetchField();
-          // Some variables are not in the database and their values are
-          // provided by the second paramenter of variable_get.
-          // Only inform about configurations that are indeed in the database.
-          if ($in_db) {
-            $var_config = new VariableConfiguration($identifier);
-            $var_config->build();
-            $config->addToDependencies($var_config);
-            $stack['variable.' . $identifier] = TRUE;
-          }
+
+        $in_db = db_query("SELECT 1 FROM {variable} WHERE name = :name", array(':name' => $identifier))->fetchField();
+        // Some variables are not in the database and their values are
+        // provided by the second paramenter of variable_get.
+        // Only inform about configurations that are indeed in the database.
+        if ($in_db) {
+          $var_config = new VariableConfiguration($identifier);
+          $var_config->build();
+          $config->addToDependencies($var_config);
         }
       }
     }

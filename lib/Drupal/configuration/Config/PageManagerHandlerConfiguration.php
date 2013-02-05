@@ -43,17 +43,16 @@ class PageManagerHandlerConfiguration extends CtoolsConfiguration {
   /**
    * Overrides Drupal\configuration\Config\Configuration::alterDependencies().
    */
-  public static function alterDependencies(Configuration $config, &$stack) {
+  public static function alterDependencies(Configuration $config) {
     // Dependencies for Page Manager Pages. Each page has a handler.
     if ($config->getComponent() == 'page_manager_pages' && !$config->broken) {
       $config_data = $config->getData();
       $id = 'page_manager_handlers.page_' . $config_data->name . '_panel_context';
-      if (empty($stack[$id])) {
-        $page_handler = ConfigurationManagement::createConfigurationInstance($id);
-        $page_handler->build();
-        $config->addToDependencies($page_handler);
-        $stack[$id] = TRUE;
-      }
+
+      $page_handler = ConfigurationManagement::createConfigurationInstance($id);
+      $page_handler->build();
+      $config->addToDependencies($page_handler);
+
     }
   }
 

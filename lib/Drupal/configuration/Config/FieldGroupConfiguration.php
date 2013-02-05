@@ -43,7 +43,7 @@ class FieldGroupConfiguration extends CtoolsConfiguration {
   /**
    * Overrides Drupal\configuration\Config\Configuration::alterDependencies().
    */
-  public static function alterDependencies(Configuration $config, &$stack) {
+  public static function alterDependencies(Configuration $config) {
     // @todo Implement dependency logic related to Content Type.
   }
 

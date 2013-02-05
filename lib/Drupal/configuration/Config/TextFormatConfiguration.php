@@ -58,6 +58,28 @@ class TextFormatConfiguration extends Configuration {
   }
 
   /**
+   * Overrides Drupal\configuration\Config\Configuration::alterDependencies().
+   */
+  public static function alterDependencies(Configuration $config) {
+    if ($config->getComponent() == 'permission') {
+
+    // Generate permissions for each text format. Warn the administrator that any
+    // of them are potentially unsafe.
+    foreach (filter_formats() as $format) {
+      $permission = filter_permission_name($format);
+      if (!empty($permission)) {
+          $data = $config->getData();
+          if ($permission == $data['permission']) {
+            $text_format = ConfigurationManagement::createConfigurationInstance('text_format.' . $format->format);
+            $config->addToDependencies($text_format);
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Implements Drupal\configuration\Config\Configuration::prepareBuild().
    */
   protected function prepareBuild() {

@@ -64,39 +64,23 @@ class PermissionConfiguration extends Configuration {
   /**
    * Overrides Drupal\configuration\Config\Configuration::alterDependencies().
    */
-  public static function alterDependencies(Configuration $config, &$stack) {
-    if ($config->getComponent() == 'permission') {
-
-      foreach (node_permissions_get_configured_types() as $type) {
-        foreach (array_keys(node_list_permissions($type)) as $permission) {
-          $data = $config->getData();
-          if ($permission == $data['permission']) {
-            $content_type = ConfigurationManagement::createConfigurationInstance('content_type.' . $type);
-            $config->addToDependencies($content_type);
-            break;
-          }
-        }
-      }
-    }
+  public static function alterDependencies(Configuration $config) {
     if ($config->getComponent() == 'content_type') {
       $permissions = node_list_permissions($config->getIdentifier());
 
       foreach (array_keys($permissions) as $permission) {
         $identifier = str_replace(' ', '_', $permission);
-        // Avoid include multiple times the same dependency.
-        if (empty($stack['permission.' . $identifier])) {
-          $perm = new PermissionConfiguration($identifier);
-          $perm->build();
 
-          // Add the content type as a dependency of the permission.
-          $perm->addToDependencies($config);
+        $perm = new PermissionConfiguration($identifier);
+        $perm->build();
 
-          // Add the permission as a child configuration of the content type
-          // The permission is not required to load the content type but is
-          // a nice to have.
-          $config->addToOptionalConfigurations($perm);
-          $stack['permission.' . $identifier] = TRUE;
-        }
+        // Add the content type as a dependency of the permission.
+        $perm->addToDependencies($config);
+
+        // Add the permission as a child configuration of the content type
+        // The permission is not required to load the content type but is
+        // a nice to have.
+        $config->addToOptionalConfigurations($perm);
       }
     }
     elseif ($config->getComponent() == 'text_format') {
@@ -104,20 +88,17 @@ class PermissionConfiguration extends Configuration {
       $permission = filter_permission_name($format);
       if (!empty($permission)) {
         $identifier = str_replace(' ', '_', $permission);
-        // Avoid include multiple times the same dependency.
-        if (empty($stack['permission.' . $identifier])) {
-          $perm = new PermissionConfiguration($identifier);
-          $perm->build();
 
-          // Add the text format as a dependency of the permission.
-          $perm->addToDependencies($config);
+        $perm = new PermissionConfiguration($identifier);
+        $perm->build();
 
-          // Add the permission as a child configuration of the filter
-          // The permission is not required to load the filter format but is
-          // a nice to have.
-          $config->addToOptionalConfigurations($perm);
-          $stack['permission.' . $identifier] = TRUE;
-        }
+        // Add the text format as a dependency of the permission.
+        $perm->addToDependencies($config);
+
+        // Add the permission as a child configuration of the filter
+        // The permission is not required to load the filter format but is
+        // a nice to have.
+        $config->addToOptionalConfigurations($perm);
       }
     }
   }

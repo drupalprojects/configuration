@@ -72,7 +72,7 @@ class FieldConfiguration extends Configuration {
   /**
    * Overrides Drupal\configuration\Config\Configuration::alterDependencies().
    */
-  public static function alterDependencies(Configuration $config, &$stack) {
+  public static function alterDependencies(Configuration $config) {
     if ($config->configForEntity()) {
       $entity_type = $config->getEntityType();
       $fields = field_info_instances($entity_type, $config->getIdentifier());
