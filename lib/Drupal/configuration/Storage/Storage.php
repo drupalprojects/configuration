@@ -51,7 +51,7 @@ class Storage {
           return TRUE;
         }
         else {
-          drupal_set_message(t('The current user do not have permissions to edit the file %file.', array('%file' => $full_path)), 'error');
+          drupal_set_message(t('The current user does not have permissions to edit the file %file.', array('%file' => $full_path)), 'error');
         }
       }
       else {
@@ -80,8 +80,8 @@ class Storage {
       if (is_writable($dir_path) || drupal_chmod($dir_path)) {
         return TRUE;
       }
-      watchdog('configuration', 'The current user do not have write permissions in the directory %dir.', array('%dir' => $dir_path), WATCHDOG_ERROR);
-      drupal_set_message(t('The current user do not have write permissions in the directory %dir.', array('%dir' => $dir_path)), 'error', FALSE);
+      watchdog('configuration', 'The current user does not have write permissions in the directory %dir.', array('%dir' => $dir_path), WATCHDOG_ERROR);
+      drupal_set_message(t('The current user does not have write permissions in the directory %dir.', array('%dir' => $dir_path)), 'error', FALSE);
     }
     return FALSE;
   }
