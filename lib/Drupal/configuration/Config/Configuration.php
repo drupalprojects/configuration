@@ -820,7 +820,7 @@ abstract class Configuration {
 
     if ($settings->getSetting('format') == 'tar') {
       $file_content = $this->raw();
-      print ConfigurationManagement::createTarContent("configuration/{$file_name}", $file_content);
+      print ConfigurationManagement::createTarContent($settings->getSetting('tar_folder') . "/{$file_name}", $file_content);
     }
     else {
       $print = $settings->getSetting('print');

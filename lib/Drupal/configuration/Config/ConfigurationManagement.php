@@ -628,6 +628,7 @@ class ConfigurationManagement {
         ),
         'settings' => array(
           'format' => 'tar',
+          'tar_folder' => 'configuration',
         )
       )
     );
@@ -672,7 +673,7 @@ class ConfigurationManagement {
     }
     $file_content .= ");\n";
 
-    print static::createTarContent("configuration/configurations.inc", $file_content);
+    print static::createTarContent($settings->getSetting('tar_folder') . "/configurations.inc", $file_content);
 
     print pack("a1024", "");
     exit;
