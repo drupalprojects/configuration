@@ -14,7 +14,7 @@
           var items = [];
 
           $.each(data['status'], function(key, val) {
-            var span = $("span[rel=" + key + "]")
+            var span = $("span[rel='" + key + "']")
 
             span.addClass('processed').html(val);
             if (val != in_sync) {
