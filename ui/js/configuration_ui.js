@@ -36,6 +36,11 @@
 
 
       $("fieldset.configuration .form-checkbox").bind('click', function() {
+
+        $("fieldset.configuration input.form-checkbox").each(function() {
+          $(this).attr('disabled', 'disabled');
+        });
+
         var current_checkbox = $(this);
         var include_dependencies = $("input[name='include_dependencies']:checked").length;
         var include_optionals = $("input[name='include_optionals']:checked").length;
@@ -62,6 +67,11 @@
             });
             current_checkbox.parents('td').next().html(original_value);
             updateCheckedCount(context);
+
+            $("fieldset.configuration input.form-checkbox").each(function() {
+              $(this).removeAttr('disabled');
+            });
+
           });
         }
       });
