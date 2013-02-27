@@ -718,7 +718,7 @@ abstract class Configuration {
    */
   public function getFileName() {
     $storage_system = static::getStorageSystem($this->getComponent());
-    return $this->getUniqueId() . $storage_system::getFileExtension();
+    return drupal_strtolower(preg_replace("/[^A-Za-z0-9 \.]/", '_', $this->getUniqueId())) . $storage_system::getFileExtension();
   }
 
   /**
