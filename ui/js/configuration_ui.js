@@ -35,7 +35,7 @@
 
 
 
-      $("fieldset.configuration .form-checkbox").bind('click', function() {
+      $("fieldset.configuration td .form-checkbox").bind('click', function() {
 
         $("fieldset.configuration input.form-checkbox").each(function() {
           $(this).attr('disabled', 'disabled');
