@@ -627,22 +627,6 @@ function configuration_ui_settings_form($form, &$form_state) {
     '#default_value' => variable_get('configuration_remote_server', -1),
   );
 
-  $form['configuration_sets'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Configuration Sets'),
-    '#collapsible' => TRUE,
-    '#collapsed' => FALSE,
-    '#description' => t('You can use configurations sets to organize your tracked configurations into folders.'),
-  );
-
-  $form['configuration_sets']['configuration_sets'] = array(
-    '#type' => 'textarea',
-    '#title' => t('List of sets'),
-    '#description' => t('One set per line, no spaces allowed. Only alpha-numeric and underscores allowed.'),
-    '#size' => 6,
-    '#default_value' => variable_get('configuration_sets', ''),
-  );
-
   $form['#validate'][] = 'configuration_ui_validate_settings';
   return system_settings_form($form);
 }
