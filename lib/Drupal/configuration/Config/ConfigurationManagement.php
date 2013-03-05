@@ -343,8 +343,19 @@ class ConfigurationManagement {
       $config->iterate($settings);
     }
 
+    // Even if we are exporting only a few configurations, all tracked
+    // configurations should be considered while creating the list of required
+    // modules.
     if ($start_tracking) {
-      static::updateTrackingFile($settings->getInfo('modules'));
+      $modules = array();
+      foreach (array_keys(static::trackedConfigurations(FALSE)) as $config_id) {
+        $config = static::createConfigurationInstance($config_id);
+        $config->build();
+        $modules = array_merge($modules, array_keys($config->getRequiredModules()));
+      }
+      array_merge($modules, $settings->getInfo('modules'));
+
+      static::updateTrackingFile($modules);
     }
 
     module_invoke_all('configuration_post_export', $settings);
