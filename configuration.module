@@ -39,6 +39,7 @@ function configuration_configuration_handlers() {
     'menu'         => '\Drupal\configuration\Config\MenuConfiguration',
     'menu_link'    => '\Drupal\configuration\Config\MenuLinkConfiguration',
     'ctools'       => '\Drupal\configuration\Config\CtoolsConfiguration',
+    'entity'       => '\Drupal\configuration\Config\EntityApiConfiguration',
     'views'        => '\Drupal\configuration\Config\ViewConfiguration',
     'strongarm'    => '\Drupal\configuration\Config\StrongarmConfiguration',
     'page_manager' => '\Drupal\configuration\Config\PageManagerHandlerConfiguration',

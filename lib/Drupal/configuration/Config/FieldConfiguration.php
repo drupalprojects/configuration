@@ -75,6 +75,9 @@ class FieldConfiguration extends Configuration {
   public static function alterDependencies(Configuration $config) {
     if ($config->configForEntity()) {
       $entity_type = $config->getEntityType();
+      if (empty($entity_type)) {
+        return;
+      }
       $fields = field_info_instances($entity_type, $config->getIdentifier());
       foreach ($fields as $name => $field) {
         $identifier = $entity_type . "." . $field['field_name'] . "." . $field['bundle'];
