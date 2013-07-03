@@ -154,7 +154,8 @@ class EntityApiConfiguration extends Configuration {
     $entity = $this->getData();
     $entity_type = $this->getComponent();
     if ($original = entity_load_single($entity_type, $this->getIdentifier())) {
-      entity_delete($entity_type, $this->getIdentifier());
+      $entity->id = $original->id;
+      unset($entity->is_new);
     }
 
     $entity->save();
