@@ -125,6 +125,14 @@ class EntityApiConfiguration extends Configuration {
   public function findRequiredModules() {
     $this->addToModules('entity');
     $entity_info = entity_get_info($this->getComponent());
+
+    $entity = $this->getData();
+    if (!empty($entity->dependencies)) {
+      foreach ($entity->dependencies as $dependency) {
+        $this->addToModules($dependency);
+      }
+    }
+
     if ($entity_info) {
       $this->addToModules($entity_info['module']);
     }
