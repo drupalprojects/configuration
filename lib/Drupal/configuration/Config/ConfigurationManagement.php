@@ -601,7 +601,7 @@ class ConfigurationManagement {
 
     $error = FALSE;
     if (!empty($missing_modules)) {
-      drupal_set_message(t('Configurations cannot be syncronized because the following modules are not available to install: %modules', array('%modules' => implode(', ', $missing_modules))), 'error');
+      drupal_set_message(t('Configurations cannot be synchronized because the following modules are not available to install: %modules', array('%modules' => implode(', ', $missing_modules))), 'error');
       return $modules_results;
     }
     else {

@@ -24,7 +24,7 @@ function configuration_drush_help($section) {
     case 'drush:cexp':
       return dt("Export a configuration to the Data Store.");
     case 'drush:csyn':
-      return dt("Syncronize configurations based on config://tracked.inc.");
+      return dt("Synchronize configurations based on config://tracked.inc.");
     case 'drush:csta':
       return dt("Start tracking a configuration changes.");
     case 'drush:csto':
@@ -134,14 +134,14 @@ function configuration_drush_command() {
   );
   $items['config-sync'] = array(
     'callback' => '_configuration_sync',
-    'description' => 'Syncronize configurations',
+    'description' => 'Synchronize configurations',
     'aliases' => array('csyn'),
     'examples' => array(
       'drush config-sync' => 'Enable all the required modules and the configurations defined in tracked.inc',
       'drush config-sync --preserve-tracked' => 'Will keep tracking the previous configurations even if they are not listed in the tracked.inc',
-      'drush csyn --source=%site/myconfig' => 'Syncronize configurations from drupal/sites/example.com/myconfig/tracked.inc',
-      'drush csyn --source=myconfig' => 'Syncronize configurations from drupal/myconfig/tracked.inc',
-      'drush csyn --source=/path/to/myconfig' => 'Syncronize configurations from /path/to/myconfig/tracked.inc',
+      'drush csyn --source=%site/myconfig' => 'Synchronize configurations from drupal/sites/example.com/myconfig/tracked.inc',
+      'drush csyn --source=myconfig' => 'Synchronize configurations from drupal/myconfig/tracked.inc',
+      'drush csyn --source=/path/to/myconfig' => 'Synchronize configurations from /path/to/myconfig/tracked.inc',
     ),
     'options' => array(
       'source' => 'import all the configurations from a given directory.',
@@ -425,7 +425,7 @@ function _configuration_sync() {
   $missing_modules = $modules_results->getInfo('missing_modules');
 
   if (!empty($missing_modules)) {
-    drush_log(dt('Configurations cannot be syncronized because the following modules are not available to install: %modules', array('%modules' => implode(', ', $missing_modules))), 'error');
+    drush_log(dt('Configurations cannot be synchronized because the following modules are not available to install: %modules', array('%modules' => implode(', ', $missing_modules))), 'error');
     $error = TRUE;
   }
   else {

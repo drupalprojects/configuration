@@ -586,7 +586,7 @@ function configuration_ui_sync_form($form, &$form_state) {
   );
   $form['configuration_ops']['sync_configurations'] = array(
     '#type' => 'submit',
-    '#value' => t('Syncronize configurations'),
+    '#value' => t('Synchronize configurations'),
     '#submit' => array('configuration_sync_configurations_submit'),
   );
   $form['configuration_ops']['preserve_tracked'] = array(
@@ -672,7 +672,7 @@ function configuration_sync_configurations_submit($form, &$form_state) {
   $missing_modules = $modules_results->getInfo('missing_modules');
 
   if (!empty($missing_modules)) {
-    drupal_set_message(t('Configurations cannot be syncronized because the following modules are not available to install: %modules', array('%modules' => implode(', ', $missing_modules))), 'error');
+    drupal_set_message(t('Configurations cannot be synchronized because the following modules are not available to install: %modules', array('%modules' => implode(', ', $missing_modules))), 'error');
     $error = TRUE;
   }
   else {

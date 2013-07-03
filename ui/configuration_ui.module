@@ -50,7 +50,7 @@ function configuration_ui_menu() {
   );
 
   $items['admin/config/system/configuration/sync'] = array(
-    'title' => 'Syncronize',
+    'title' => 'Synchronize',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('configuration_ui_sync_form'),
     'access arguments' => array('administer configuration management'),

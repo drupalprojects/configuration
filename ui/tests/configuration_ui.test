@@ -193,9 +193,9 @@ class ConfigurationUISettingsTest extends ConfigurationUIWebTestCase {
     }
   }
 
-  public function testSyncronizeUI() {
+  public function testSynchronizeUI() {
     // Change the path to be able to read configurations from the test folder
-    // Test the syncronize feature
+    // Test the synchronize feature
     $web_user = $this->drupalCreateUser(
       array(
         'administer configuration management',
@@ -221,7 +221,7 @@ class ConfigurationUISettingsTest extends ConfigurationUIWebTestCase {
     $this->assertRaw(t('The directory %directory does not exist.', array('%directory' => $directory)));
 
     $edit = array();
-    $this->drupalPost('admin/config/system/configuration/sync', $edit, t('Syncronize configurations'));
+    $this->drupalPost('admin/config/system/configuration/sync', $edit, t('Synchronize configurations'));
 
     $this->assertRaw('The following modules have been enabled:', 'Modules enabled');
     $this->assertRaw(t('Imported %config', array('%config' => 'content_type.article')));
