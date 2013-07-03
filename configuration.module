@@ -43,6 +43,7 @@ function configuration_configuration_handlers() {
     'views'        => '\Drupal\configuration\Config\ViewConfiguration',
     'strongarm'    => '\Drupal\configuration\Config\StrongarmConfiguration',
     'page_manager' => '\Drupal\configuration\Config\PageManagerHandlerConfiguration',
+    'panelizer'    => '\Drupal\configuration\Config\PanelizerConfiguration',
     'wysiwyg'      => '\Drupal\configuration\Config\WysiwygConfiguration',
     'role_export'  => '\Drupal\configuration\Config\RoleConfiguration',
     'field_group'  => '\Drupal\configuration\Config\FieldGroupConfiguration',
