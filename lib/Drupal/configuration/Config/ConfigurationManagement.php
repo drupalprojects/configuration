@@ -191,12 +191,16 @@ class ConfigurationManagement {
    *   not tracked anymore.
    */
   static public function stopTracking($list = array(), $stop_track_dependencies = TRUE, $stop_track_optionals = TRUE) {
+    $excluded = static::excludedConfigurations();
     $settings = new ConfigIteratorSettings(
       array(
         'build_callback' => 'build',
         'callback' => 'removeConfiguration',
         'process_dependencies' => $stop_track_dependencies,
         'process_optionals' => $stop_track_optionals,
+        'settings' => array(
+          'excluded' => $excluded,
+        ),
         'info' => array(
           'untracked' => array(),
         )
@@ -204,6 +208,10 @@ class ConfigurationManagement {
     );
     if (Storage::checkFilePermissions('tracked.inc')) {
       foreach ($list as $component) {
+        if (in_array($component, $excluded)) {
+          continue;
+        }
+
         $config = static::createConfigurationInstance($component);
 
         // Make sure the object is built before start to iterate on its
@@ -248,6 +256,7 @@ class ConfigurationManagement {
    *   configurations.
    */
   static public function importToActiveStore($list = array(), $import_dependencies = TRUE, $import_optionals = TRUE, $start_tracking = FALSE, $source = NULL) {
+    $excluded = static::excludedConfigurations();
     $settings = new ConfigIteratorSettings(
       array(
         'build_callback' => 'loadFromStorage',
@@ -257,6 +266,7 @@ class ConfigurationManagement {
         'settings' => array(
           'start_tracking' => $start_tracking,
           'source' => $source,
+          'excluded' => $excluded,
         ),
         'info' => array(
           'imported' => array(),
@@ -271,6 +281,9 @@ class ConfigurationManagement {
     $handlers = static::getConfigurationHandler();
 
     foreach ($list as $component) {
+      if (in_array($component, $excluded)) {
+        continue;
+      }
       $part = explode('.', $component, 2);
       if (empty($handlers[$part[0]])) {
         $settings->addInfo('no_handler', $part[0]);
@@ -314,6 +327,7 @@ class ConfigurationManagement {
    *   configurations.
    */
   static public function exportToDataStore($list = array(), $export_dependencies = TRUE, $export_optionals = TRUE, $start_tracking = FALSE) {
+    $excluded = static::excludedConfigurations();
     $settings = new ConfigIteratorSettings(
       array(
         'build_callback' => 'build',
@@ -322,6 +336,7 @@ class ConfigurationManagement {
         'process_optionals' => $export_optionals,
         'settings' => array(
           'start_tracking' => $start_tracking,
+          'excluded' => $excluded,
         ),
         'info' => array(
           'modules' => array(),
@@ -334,6 +349,9 @@ class ConfigurationManagement {
     module_invoke_all('configuration_pre_export', $settings);
 
     foreach ($list as $component) {
+      if (in_array($component, $excluded)) {
+        continue;
+      }
       $config = static::createConfigurationInstance($component);
 
       // Make sure the object is built before start to iterate on its
@@ -412,6 +430,7 @@ class ConfigurationManagement {
    *   @endcode
    */
   static public function trackedConfigurations($tree = TRUE) {
+    $excluded = static::excludedConfigurations();
     $tracked = db_select('configuration_tracked', 'ct')
                   ->fields('ct', array('component', 'identifier', 'hash'))
                   ->execute()
@@ -428,6 +447,11 @@ class ConfigurationManagement {
     }
 
     foreach ($tracked as $object) {
+      $id = $object->component . '.' . $object->identifier;
+      if (in_array($id, $excluded)) {
+        continue;
+      }
+
       // Only return tracked Configurations for supported components.
       if (isset($handlers[$object->component])) {
 
@@ -463,6 +487,7 @@ class ConfigurationManagement {
    * @return array
    */
   static public function nonTrackedConfigurations() {
+    $excluded = static::excludedConfigurations();
     $handlers = static::getConfigurationHandler();
 
     $tracked = static::trackedConfigurations();
@@ -474,6 +499,9 @@ class ConfigurationManagement {
       foreach ($identifiers as $identifier => $identifier_human_name) {
         if (empty($tracked[$component]) || empty($tracked[$component][$identifier])) {
           $id = $component . '.' . $identifier;
+          if (in_array($id, $excluded)) {
+            continue;
+          }
           $non_tracked[$component][$identifier] = array(
             'id' => $id,
             'name' => $identifier_human_name,
@@ -484,6 +512,18 @@ class ConfigurationManagement {
     return $non_tracked;
   }
 
+  /**
+   * Return a list of configurations that will not be proccessed by
+   * configuration management.
+   */
+  static public function excludedConfigurations() {
+    $list = variable_get('configuration_exclude_configurations', '');
+    $list = explode("\n", $list);
+    $list = array_map('trim', $list);
+    $list = array_filter($list, 'strlen');
+
+    return $list;
+  }
 
   /**
    * Returns a list of configurations available in the site without distinction
@@ -492,6 +532,8 @@ class ConfigurationManagement {
    * @return array
    */
   static public function allConfigurations() {
+    $excluded = static::excludedConfigurations();
+
     $handlers = static::getConfigurationHandler();
 
     $tracked = static::trackedConfigurations();
@@ -501,6 +543,11 @@ class ConfigurationManagement {
       $identifiers = $handler::getAllIdentifiersCached($component);
       foreach ($identifiers as $identifier => $identifier_human_name) {
         $id = $component . '.' . $identifier;
+
+        if (in_array($id, $excluded)) {
+          continue;
+        }
+
         if (!empty($tracked[$component][$identifier])) {
           // Set the hash for the tracked configurations
           $all[$component][$identifier] = array(
@@ -625,6 +672,7 @@ class ConfigurationManagement {
    * Download the entire configuration packaged up into tar file
    */
   public static function exportAsTar($list = array(), $export_dependencies = TRUE, $export_optionals = TRUE) {
+    $excluded = static::excludedConfigurations();
     $settings = new ConfigIteratorSettings(
       array(
         'build_callback' => 'build',
@@ -636,6 +684,7 @@ class ConfigurationManagement {
           'exported_files' => array(),
           'hash' => array(),
           'modules' => array(),
+          'excluded' => $excluded,
         ),
         'settings' => array(
           'format' => 'tar',
@@ -658,6 +707,9 @@ class ConfigurationManagement {
     drupal_send_headers();
 
     foreach ($list as $component) {
+      if (in_array($component, $excluded)) {
+        continue;
+      }
       $config = static::createConfigurationInstance($component);
 
       // Make sure the object is built before start to iterate on its
@@ -694,6 +746,7 @@ class ConfigurationManagement {
    * Download the entire configuration packaged up into tar file
    */
   public static function rawDepdendencyInfo($list = array(), $include_dependencies = TRUE, $include_optionals = TRUE) {
+    $excluded = static::excludedConfigurations();
     $settings = new ConfigIteratorSettings(
       array(
         'build_callback' => 'build',
@@ -710,6 +763,7 @@ class ConfigurationManagement {
             'optionals' => $include_optionals,
             'dependencies' => $include_dependencies,
           ),
+          'excluded' => $excluded,
         )
       )
     );
@@ -723,6 +777,9 @@ class ConfigurationManagement {
     print "{\n";
 
     foreach ($list as $component) {
+      if (in_array($component, $excluded)) {
+        continue;
+      }
       $config = static::createConfigurationInstance($component);
 
       // Make sure the object is built before start to iterate on its

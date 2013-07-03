@@ -627,6 +627,22 @@ function configuration_ui_settings_form($form, &$form_state) {
     '#default_value' => variable_get('configuration_remote_server', -1),
   );
 
+  $form['configuration_exclude'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Exclude Configurations'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+    '#description' => t('There are some configurations, specially variables that are closely related to the current site. Like <em>cron_key</em> or <em>drupal_private_key</em>. You can use this list to exclude those configurations from being handler from Configuration Management module.'),
+  );
+
+  $form['configuration_exclude']['configuration_exclude_configurations'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Configurations to exclude.'),
+    '#description' => t('One configuration to exclude per line, no spaces allowed. Use the format: component.identifier (i.e: variable.cron_key).'),
+    '#size' => 6,
+    '#default_value' => variable_get('configuration_exclude_configurations', ''),
+  );
+
   $form['#validate'][] = 'configuration_ui_validate_settings';
   return system_settings_form($form);
 }

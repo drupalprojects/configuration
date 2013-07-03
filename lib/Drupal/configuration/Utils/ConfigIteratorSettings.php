@@ -120,6 +120,15 @@ class ConfigIteratorSettings {
     $cthis->cache[$id] = $configuration;
   }
 
+  function excluded($configuration) {
+    if (empty($this->settings['excluded'])) {
+      return FALSE;
+    }
+    else {
+      return !empty($this->settings['excluded'][$configuration->getUniqueId()]);
+    }
+  }
+
   function alreadyProcessed($configuration) {
     return !empty($this->already_processed[$configuration->getUniqueId()]);
   }

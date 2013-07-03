@@ -870,7 +870,7 @@ abstract class Configuration {
     $callback = $settings->getCallback();
     $build_callback = $settings->getBuildCallback();
 
-    if ($settings->alreadyProcessed($this)) {
+    if ($settings->alreadyProcessed($this) || $settings->excluded($this)) {
       return;
     }
 
