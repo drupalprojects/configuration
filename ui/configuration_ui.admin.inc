@@ -679,7 +679,7 @@ function configuration_sync_configurations_submit($form, &$form_state) {
     $modules_to_install = $modules_results->getInfo('modules_to_install');
     drupal_set_message(t('The following will be enabled: %modules', array('%modules' => implode(', ', $modules_to_install))));
     if (!empty($modules_to_install)) {
-      module_enable($modules_to_install, FALSE);
+      module_enable($modules_to_install, TRUE);
       drupal_set_message(t('The following modules have been enabled: %modules', array('%modules' => implode(', ', $modules_to_install))));
     }
 

@@ -432,7 +432,7 @@ function _configuration_sync() {
     $modules_to_install = $modules_results->getInfo('modules_to_install');
     drush_log(dt('The following will be enabled: %modules', array('%modules' => implode(', ', $modules_to_install))));
     if (!empty($modules_to_install)) {
-      module_enable($modules_to_install, FALSE);
+      module_enable($modules_to_install, TRUE);
       drush_log(dt('The following modules have been enabled: %modules', array('%modules' => implode(', ', $modules_to_install))));
     }
 
