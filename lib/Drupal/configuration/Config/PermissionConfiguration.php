@@ -56,7 +56,9 @@ class PermissionConfiguration extends Configuration {
     $return = array();
     $permissions = array_keys(module_invoke_all('permission'));
     foreach ($permissions as $permission) {
-      $return[str_replace(' ', '_', $permission)] = $permission;
+      $id = str_replace(' ', '_', $permission);
+      $id = str_replace('/', '_', $id);
+      $return[$id] = $permission;
     }
     return $return;
   }
