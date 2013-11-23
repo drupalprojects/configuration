@@ -213,19 +213,17 @@ function _configuration_get_tracked() {
     'Hash',
   );
   //get tracked file
-  $tracked = ConfigurationManagement::trackedConfigurations();
+  $tracked = ConfigurationManagement::trackedConfigurations(FALSE);
   //format the result
-  foreach ($tracked as $component => $list) {
-    foreach ($list as $identifier => $hash) {
-      //check status
-      $configuration = ConfigurationManagement::createConfigurationInstance($component);
-      $content[] = array(
-        'component' => $component,
-        'identifier' => $identifier,
-        'status' => $configuration->getStatus(),
-        'hash' => $hash,
-      );
-    }
+  foreach ($tracked as $component => $info) {
+    //check status
+    $configuration = ConfigurationManagement::createConfigurationInstance($component);
+    $content[] = array(
+      'component' => $configuration->getComponent(),
+      'identifier' => $configuration->getIdentifier(),
+      'status' => $configuration->getStatus(),
+      'hash' => $info['hash'],
+    );
   }
   if (empty($content)) {
     return drush_print('No tracked components');
