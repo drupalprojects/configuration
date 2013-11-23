@@ -112,7 +112,7 @@ abstract class ConfigurationHandlerBaseTestCase extends ConfigurationWebTestCase
    * Import a configuration. Make modifications on it, and then revert it.
    *
    * This function will check that the configuration is 'In Sync' after is
-   * imported the first time. Then is overriden after is modified, and is again
+   * imported the first time. Then is overridden after is modified, and is again
    * 'In Sync' after revert it.
    */
   public function testCheckModifications() {

@@ -317,7 +317,7 @@ function configuration_ui_config_status($component) {
           $status[$id] = t('Active Store Only');
         }
         elseif ($hash != $item['hash']) {
-          $status[$id] = t('Overriden');
+          $status[$id] = t('Overridden');
         }
         else {
           $status[$id] = t('In Sync');
