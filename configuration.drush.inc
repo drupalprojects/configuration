@@ -436,9 +436,9 @@ function _configuration_sync() {
 
   }
 
-  // If we have to stop tracking some configurations, figure out which
+  // If we have to stop stracking some configurations, figure out which
   // configurations have to be untracked.
-  if (!drush_get_option('preserve-tracked')) {
+  if (drush_get_option('preserve-tracked')) {
 
     $being_tracked = array_keys(ConfigurationManagement::trackedConfigurations(FALSE));
 
