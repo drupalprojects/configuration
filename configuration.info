@@ -1,0 +1,8 @@
+name = "Configuration Management"
+description = "Provides configuration management for Drupal."
+core = 7.x
+php = 5.3
+package = "Configuration"
+
+dependencies[] = role_export
+dependencies[] = composer_manager

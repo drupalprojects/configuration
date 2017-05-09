@@ -1,0 +1,35 @@
+<?php
+
+use Configuration\ConfigurationManager;
+
+
+function exportAll() {
+
+  $cm =  new ConfigurationManager();
+  $cm->registerHandlers()->registerEvents();
+
+  $list = array();
+  foreach ($cm->getHandlersTypes() as $type) {
+    $identifiers = $cm->getHandlerFromType($type)->getIdentifiers();
+    foreach ($identifiers as $id => $label) {
+      $list[$type . '.' . $id] = TRUE;
+    }
+  }
+  $cm->exporter()->defineItemsToExport($list)->export();
+}
+
+function loadAll() {
+  $cm =  new ConfigurationManager();
+  $cm->registerHandlers()->registerEvents();
+
+  $in_configurations_json = $cm->importer()->loadConfigurationList()->configurations()->getConfigurations();
+
+  $list = array();
+  foreach ($in_configurations_json as $group => $configs_in_group) {
+    foreach ($configs_in_group as $identifier => $config) {
+      $list[$identifier] = TRUE;;
+    }
+  }
+
+  $cm->importer()->defineItemsToImport($list)->import();
+}

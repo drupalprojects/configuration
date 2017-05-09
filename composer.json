@@ -1,0 +1,13 @@
+{
+  "require": {
+    "symfony/config": "2.6.*@dev",
+    "symfony/event-dispatcher": "2.6.*@dev",
+    "symfony/property-access": "2.6.*@dev",
+    "camspiers/json-pretty": "1.0.*",
+    "phpcollection/phpcollection": "0.4.*@dev",
+    "mdagostino/dependencyresolver": "1.0.0"
+  },
+  "autoload": {
+    "psr-4": {"Configuration\\": "src/"}
+  }
+}
